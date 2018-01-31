@@ -1,4 +1,4 @@
-# Gnarly
+# 🤘 Gnarly
 
 > Gnarly’s reduces blockchain events into a steady state with confidence.
 >
@@ -7,9 +7,9 @@
 ## Features
 
 - "Instant" updates with confidence intervals
-    - optimistic UI pattern; apply expected changes immedately but revert to source of truth as soon as it's known
+    - optimistic UI pattern; apply expected changes immediately but revert to source of truth as soon as it's known
 - reduces blockchain events into a steady state
-    - optimize queries and architecture
+    - optimize client queries and data architecture
     - compatible with the rest of the world of technology
 - graceful reorg and incorrect optimistic state handling
 - friendly error management
@@ -100,6 +100,8 @@ from which the backend can
 
 These actions are then presented to the system as a new block
 
+Because this state is designed to be shared, sybil defenses are necessary. Any system providing this shared state will be grief-able, so minimizing attack surfaces with rate limiting and a basic authentication scheme will be necessary. For example, only users with an ID associated with your project ([perhaps an ENS name that resolves to their address](https://github.com/aragon/aragon-id)) should be able to write to your optimistic shared state.
+
 
 ## System Components
 
@@ -175,26 +177,37 @@ The `producer` argument to the reducer is a object that provides primitives for 
 
 Almost every db transaction produced by this reducer that affects an artifact should come with a `_REASON` to be applied to the event log.
 
+```js
 
+const byId = (state, action) => produce(state, draft => {
+    switch (action.type) {
+        case RECEIVE_PRODUCTS:
+            action.products.forEach(product => {
+                draft[product.id] = product
+            })
+        break
+    }
+})
+```
 
 ```js
 import { combineReducers } from 'redux'
 
-const counters = (db, action, producer) => {
+const counters = (db, action) => produce(db, draft => {
 
     // whatever this looks like for the db adaptor
-    producer.produce(`
+    draft.query(`
         UPDATE counters
         SET value = value + 1
         WHERE from = $1
     `, [ action.payload.from ])
 
     // produce an event log
-    producer.produce(`
+    draft.query(`
         INSERT INTO event_log (artifact_id, reason, meta)
         VALUES ($1, $2, $3)
     `, [artifact_id, action._REASON, action.meta])
-}
+})
 
 // do we really need the object here? the keys don't really mean anything (yet?)
 export default combineReducers({
@@ -218,6 +231,8 @@ Some of these validity changes are implied by new events (say, a new block is cr
 
 I need to think more about views, timetravel databases (aka blockchains, lol), and how to better represent state changes as dependencies to actions.
 
+What about a client-local version for a more “self-sovereign” architecture?
+
 In the event of a rollback (for whatever reason), it should be a relatively straightforward process to:
 - find all artifacts of a block
     - find all artifacts of the txs of a block
@@ -225,4 +240,9 @@ In the event of a rollback (for whatever reason), it should be a relatively stra
 - invalidate them
 - roll back any state nicely so that the steady state is again accurate (and make sure confidence intervals are re-applied correctly)
 
-This might actually require a little mini blockchain-as-a-database kinda thing. BigchainDB?
+> I love how this can help make ‘live use’ of a dApp way better. But also very very important too is computing the original state without every user having to traverse a huge event chain locally.
+> Truebit could be used for this. Having an off-chain state reducing function that takes the state and logs of a contract and returns a JSON file with the processed state that can then be published to IPFS. The hash could be stored on chain and there could be a verification game to claim the state has been computed incorrectly.
+> You can do this sort of snapshots every finalized block, to be sure it is unlikely the chain will reorg.  — Jorge Izquierdo
+
+
+This blend of “reduce the finalized state for everyone, but catch up yourself” solves most of the “this isn’t decentralized” issues. That architecture plus a local version of gnarly would be a decent balance of decentralization and UX.
