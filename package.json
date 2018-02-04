@@ -1,0 +1,44 @@
+{
+  "name": "gnarly",
+  "version": "0.0.1",
+  "description": "Condense blockchains into steady state with confidence.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build-ts && npm run tslint",
+    "start": "node dist/index.js",
+    "watch-node": "nodemon dist/index.js",
+    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "test": "jest --forceExit --coverage --verbose",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint -c tslint.json -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XLNT/gnarly.git"
+  },
+  "keywords": [
+    "ethereum"
+  ],
+  "author": "Matt Condon <m@cond.in> (http://mat.tc)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/XLNT/gnarly/issues"
+  },
+  "homepage": "https://github.com/XLNT/gnarly#readme",
+  "dependencies": {
+    "bignumber.js": "^6.0.0",
+    "ethereumjs-blockstream": "^3.1.0",
+    "isomorphic-fetch": "^2.2.1",
+    "mobx": "^3.4.1",
+    "typescript": "^2.7.1",
+    "web3": "^1.0.0-beta.29"
+  },
+  "devDependencies": {
+    "@types/node": "^9.4.0",
+    "concurrently": "^3.5.1",
+    "mobx-utils": "^3.2.2",
+    "nodemon": "^1.14.12",
+    "tslint": "^5.9.1"
+  }
+}
