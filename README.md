@@ -37,3 +37,11 @@ You can think of it as a "server-side" apollo-client where the blockchain you're
 Gnarly uses the ideas behind redux and MobX to convert imperative blockchain events to declarative, reactive state.
 
 
+## Technology
+Any/all of this can change, but here are the technologies currently used. Note that gnarly should be able to be used in both a browser and server-side environment.
+
+- Typescript
+- MobX
+- [future] [Parcel](https://github.com/parcel-bundler/parcel)
+- ethereumjs-blockstream
+- GraphQL
