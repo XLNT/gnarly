@@ -1,4 +1,4 @@
-# 🤘 Gnarly
+# 🤙 Gnarly
 
 > Gnarly’s reduces blockchain events into a steady state with confidence.
 >
