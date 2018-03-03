@@ -105,18 +105,27 @@ const DonationTracker = types
     },
   }))
 
-const donationTracker = DonationTracker.create()
+const donationTracker = DonationTracker.create({
+  donations: {},
+})
 
+const Store = types.model('Store', {
+  gasPrice: types.optional(GasPriceOracle, {}),
+  kitties: types.optional(KittyTracker, {}),
+  donations: types.optional(DonationTracker, {}),
+})
 
 // @TOOD - how to root store?????
 const store = Store.create({
-  gasPrice: GasPriceOracle.create(),
-  kitties: KittyTracker,
+  gasPrice: GasPriceOracle.create({
+    blockGasPriceAverages: [1, 12, 3],
+  }),
+  kitties: kittyTracker,
   donations: donationTracker,
 })
 
-onSnapshot(store, (snapshot) => {
-  console.dir(snapshot)
+onPatch(store, (patch) => {
+  console.dir(patch)
 })
 
 const reasons = {

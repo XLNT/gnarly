@@ -2,7 +2,7 @@
   "name": "gnarly",
   "version": "0.0.1",
   "description": "Condense blockchains into steady state with confidence.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "npm run build-ts && npm run tslint",
     "start": "node dist/index.js",
