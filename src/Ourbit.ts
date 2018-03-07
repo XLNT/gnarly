@@ -7,6 +7,10 @@ import {
   types,
 } from 'mobx-state-tree'
 
+import {
+  splitPath,
+} from './utils'
+
 import { EventEmitter } from 'events'
 import uuidv4 from 'uuid/v4'
 
@@ -118,7 +122,7 @@ class Ourbit extends EventEmitter {
     this.untracked(() => {
       this.targetState.applyPatch(tx.inversePatches)
     })
-    this.uncommitTransaction(tx)
+    await this.uncommitTransaction(tx)
   }
 
   /**
@@ -134,20 +138,20 @@ class Ourbit extends EventEmitter {
     })
   }
 
-  private async persistPatches (txId: string, patches: IPatch[]) {
+  private notifyPatches (txId: string, patches: IPatch[]) {
     patches.forEach((patch) => {
-      this.emit('patch:persist', txId, patch)
+      this.emit('patch', txId, patch)
     })
   }
 
   private async commitTransaction (tx: ITransaction) {
     await this.store.saveTransaction(tx)
-    await this.persistPatches(tx.id, tx.patches)
+    this.notifyPatches(tx.id, tx.patches)
   }
 
   private async uncommitTransaction (tx: ITransaction) {
     await this.store.deleteTransaction(tx)
-    await this.persistPatches(tx.id, tx.inversePatches)
+    this.notifyPatches(tx.id, tx.inversePatches)
   }
 
   private untracked (fn) {
@@ -162,7 +166,7 @@ class Ourbit extends EventEmitter {
     }
 
     const patchId = uuidv4()
-    const pathParts = this.splitPath(patch.path)
+    const pathParts = splitPath(patch.path)
     // parse storeKey and keyKey from path and provide to patch
     this.patches.push({
       ...patch,
@@ -174,11 +178,6 @@ class Ourbit extends EventEmitter {
       id: patchId,
       ...pathParts,
     })
-  }
-
-  private splitPath (path: string): IPathThing {
-    const [reducerKey, domainKey, key] = path.split('/')
-    return { reducerKey, domainKey, key }
   }
 }
 
