@@ -76,96 +76,133 @@ in our system, each entry is linked to an action that produced it
  *   // keyKey = ownerOf
  *   // key = key
  *
- *   typeStoreInterface[storeKey][keyKey](tx_id, {
- *     ...patch,
- *     key,
- *   })
+ *   typeStoreInterface[storeKey][keyKey](tx_id, patch)
  * })
  *
- *
- *
- * urbit:
- * a transaction is a discrete set of events that produce patches to the state
- *   but should be treated as a single unit that can be reverted.
- *   One transaction can produce multiple events that can produce multiple patches.
- * tx => [event]
- * event => [patch]
- * tx_id = uuid for each transaction(), by which patches are indexed
- *
- * when using gnarly with blockchains, tx_id === block_id (fork_id, block_num)
- *
- *  - handle resuming itself from either null, or some tx_id
- *    - pulling patches from that tx_id and apply them over provided initialState
- *    - urbit = new Urbit(stateReference, storeInterface)
- *    - urbit.applyPatchesFrom(tx_id = null)
- *  - accept transaction stream, calls the provided reducer over those events
- *    - processTransaction(tx_id, (stateReference) => {
- *        because(reason, () => {
- *          // do mobx manipulation
- *        })
- *      })
- *  - handle persisting patches as they're produced (solid-state-interpreter-ing)
- *    - mobx.onPatch(storeInterface, (patch) => { storeInterface.persistPatch(tx_id) })
- *  - handle rollbacks
- *    - urbit.rollback(tx_id)
- *      (mobx.applyPatch(stateReference, reversePatchesByTxId(tx_id)))
  */
 
-import { transaction } from 'mobx'
-import { getSnapshot, onPatch, onSnapshot, types } from 'mobx-state-tree'
-// import Urbitesq from './Urbitesq'
+// import {
+//   BlockchainPart,
+//   persistStateWithStore,
+// } from './'
 
-import {
-  BlockchainPart,
-  Urbit,
-  persistStateWithStore,
-} from './'
+import { types } from 'mobx-state-tree'
 
-interface IStoreInterface {
-  persistPatch: (txId: string, patch: any) => Promise<any>
-  patchesFrom: (txId: string) => Promise<any>
+import Ourbit, {
+  IPatch,
+  IPersistInterface,
+  ITransaction,
+  ITypeStore,
+} from './Ourbit'
+
+import Sequelize from 'sequelize'
+
+const persistStateWithStore = async (ourbit, typeStore) => {
+  ourbit.on('patch:persist', (txId: string, patch: IPatch) => {
+    typeStore[patch.reducerKey][patch.domainKey](txId, patch)
+  })
 }
 
-class SqlStoreInterface implements IStoreInterface {
-  public connectionString
+class SequelizePersistInterface implements IPersistInterface {
+  private connectionString
+  private sequelize
+
+  private Transaction
 
   constructor (connectionString: string) {
     this.connectionString = connectionString
+    this.sequelize = new Sequelize(this.connectionString)
+
+    this.Transaction = this.sequelize.define('transaction', {
+      id: {
+        type: Sequelize.STRING,
+        primaryKey: true,
+      },
+      patches: Sequelize.JSON,
+      inversePatches: Sequelize.JSON,
+    })
   }
 
-  public async persistPatch (txId: string, patch: any) {
-    //
+  public async getTransactions (fromTxId: null | string) {
+    return this.Transaction.findAll()
   }
 
-  public async patchesFrom (txId: string) {
-    //
+  public async deleteTransaction (tx: ITransaction) {
+    return this.Transaction.destroy({
+      where: { id: tx.id },
+    })
+  }
+
+  public async saveTransaction (tx: ITransaction) {
+    return this.Transaction.create(tx)
+  }
+
+  public async getTransaction (txId: string) {
+    return this.Transaction.findById(txId)
   }
 }
 
-const sql = {}
+const anotherConnectionString = 'postgres://'
+const sequelize = new Sequelize(anotherConnectionString)
+
+const Kitty = this.sequelize.define('kitty', {
+  id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
+  txId: { type: Sequelize.STRING },
+  patchId: { type: Sequelize.STRING },
+
+  kittyId: { type: Sequelize.STRING },
+  owner: { type: Sequelize.STRING },
+}, {
+  indexes: [
+    { fields: ['kittyId'] },
+    { fields: ['owner'] },
+    { fields: ['txId'], unique: true },
+  ],
+})
 
 const MyTypeStore = {
   kittyTracker: {
-    ownerOf: (txId: string, { op, key, value }) => {
-      switch (op) {
-        case 'add':
-          // await sql.insert()
-        case 'replace':
-          // await sql.update()
-        case 'remove':
-          // await sql.delete()
-        default:
+    ownerOf: async (txId: string, patch: IPatch) => {
+      switch (patch.op) {
+        case 'add': {
+          await Kitty.create({
+            txId,
+            patchId: patch.id,
+            kittyId: patch.key,
+            owner: patch.value,
+          })
+          break
+        }
+        case 'replace': {
+          await Kitty.update({
+            txId,
+            patchId: patch.id,
+            kittyId: patch.key,
+            owner: patch.value,
+          }, {
+            where: { kittyId: patch.key },
+          })
+          break
+        }
+        case 'remove': {
+          await Kitty.destroy({
+            where: { kittyId: patch.key },
+          })
+          break
+        }
+        default: {
           throw new Error('wut')
+        }
       }
     },
   },
 }
 
-const because = (reason, meta, fn) => {
+export const because = (reason, meta, fn) => {
   // start group with reason + meta
-  transaction(() => {
-    fn()
-  })
+  // how does this interact with Ourbit? we'll be in the context of processTransaction here
+
+  fn()
 }
 
 // developer land
@@ -195,7 +232,7 @@ const stateReference = Store.create({
   kittyTracker: KittyTracker.create(),
 })
 
-const storeInterface = new SqlStoreInterface('postgres://')
+const storeInterface = new SequelizePersistInterface('postgres://')
 const nodeEndpoint = ''
 
 const onBlock = (block) => {
@@ -203,6 +240,7 @@ const onBlock = (block) => {
     if (tx.to === CRYPTO_KITTIES) {
       tx.events.forEach((event) => {
         if (event.name === 'Transfer') {
+
           because(reasons.KittyTransfer, {}, () => {
             stateReference.kittyTracker.transfer(event[0], event[1])
           })
@@ -212,10 +250,10 @@ const onBlock = (block) => {
   })
 }
 
-const urbit = new Urbit(stateReference, storeInterface)
-const blockstreamer = new BlockchainPart(nodeEndpoint, urbit, onBlock)
+const ourbit = new Ourbit(stateReference, storeInterface)
+const blockstreamer = new BlockchainPart(nodeEndpoint, ourbit, onBlock)
 
-persistStateWithStore(stateReference, MyTypeStore)
+persistStateWithStore(ourbit, MyTypeStore)
 
 const gnarly = new Gnarly({
   stateReference,
