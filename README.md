@@ -6,6 +6,27 @@
 
 -----> [Read the Medium post for more details](https://medium.com/xlnt-art/solving-severe-asynchronicity-with-gnarly-51f5310e5543) <-----
 
+## TODO
+
+We'd love your help with any of this stuff
+
+- [ ] literally just testing the code we've written at all, manually
+  - [ ] does it work
+  - [ ] if no, make it work
+- [ ] automated testing with mocha/chai/etc
+  - [ ] ourbit unit tests, with a stubbed store
+  - [ ] ourbit integration tests against sqlite (optional)
+  - [ ] blockstream with stubbed getters calls ourbit correctly
+  - [ ] test that persistStateWithStore works corectly
+  - [ ] test utils (path splitting)
+  - [ ] gnarly itself works (integration test)
+- [ ] update README with example code
+- [ ] any sort of overall architecture improvements (do we want a functional interpreter situation going on?)
+- [ ] replace block reconciliation polling with a web3 filter
+- [ ] replace `getTransactions` with a generator that can page through results
+
+---
+
 ## Features
 
 - "Instant" updates with confidence intervals
