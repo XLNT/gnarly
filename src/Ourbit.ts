@@ -2,6 +2,7 @@ import { transaction } from 'mobx'
 import {
   getSnapshot,
   IJsonPatch,
+  IStateTreeNode,
   onPatch,
   onSnapshot,
   types,
@@ -75,7 +76,7 @@ export interface IPersistInterface {
 }
 
 class Ourbit extends EventEmitter {
-  public targetState
+  public targetState: IStateTreeNode
   public store: IPersistInterface
 
   private skipping: boolean = false
@@ -83,7 +84,7 @@ class Ourbit extends EventEmitter {
   private patches = []
   private inversePatches = []
 
-  constructor (targetState, store: IPersistInterface) {
+  constructor (targetState: IStateTreeNode, store: IPersistInterface) {
     super()
 
     this.targetState = targetState
