@@ -162,7 +162,7 @@ class Ourbit extends EventEmitter {
     this.skipping  = false
   }
 
-  private handlePatch (patch: IJsonPatch, inversePatch: IJsonPatch) {
+  private handlePatch = (patch: IJsonPatch, inversePatch: IJsonPatch) => {
     if (this.skipping) {
       return
     }
