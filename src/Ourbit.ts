@@ -1,5 +1,6 @@
 import { transaction } from 'mobx'
 import {
+  applyPatch,
   getSnapshot,
   IJsonPatch,
   IStateTreeNode,
@@ -121,7 +122,7 @@ class Ourbit extends EventEmitter {
   public async rollbackTransaction (txId: string) {
     const tx = await this.store.getTransaction(txId)
     this.untracked(() => {
-      this.targetState.applyPatch(tx.inversePatches)
+      applyPatch(this.targetState, tx.inversePatches)
     })
     await this.uncommitTransaction(tx)
   }
@@ -134,7 +135,7 @@ class Ourbit extends EventEmitter {
     const allTxs = await this.store.getTransactions(txId)
     this.untracked(() => {
       allTxs.forEach((tx) => {
-        this.targetState.applyPatch(tx.patches)
+        applyPatch(this.targetState, tx.patches)
       })
     })
   }
