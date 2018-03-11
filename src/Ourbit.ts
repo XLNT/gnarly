@@ -14,7 +14,7 @@ import {
 } from './utils'
 
 import { EventEmitter } from 'events'
-import uuidv4 from 'uuid/v4'
+import * as uuidv4 from 'uuid/v4'
 
 /*
  * urbit:
