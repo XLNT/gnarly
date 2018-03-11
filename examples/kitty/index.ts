@@ -95,18 +95,20 @@ const storeInterface = new SequelizePersistInterface('postgres://')
 const nodeEndpoint = ''
 
 const onBlock = (block) => {
-  block.transactions.forEach((tx) => {
-    if (tx.to === CRYPTO_KITTIES) {
-      tx.events.forEach((event) => {
-        if (event.name === 'Transfer') {
+  return () => {
+    block.transactions.forEach((tx) => {
+      if (tx.to === CRYPTO_KITTIES) {
+        tx.events.forEach((event) => {
+          if (event.name === 'Transfer') {
 
-          because(reasons.KittyTransfer, {}, () => {
-            stateReference.kittyTracker.transfer(event[0], event[1])
-          })
-        }
-      })
-    }
-  })
+            because(reasons.KittyTransfer, {}, () => {
+              stateReference.kittyTracker.transfer(event[0], event[1])
+            })
+          }
+        })
+      }
+    })
+  }
 }
 
 const gnarly = new Gnarly(

@@ -80,7 +80,7 @@ class BlockStream extends EventEmitter {
   private onBlockAdd (data) {
     console.log(data)
     const block = data.result
-    const pendingTransaction = this.ourbit.processTransaction(block.id, this.onBlock)
+    const pendingTransaction = this.ourbit.processTransaction(block.id, this.onBlock(block))
     this.pendingTransactions.push(pendingTransaction)
   }
 
