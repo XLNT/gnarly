@@ -14,7 +14,7 @@ import {
 } from './utils'
 
 import { EventEmitter } from 'events'
-import * as uuidv4 from 'uuid/v4'
+import * as uuid from 'uuid'
 
 /*
  * urbit:
@@ -167,7 +167,7 @@ class Ourbit extends EventEmitter {
       return
     }
 
-    const patchId = uuidv4()
+    const patchId = uuid.v4()
     const pathParts = splitPath(patch.path)
     // parse storeKey and keyKey from path and provide to patch
     this.patches.push({
