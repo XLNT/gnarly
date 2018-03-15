@@ -8,7 +8,7 @@
     "start": "node dist/index.js",
     "watch-node": "nodemon dist/index.js",
     "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
-    "test": "jest --forceExit --coverage --verbose",
+    "test": "mocha -r ts-node/register src/**/*.spec.ts",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "tslint": "tslint -c tslint.json -p tsconfig.json"
@@ -35,15 +35,23 @@
     "mobx-state-tree": "^1.3.1",
     "mst-middlewares": "^1.3.1",
     "sequelize": "^4.35.2",
+    "sqlite3": "^3.1.13",
     "typescript": "2.6.1",
     "uuid": "^3.2.1",
     "web3": "^1.0.0-beta.29"
   },
   "devDependencies": {
+    "@types/chai": "^4.1.2",
+    "@types/chai-spies": "0.0.0",
+    "@types/mocha": "^2.2.48",
     "@types/node": "^9.4.0",
+    "chai": "^4.1.2",
+    "chai-spies": "^1.0.0",
     "concurrently": "^3.5.1",
     "mobx-utils": "^3.2.2",
+    "mocha": "^5.0.4",
     "nodemon": "^1.14.12",
+    "ts-node": "^5.0.1",
     "tslint": "^5.9.1"
   }
 }
