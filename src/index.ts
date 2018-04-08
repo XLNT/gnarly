@@ -9,7 +9,6 @@ import Ourbit, {
 import persistStateWithStore from './persistStateWithStore'
 
 export {
-  IPatch,
   IPersistInterface,
   ITransaction,
   ITypeStore,
@@ -53,21 +52,3 @@ class Gnarly {
 }
 
 export default Gnarly
-
-// replace for loop with onBlockProduced
-// for (let i = 1; i < 11; i++) {
-//   const block = { number: i  }
-
-//   because(reasons.BlockProduced, { number: block.number }, () => {
-//     store.gasPrice.addGasPriceAverage(1000 * block.number)
-//   })
-
-//   because(reasons.KittyTransfer, { id: '0xkitty', from: '0x1', to: '0x2' }, () => {
-//     store.kitties.transfer('0xkitty', '0x2')
-//   })
-
-//   because(reasons.DonationCreated, { from: '0x1', amount: 45 }, () => {
-//     store.donations.addDonation('0x1', 45)
-//     store.donations.addDonation('0x1', 65)
-//   })
-// }

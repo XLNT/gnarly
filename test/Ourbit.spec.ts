@@ -4,8 +4,8 @@ import { clone, types } from 'mobx-state-tree'
 import 'mocha'
 import * as uuid from 'uuid'
 
-import Ourbit from '../Ourbit'
-import { SequelizePersistInterface } from '../stores'
+import Ourbit from '../src/Ourbit'
+import { SequelizePersistInterface } from '../src/stores'
 import MockPersistInterface, { mockPatch, mockTransaction } from './helpers/MockPersistInterface'
 
 const { expect, use } = chai

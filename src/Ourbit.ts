@@ -44,6 +44,10 @@ import * as uuid from 'uuid'
  *      (mobx.applyPatch(stateReference, reversePatchesByTxId(tx_id)))
  */
 
+export interface IPatch extends IJsonPatch, IPathThing {
+  id: string
+}
+
 export interface ITransaction {
   id: string
   patches: IPatch[]
@@ -54,10 +58,6 @@ export interface IPathThing {
   reducerKey: string
   domainKey: string
   key: string
-}
-
-export interface IPatch extends IJsonPatch, IPathThing {
-  id: string
 }
 
 // tslint:disable-next-line no-empty-interface

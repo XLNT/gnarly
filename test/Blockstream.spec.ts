@@ -4,13 +4,12 @@ import { clone, types } from 'mobx-state-tree'
 import 'mocha'
 import * as uuid from 'uuid'
 
-import BlockStream from '../Blockstream'
-import Ourbit from '../Ourbit'
-import { SequelizePersistInterface } from '../stores'
+import BlockStream from '../src/Blockstream'
+import Ourbit from '../src/Ourbit'
+import { SequelizePersistInterface } from '../src/stores'
 import MockPersistInterface, { mockPatch, mockTransaction } from './helpers/MockPersistInterface'
 
-const { expect, use } = chai
-use(spies)
+chai.use(spies)
 const sandbox = chai.spy.sandbox()
 
 // Helpers

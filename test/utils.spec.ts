@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import spies from 'chai-spies'
+import * as spies from 'chai-spies'
 import 'mocha'
 
-import { splitPath } from '../utils'
+import { splitPath } from '../src/utils'
 
 describe('Utils', () => {
   const reducerKey = 'kittyTracker'
