@@ -126,13 +126,13 @@ class BlockStream extends EventEmitter {
     await Promise.all(this.pendingTransactions)
   }
 
-  private onBlockAdd = (block) => {
+  private onBlockAdd = (block: BlockstreamBlock) => {
     console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
     const pendingTransaction = this.ourbit.processTransaction(block.hash, this.onBlock(block))
     this.pendingTransactions.push(pendingTransaction)
   }
 
-  private onBlockInvalidated = (block) => {
+  private onBlockInvalidated = (block: BlockstreamBlock) => {
     console.log(`[onBlockInvalidated] ${block.number} (${block.hash})`)
     const pendingTransaction = this.ourbit.rollbackTransaction(block.hash)
     this.pendingTransactions.push(pendingTransaction)
