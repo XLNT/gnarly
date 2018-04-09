@@ -12,7 +12,7 @@ import {
 const connectionString = 'postgres://'
 const sequelize = new Sequelize(connectionString)
 
-const Kitty = this.sequelize.define('kitty', {
+const Kitty = sequelize.define('kitty', {
   id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
   txId: { type: Sequelize.STRING },
   patchId: { type: Sequelize.STRING },

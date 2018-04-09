@@ -25,21 +25,30 @@ class SequelizePersistInterface implements IPersistInterface {
     })
   }
 
-  public async getTransactions (fromTxId: null | string) {
+  public setup = async () => {
+    // @TODO(shrugs) - make this an env var or remove it entirely
+    await this.Transaction.sync({ force: true })
+  }
+
+  public getLatestTransaction = async () => {
+    return this.Transaction.findOne({ order: [['createdAt', 'DESC']] })
+  }
+
+  public getTransactions = async (fromTxId: null | string)  => {
     return this.Transaction.findAll()
   }
 
-  public async deleteTransaction (tx: ITransaction) {
+  public deleteTransaction = async (tx: ITransaction)  => {
     return this.Transaction.destroy({
       where: { id: tx.id },
     })
   }
 
-  public async saveTransaction (tx: ITransaction) {
+  public saveTransaction = async (tx: ITransaction)  => {
     return this.Transaction.create(tx)
   }
 
-  public async getTransaction (txId: string) {
+  public getTransaction = async (txId: string)  => {
     return this.Transaction.findById(txId)
   }
 }

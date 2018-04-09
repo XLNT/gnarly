@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js'
+
 import {
   IPathThing,
 } from './Ourbit'
@@ -9,3 +11,5 @@ export const splitPath = (path: string): IPathThing => {
   const [emptyString, reducerKey, domainKey, key] = path.split('/')
   return { reducerKey, domainKey, key }
 }
+
+export const hexToBigNumber = (hex: string) => new BigNumber(hex)

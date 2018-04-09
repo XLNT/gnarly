@@ -13,7 +13,6 @@ import {
   splitPath,
 } from './utils'
 
-import { EventEmitter } from 'events'
 import * as uuid from 'uuid'
 
 /*
@@ -67,6 +66,7 @@ export interface ITypeStore {
 
 export interface IPersistInterface {
   getTransactions: (fromTxId: null|string) => Promise<ITransaction[]>
+  getLatestTransaction: () => Promise<ITransaction>
   // @TODO ^ make this a generator that batches transaction returns
 
   deleteTransaction: (tx: ITransaction) => Promise<any>
@@ -76,20 +76,22 @@ export interface IPersistInterface {
   // event log CRUD actions
 }
 
-class Ourbit extends EventEmitter {
+type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
+
+class Ourbit {
   public targetState: IStateTreeNode
   public store: IPersistInterface
+  private persistPatch: PersistPatchHandler
 
   private skipping: boolean = false
 
   private patches = []
   private inversePatches = []
 
-  constructor (targetState: IStateTreeNode, store: IPersistInterface) {
-    super()
-
+  constructor (targetState: IStateTreeNode, store: IPersistInterface, persistPatch: PersistPatchHandler) {
     this.targetState = targetState
     this.store = store
+    this.persistPatch = persistPatch
 
     onPatch(this.targetState, this.handlePatch)
   }
@@ -99,7 +101,7 @@ class Ourbit extends EventEmitter {
    * @param txId transaction id
    * @param fn mutating function
    */
-  public async processTransaction (txId: string, fn) {
+  public processTransaction = async (txId: string, fn) => {
     transaction(() => {
       fn()
     })
@@ -119,7 +121,7 @@ class Ourbit extends EventEmitter {
    * Applys inverse patches from a specific transaction, mutating the target state
    * @param txId transaction id
    */
-  public async rollbackTransaction (txId: string) {
+  public rollbackTransaction = async (txId: string) => {
     const tx = await this.store.getTransaction(txId)
     this.untracked(() => {
       applyPatch(this.targetState, tx.inversePatches)
@@ -140,23 +142,23 @@ class Ourbit extends EventEmitter {
     })
   }
 
-  private notifyPatches (txId: string, patches: IPatch[]) {
-    patches.forEach((patch) => {
-      this.emit('patch', txId, patch)
-    })
+  private notifyPatches = async (txId: string, patches: IPatch[]) => {
+    for (const patch of patches) {
+      await this.persistPatch(txId, patch)
+    }
   }
 
-  private async commitTransaction (tx: ITransaction) {
+  private commitTransaction = async (tx: ITransaction) => {
     await this.store.saveTransaction(tx)
-    this.notifyPatches(tx.id, tx.patches)
+    await this.notifyPatches(tx.id, tx.patches)
   }
 
-  private async uncommitTransaction (tx: ITransaction) {
+  private uncommitTransaction = async (tx: ITransaction) => {
     await this.store.deleteTransaction(tx)
-    this.notifyPatches(tx.id, tx.inversePatches)
+    await this.notifyPatches(tx.id, tx.inversePatches)
   }
 
-  private untracked (fn) {
+  private untracked = (fn) => {
     this.skipping = true
     fn()
     this.skipping  = false

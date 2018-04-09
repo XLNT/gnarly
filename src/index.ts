@@ -6,13 +6,15 @@ import Ourbit, {
   ITransaction,
   ITypeStore,
 } from './Ourbit'
-import persistStateWithStore from './persistStateWithStore'
 
 export {
+  IPatch,
   IPersistInterface,
   ITransaction,
   ITypeStore,
 }
+
+export * from './stores'
 
 export const because = (reason, meta, fn) => {
   // start group with reason + meta
@@ -26,8 +28,6 @@ class Gnarly {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
 
-  private stopPersistingStateWithStore
-
   constructor (
     private stateReference: IStateTreeNode,
     private storeInterface: IPersistInterface,
@@ -35,19 +35,34 @@ class Gnarly {
     private typeStore: ITypeStore,
     private onBlock: (block: any) => void,
   ) {
-    this.ourbit = new Ourbit(this.stateReference, this.storeInterface)
+    this.ourbit = new Ourbit(
+      this.stateReference,
+      this.storeInterface,
+      this.persistPatchHandler,
+    )
     this.blockstreamer = new Blockstream(this.nodeEndpoint, this.ourbit, this.onBlock)
   }
 
-  public shaka () {
-    this.blockstreamer.start()
-    this.stopPersistingStateWithStore = persistStateWithStore(this.ourbit, this.typeStore)
+  public shaka = async () => {
+    let latestBlockHash
+    if (process.env.LATEST_BLOCK_HASH) {
+      latestBlockHash = process.env.LATEST_BLOCK_HASH
+    } else {
+      const latestTransaction = await this.storeInterface.getLatestTransaction()
+      latestBlockHash = latestTransaction ? latestTransaction.id : null
+      // ^ latestBlockHash happens to also be the latest block hash
+    }
+
+    await this.blockstreamer.start(latestBlockHash)
     return this.bailOut.bind(this)
   }
 
-  public async bailOut () {
-    await this.stopPersistingStateWithStore()
+  public bailOut = async () => {
     await this.blockstreamer.stop()
+  }
+
+  private persistPatchHandler = async (txId: string, patch: IPatch) => {
+    await this.typeStore[patch.reducerKey][patch.domainKey](txId, patch)
   }
 }
 
