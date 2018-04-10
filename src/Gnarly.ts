@@ -6,8 +6,8 @@ import Ourbit, {
   ITypeStore,
 } from './Ourbit'
 
-import { Block as BlockstreamBlock } from 'ethereumjs-blockstream'
 import Block, { IJSONBlock } from './models/Block'
+import NodeApi from './models/NodeApi'
 
 export const because = (reason, meta, fn) => {
   // start group with reason + meta
@@ -15,11 +15,13 @@ export const because = (reason, meta, fn) => {
   fn()
 }
 
-export type OnBlockHandler = (block: Block) => Promise<void>
+export type OnBlockHandler = (block: Block) => () => Promise<void>
 
 class Gnarly {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
+
+  private api: NodeApi
 
   constructor (
     private stateReference: IStateTreeNode,
@@ -33,8 +35,9 @@ class Gnarly {
       this.storeInterface,
       this.persistPatchHandler,
     )
+    this.api = new NodeApi(nodeEndpoint)
     this.blockstreamer = new Blockstream(
-      this.nodeEndpoint,
+      this.api,
       this.ourbit,
       this.handleNewBlock,
     )
@@ -58,14 +61,13 @@ class Gnarly {
     await this.blockstreamer.stop()
   }
 
-  private handleNewBlock = async (block: IJSONBlock) => {
-    await this.onBlock(
-      await this.normalizeBlock(block),
-    )
+  private handleNewBlock = (block: IJSONBlock) => async () => {
+    const gnarlyBlock = await this.normalizeBlock(block)
+    await this.onBlock(gnarlyBlock)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {
-    return new Block(block)
+    return new Block(block, this.api)
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {

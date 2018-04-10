@@ -3,9 +3,12 @@ import 'isomorphic-fetch'
 import {
   Block as BlockstreamBlock,
   BlockAndLogStreamer,
-  FilterOptions,
   Log as BlockstreamLog,
 } from 'ethereumjs-blockstream'
+
+import { IJSONBlock } from './models/Block'
+import { IJSONLog } from './models/Log'
+import NodeApi from './models/NodeApi'
 
 import { EventEmitter } from 'events'
 import Ourbit from './Ourbit'
@@ -14,72 +17,26 @@ import {
   hexToBigNumber,
 } from './utils'
 
-const gettersWithWeb3 = (nodeEndpoint) => ({
-  getBlockByNumber: async (num: number): Promise<BlockstreamBlock> => {
-    console.log('[getBlockByNumber]', num)
-    const res = await fetch(nodeEndpoint, {
-      method: 'POST',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getBlockByNumber',
-        params: [`0x${num.toString(16)}`, true],
-      }),
-    })
-    return res.json()
-  },
-  getBlockByHash: async (hash: string): Promise<BlockstreamBlock | null > => {
-    console.log('[getBlockByHash]', hash)
-    const res = await fetch(nodeEndpoint, {
-      method: 'POST',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBlockByHash', params: [hash, true] }),
-    })
-    return res.json()
-  },
-  getLogs: async (filterOptions: FilterOptions): Promise<BlockstreamLog[]> => {
-    console.log('[getLogs]', filterOptions)
-    const res = await fetch(nodeEndpoint, {
-      method: 'POST',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getLogs', params: [filterOptions] }),
-    })
-    return res.json()
-  },
-  getLatestBlock: async (): Promise<BlockstreamBlock> => {
-    console.log('[getLatestBlock]')
-    const res = await fetch(nodeEndpoint, {
-      method: 'POST',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBlockByNumber', params: ['latest', true] }),
-    })
-    return res.json()
-  },
-})
-
 class BlockStream extends EventEmitter {
-  private streamer
+  private streamer: BlockAndLogStreamer<IJSONBlock, IJSONLog>
 
   private onBlockAddedSubscriptionToken
   private onBlockRemovedSubscriptionToken
   private reconciling
-  private getters
 
   private pendingTransactions: Array<Promise<any>> = []
 
   constructor (
-    private nodeEndpoint: string,
+    private api: NodeApi,
     private ourbit: Ourbit,
-    private onBlock: (block: any) => void,
+    private onBlock: (block: BlockstreamBlock) => () => Promise<any>,
     private interval: number = 5000,
   ) {
     super()
   }
 
   public start = async (fromBlockHash: string = null) => {
-    this.getters = gettersWithWeb3(this.nodeEndpoint)
-    this.streamer = new BlockAndLogStreamer(this.getters.getBlockByHash, this.getters.getLogs, {
+    this.streamer = new BlockAndLogStreamer(this.api.getBlockByHash, this.api.getLogs, {
       blockRetention: 100,
     })
 
@@ -92,14 +49,14 @@ class BlockStream extends EventEmitter {
       startBlockNumber = hexToBigNumber('0x0')
     } else {
       // otherwise get the expected block's number
-      const { result: startFromBlock} = await this.getters.getBlockByHash(fromBlockHash)
+      const startFromBlock = await this.api.getBlockByHash(fromBlockHash)
       startBlockNumber = hexToBigNumber(startFromBlock.number).plus(1)
       // ^ +1 because we already know about this block and we want the next
     }
 
     // get the latest block
     let latestBlockNumber = hexToBigNumber(
-      (await this.getters.getLatestBlock()).result.number,
+      (await this.api.getLatestBlock()).number,
     )
 
     // if we're not at that block number, start pulling the blocks
@@ -109,10 +66,10 @@ class BlockStream extends EventEmitter {
         `[fast-forward] Starting from ${startBlockNumber.toNumber()} to ${latestBlockNumber.toNumber()}`,
       )
       for (let i = startBlockNumber.toNumber(); i < latestBlockNumber.toNumber(); i++) {
-        const { result: block } = await this.getters.getBlockByNumber(i)
+        const block = await this.api.getBlockByNumber(i)
         console.log(`[fast-forward] block ${block.number} (${block.hash})`)
         await this.streamer.reconcileNewBlock(block)
-        latestBlockNumber = hexToBigNumber((await this.getters.getLatestBlock()).result.number)
+        latestBlockNumber = hexToBigNumber((await this.api.getLatestBlock()).number)
       }
     }
 
@@ -128,7 +85,10 @@ class BlockStream extends EventEmitter {
 
   private onBlockAdd = (block: BlockstreamBlock) => {
     console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
-    const pendingTransaction = this.ourbit.processTransaction(block.hash, this.onBlock(block))
+    const pendingTransaction = this.ourbit.processTransaction(
+      block.hash,
+      this.onBlock(block),
+    )
     this.pendingTransactions.push(pendingTransaction)
   }
 
@@ -141,7 +101,7 @@ class BlockStream extends EventEmitter {
   private beginTracking = () => {
     // @TODO - replace this with a filter
     this.reconciling = setInterval(async () => {
-      await this.streamer.reconcileNewBlock(await this.getters.getLatestBlock())
+      await this.streamer.reconcileNewBlock(await this.api.getLatestBlock())
     }, this.interval)
   }
 }

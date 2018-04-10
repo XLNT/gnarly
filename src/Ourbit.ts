@@ -101,7 +101,7 @@ class Ourbit {
    * @param txId transaction id
    * @param fn mutating function
    */
-  public processTransaction = async (txId: string, fn) => {
+  public processTransaction = async (txId: string, fn: () => void) => {
     transaction(() => {
       fn()
     })

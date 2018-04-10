@@ -6,13 +6,24 @@
 
 -----> [Read the Medium post for more details](https://medium.com/xlnt-art/solving-severe-asynchronicity-with-gnarly-51f5310e5543) <-----
 
+## Developer Install / Usage
+
+clone this repo
+
+```
+npm install
+npm run test
+npm run watch-ts
+```
+
+To use it in a project, #TODO
+
 ## TODO
 
 We'd love your help with any of this stuff
 
-- [ ] literally just testing the code we've written at all, manually
-  - [ ] does it work
-  - [ ] if no, make it work
+- [x] literally just testing the code we've written at all, manually
+  - [x] does it work
 - [ ] automated testing with mocha/chai/etc
   - [ ] ourbit unit tests, with a stubbed store
   - [ ] ourbit integration tests against sqlite (optional)

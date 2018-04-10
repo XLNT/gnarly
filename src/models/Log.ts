@@ -1,4 +1,5 @@
 import { hexToBigNumber } from '../utils'
+import Transaction from './Transaction'
 
 export interface IJSONLog {
   logIndex: string
@@ -31,7 +32,11 @@ export default class Log {
   public readonly event: string
   public readonly args: object
 
-  public constructor (log: IJSONLog) {
+  private transaction: Transaction
+
+  public constructor (tx: Transaction, log: IJSONLog) {
+    this.transaction = tx
+
     this.logIndex = hexToBigNumber(log.logIndex)
     this.blockNumber = hexToBigNumber(log.blockNumber)
     this.blockHash = log.blockHash

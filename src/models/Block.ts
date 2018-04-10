@@ -1,3 +1,4 @@
+import NodeApi from './NodeApi'
 import Transaction, { IJSONTransaction } from './Transaction'
 
 import { Block as BlockstreamBlock } from 'ethereumjs-blockstream'
@@ -45,7 +46,11 @@ export default class Block {
   public transactions: Transaction[]
   public uncles: string[]
 
-  public constructor (block: IJSONBlock) {
+  public api: NodeApi
+
+  public constructor (block: IJSONBlock, api: NodeApi) {
+    this.api = api
+
     this.number = hexToBigNumber(block.number)
     this.hash = block.hash
     this.parentHash = block.parentHash
@@ -62,7 +67,7 @@ export default class Block {
     this.gasLimit = hexToBigNumber(block.gasLimit)
     this.gasUsed = hexToBigNumber(block.gasUsed)
     this.timestamp = hexToBigNumber(block.timestamp)
-    this.transactions = block.transactions.map((t) => new Transaction(t))
+    this.transactions = block.transactions.map((t) => new Transaction(this, t))
     this.uncles = block.uncles
   }
 }
