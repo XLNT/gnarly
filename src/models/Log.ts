@@ -2,16 +2,15 @@ import { hexToBigNumber } from '../utils'
 import Transaction from './Transaction'
 
 export interface IJSONLog {
-  logIndex: string
+  address: string
+  topics: string[]
+  data: string
   blockNumber: string
   blockHash: string
   transactionHash: string
   transactionIndex: string
-  address: string
-  data: string
-  topics: string[]
-  event: string
-  args: object
+  logIndex: string
+  removed: boolean
 }
 
 export default class Log {
@@ -45,7 +44,8 @@ export default class Log {
     this.address = log.address
     this.data = log.data
     this.topics = log.topics
-    this.event = log.event
-    this.args = log.args
+    // @TODO - parse these out
+    // this.event = log.event
+    // this.args = log.args
   }
 }

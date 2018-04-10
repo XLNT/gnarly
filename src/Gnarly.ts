@@ -16,6 +16,7 @@ export const because = (reason, meta, fn) => {
 }
 
 export type OnBlockHandler = (block: Block) => () => Promise<void>
+export type TransactionProducer = (block: Block) => Promise<void>
 
 class Gnarly {
   public ourbit: Ourbit
@@ -28,7 +29,7 @@ class Gnarly {
     private storeInterface: IPersistInterface,
     private nodeEndpoint: string,
     private typeStore: ITypeStore,
-    private onBlock: OnBlockHandler,
+    private onBlock: TransactionProducer,
   ) {
     this.ourbit = new Ourbit(
       this.stateReference,

@@ -1,6 +1,6 @@
 import { IJSONBlock } from './Block'
 import { IJSONLog } from './Log'
-import { IJSONLongTransaction } from './Transaction'
+import { IJSONTransactionReceipt } from './Transaction'
 
 import {
   FilterOptions,
@@ -34,7 +34,7 @@ export default class NodeApi {
     return this.doFetch('eth_getBlockByNumber', ['latest', true])
   }
 
-  public getTransactionReciept = async (hash: string): Promise<IJSONLongTransaction> => {
+  public getTransactionReciept = async (hash: string): Promise<IJSONTransactionReceipt> => {
     return this.doFetch('eth_getTransactionReceipt', [hash])
   }
 

@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js'
+import * as pMap from 'p-map'
 
 import {
   IPathThing,
@@ -13,3 +14,7 @@ export const splitPath = (path: string): IPathThing => {
 }
 
 export const hexToBigNumber = (hex: string) => new BigNumber(hex)
+
+export const forEach = async (iterable, mapper, opts = { concurrency: 5 }) => {
+  return pMap(iterable, mapper)
+}

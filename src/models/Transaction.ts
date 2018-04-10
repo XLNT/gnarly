@@ -2,11 +2,10 @@ import Block from './Block'
 import Log, { IJSONLog } from './Log'
 
 import { Transaction as BlockstreamTransaction } from 'ethereumjs-blockstream'
+import { transaction } from 'mobx'
 import { hexToBigNumber } from '../utils'
 
-// this is actually the Blockstream transaction interface
-// because idk why it's not just returning the thing directly but whatever
-export interface IJSONShortTransaction {
+export interface IJSONTransaction {
   hash: string
   nonce: string
   blockHash: string
@@ -20,19 +19,30 @@ export interface IJSONShortTransaction {
   input: string
 }
 
-export interface IJSONLongTransaction extends IJSONShortTransaction {
+function isTransaction (obj: any): obj is IJSONTransaction {
+  return 'nonce' in obj
+}
+
+export interface IJSONTransactionReceipt {
+  blockHash: string
+  blockNumber: string
+  contractAddress: string
   cumulativeGasUsed: string
+  from: string
   gasUsed: string
-  contractAddress: string | null
-  logs: any[]
+  logs: IJSONLog[]
+  logsBloom: string
   status: string
+  to: string
+  transactionHash: string
+  transactionIndex: string
 }
 
-export type IJSONTransaction = IJSONShortTransaction | IJSONLongTransaction
-
-function isLongTransaction (object: any): object is IJSONLongTransaction {
-  return 'logs' in object
+function isTransactionReceipt (obj: any): obj is IJSONTransactionReceipt {
+  return 'status' in obj
 }
+
+export type IJSONTransactionInfo = IJSONTransaction | IJSONTransactionReceipt
 
 export default class Transaction {
 
@@ -43,10 +53,11 @@ export default class Transaction {
   public index: BigNumber
   public blockNumber: BigNumber
   public blockHash: string
-  public cumulativeGasUsed: BigNumber
+  public cumulativeGasUsed: BigNumber | null
   public gasUsed: BigNumber
   public contractAddress: string | null
   public logs: Log[]
+  public logsBloom: string
   public status: BigNumber
 
   public from: string
@@ -63,28 +74,33 @@ export default class Transaction {
   }
 
   public getFull = async () => {
-    this.setSelf(await this.block.api.getTransactionReciept(this.hash))
+    const txReceipt = await this.block.api.getTransactionReciept(this.hash)
+    console.log(txReceipt)
+    this.setSelf(txReceipt)
   }
 
-  private setSelf = (tx: IJSONTransaction) => {
-    this.nonce = hexToBigNumber(tx.nonce)
-    this.hash = tx.hash
-    this.index = hexToBigNumber(tx.transactionIndex)
-    this.blockNumber = hexToBigNumber(tx.blockNumber)
-    this.blockHash = tx.blockHash
-    this.from = tx.from
-    this.to = tx.to
-    this.value = hexToBigNumber(tx.value)
-    this.gasPrice = hexToBigNumber(tx.gasPrice)
-    this.gas = hexToBigNumber(tx.gas)
-    this.input = tx.input
+  private setSelf = (tx: IJSONTransactionInfo) => {
 
-    if (isLongTransaction(tx)) {
+    if (isTransaction(tx)) {
+      this.nonce = hexToBigNumber(tx.nonce)
+      this.hash = tx.hash
+      this.index = hexToBigNumber(tx.transactionIndex)
+      this.blockNumber = hexToBigNumber(tx.blockNumber)
+      this.blockHash = tx.blockHash
+      this.from = tx.from
+      this.to = tx.to
+      this.value = hexToBigNumber(tx.value)
+      this.gasPrice = hexToBigNumber(tx.gasPrice)
+      this.gas = hexToBigNumber(tx.gas)
+      this.input = tx.input
+    } else if (isTransactionReceipt(tx)) {
       this.cumulativeGasUsed = hexToBigNumber(tx.cumulativeGasUsed)
       this.gasUsed = hexToBigNumber(tx.gasUsed)
       this.contractAddress = tx.contractAddress
       this.logs = tx.logs.map((l) => new Log(this, l))
       this.status = hexToBigNumber(tx.status)
+    } else {
+      throw new Error(`Unexpected type ${tx} in Transaction#setSelf()`)
     }
   }
 }
