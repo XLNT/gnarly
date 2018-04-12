@@ -8,16 +8,16 @@ import {
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
-import NodeApi from './models/NodeApi'
 
-import { EventEmitter } from 'events'
 import Ourbit from './Ourbit'
 
 import {
   hexToBigNumber,
 } from './utils'
 
-class BlockStream extends EventEmitter {
+import { globalState } from './globalstate'
+
+class BlockStream {
   private streamer: BlockAndLogStreamer<IJSONBlock, IJSONLog>
 
   private onBlockAddedSubscriptionToken
@@ -27,16 +27,15 @@ class BlockStream extends EventEmitter {
   private pendingTransactions: Array<Promise<any>> = []
 
   constructor (
-    private api: NodeApi,
     private ourbit: Ourbit,
     private onBlock: (block: BlockstreamBlock) => () => Promise<any>,
     private interval: number = 5000,
   ) {
-    super()
+
   }
 
   public start = async (fromBlockHash: string = null) => {
-    this.streamer = new BlockAndLogStreamer(this.api.getBlockByHash, this.api.getLogs, {
+    this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
       blockRetention: 100,
     })
 
@@ -49,14 +48,14 @@ class BlockStream extends EventEmitter {
       startBlockNumber = hexToBigNumber('0x0')
     } else {
       // otherwise get the expected block's number
-      const startFromBlock = await this.api.getBlockByHash(fromBlockHash)
+      const startFromBlock = await globalState.api.getBlockByHash(fromBlockHash)
       startBlockNumber = hexToBigNumber(startFromBlock.number).plus(1)
       // ^ +1 because we already know about this block and we want the next
     }
 
     // get the latest block
     let latestBlockNumber = hexToBigNumber(
-      (await this.api.getLatestBlock()).number,
+      (await globalState.api.getLatestBlock()).number,
     )
 
     // if we're not at that block number, start pulling the blocks
@@ -66,10 +65,10 @@ class BlockStream extends EventEmitter {
         `[fast-forward] Starting from ${startBlockNumber.toNumber()} to ${latestBlockNumber.toNumber()}`,
       )
       for (let i = startBlockNumber.toNumber(); i < latestBlockNumber.toNumber(); i++) {
-        const block = await this.api.getBlockByNumber(i)
+        const block = await globalState.api.getBlockByNumber(i)
         console.log(`[fast-forward] block ${block.number} (${block.hash})`)
         await this.streamer.reconcileNewBlock(block)
-        latestBlockNumber = hexToBigNumber((await this.api.getLatestBlock()).number)
+        latestBlockNumber = hexToBigNumber((await globalState.api.getLatestBlock()).number)
       }
     }
 
@@ -101,7 +100,7 @@ class BlockStream extends EventEmitter {
   private beginTracking = () => {
     // @TODO - replace this with a filter
     this.reconciling = setInterval(async () => {
-      await this.streamer.reconcileNewBlock(await this.api.getLatestBlock())
+      await this.streamer.reconcileNewBlock(await globalState.api.getLatestBlock())
     }, this.interval)
   }
 }

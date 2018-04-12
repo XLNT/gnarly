@@ -14,6 +14,7 @@ import {
 } from './utils'
 
 import * as uuid from 'uuid'
+import { globalState } from './globalstate'
 
 /*
  * urbit:
@@ -59,15 +60,16 @@ export interface IPathThing {
   key: string
 }
 
-// tslint:disable-next-line no-empty-interface
 export interface ITypeStore {
-
+  [key: string]: {
+    [key: string]: (txId: string, patch: IPatch) => Promise<void>,
+  }
 }
 
 export interface IPersistInterface {
   getTransactions: (fromTxId: null|string) => Promise<ITransaction[]>
-  getLatestTransaction: () => Promise<ITransaction>
   // @TODO ^ make this a generator that batches transaction returns
+  getLatestTransaction: () => Promise<ITransaction>
 
   deleteTransaction: (tx: ITransaction) => Promise<any>
   saveTransaction: (tx: ITransaction) => Promise<any>
@@ -88,7 +90,11 @@ class Ourbit {
   private patches = []
   private inversePatches = []
 
-  constructor (targetState: IStateTreeNode, store: IPersistInterface, persistPatch: PersistPatchHandler) {
+  constructor (
+    targetState: IStateTreeNode,
+    store: IPersistInterface,
+    persistPatch: PersistPatchHandler,
+  ) {
     this.targetState = targetState
     this.store = store
     this.persistPatch = persistPatch
@@ -135,6 +141,7 @@ class Ourbit {
    */
   public async resumeFromTxId (txId: string) {
     const allTxs = await this.store.getTransactions(txId)
+    // @TODO(shrugs) - do we need to untrack this?
     this.untracked(() => {
       allTxs.forEach((tx) => {
         applyPatch(this.targetState, tx.patches)
@@ -168,6 +175,12 @@ class Ourbit {
     if (this.skipping) {
       return
     }
+
+    // we have access to reason and meta here, thanks to the global
+    // so we need to log that in the database to track why patches were made
+    // // do we need to replace the json blob with a linked array of
+    // patches? how do we link the artifact with the event log?
+    // console.log(globalState.currentReason)
 
     const patchId = uuid.v4()
     const pathParts = splitPath(patch.path)

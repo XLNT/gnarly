@@ -1,3 +1,5 @@
+import { globalState } from './globalstate'
+
 export {
   IPatch,
   IPersistInterface,
@@ -13,10 +15,21 @@ export * from './stores'
 
 export {
   default,
-  because,
   OnBlockHandler,
 } from './Gnarly'
 
 export {
   forEach,
 } from './utils'
+
+export const because = (reason, meta, fn) => {
+  console.log(`[because] [start] ${reason}`)
+  globalState.currentReason = reason
+  globalState.currentMeta = meta
+
+  fn()
+
+  globalState.currentReason = null
+  globalState.currentMeta = null
+  console.log(`[because] [end] ${reason}`)
+}

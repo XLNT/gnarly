@@ -9,11 +9,7 @@ import Ourbit, {
 import Block, { IJSONBlock } from './models/Block'
 import NodeApi from './models/NodeApi'
 
-export const because = (reason, meta, fn) => {
-  // start group with reason + meta
-  // how does this interact with Ourbit? we'll be in the context of processTransaction here
-  fn()
-}
+import { globalState } from './globalstate'
 
 export type OnBlockHandler = (block: Block) => () => Promise<void>
 export type TransactionProducer = (block: Block) => Promise<void>
@@ -22,8 +18,6 @@ class Gnarly {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
 
-  private api: NodeApi
-
   constructor (
     private stateReference: IStateTreeNode,
     private storeInterface: IPersistInterface,
@@ -31,14 +25,15 @@ class Gnarly {
     private typeStore: ITypeStore,
     private onBlock: TransactionProducer,
   ) {
+    globalState.setApi(new NodeApi(nodeEndpoint))
+
     this.ourbit = new Ourbit(
       this.stateReference,
       this.storeInterface,
       this.persistPatchHandler,
     )
-    this.api = new NodeApi(nodeEndpoint)
+
     this.blockstreamer = new Blockstream(
-      this.api,
       this.ourbit,
       this.handleNewBlock,
     )
@@ -51,7 +46,8 @@ class Gnarly {
     } else {
       const latestTransaction = await this.storeInterface.getLatestTransaction()
       latestBlockHash = latestTransaction ? latestTransaction.id : null
-      // ^ latestBlockHash happens to also be the latest block hash
+      // ^ latest transaction id happens to also be the latest block hash
+      // so update this line if that ever becomes not-true
     }
 
     await this.blockstreamer.start(latestBlockHash)
@@ -68,7 +64,7 @@ class Gnarly {
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {
-    return new Block(block, this.api)
+    return new Block(block)
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {

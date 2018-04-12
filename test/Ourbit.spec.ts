@@ -28,10 +28,11 @@ const Store = types.model('Store', {
 })
 
 describe('Ourbit', () => {
-  let ourbit = null
-  let stateReference = null
+  let ourbit
+  let stateReference
+  let persistPatchSpy
   const storeInterface = new MockPersistInterface()
-  let testFn = null
+  let testFn
 
   beforeEach(() => {
     // tslint:disable-next-line
@@ -43,13 +44,15 @@ describe('Ourbit', () => {
       kittyTracker: KittyTracker.create(),
     })
 
+    persistPatchSpy = chai.spy()
+
     testFn = () => {
       stateReference.kittyTracker.transfer('0x12345', '0x0987')
     }
 
     sandbox.on(storeInterface, ['getTransactions', 'deleteTransaction', 'saveTransaction', 'getTransaction'])
 
-    ourbit = new Ourbit(stateReference, storeInterface)
+    ourbit = new Ourbit(stateReference, storeInterface, persistPatchSpy)
   })
 
   afterEach(() => {
@@ -65,13 +68,10 @@ describe('Ourbit', () => {
       expect(storeInterface.saveTransaction).to.have.been.called.with(mockTransaction)
     })
 
-    it('should emit `patch` events', async () => {
-      const spy = chai.spy()
-      ourbit.on('patch', spy)
-
+    it('should call persistPatch', async () => {
       await ourbit.processTransaction('mockTransaction', testFn)
       // tslint:disable-next-line no-unused-expression
-      expect(spy).to.have.been.called.once
+      expect(persistPatchSpy).to.have.been.called.once
     })
   })
 
@@ -85,12 +85,9 @@ describe('Ourbit', () => {
     it('should emit `patch` events', async () => {
       await ourbit.processTransaction('mockTransaction', testFn)
 
-      const spy = chai.spy()
-      ourbit.on('patch', spy)
-
       await ourbit.rollbackTransaction('mockTransaction')
       // tslint:disable-next-line no-unused-expression
-      expect(spy).to.have.been.called.once
+      expect(persistPatchSpy).to.have.been.called.twice
     })
 
     it('should rollback stateReference to previous state', async () => {
@@ -114,12 +111,9 @@ describe('Ourbit', () => {
     })
 
     it('should  not emit `patch` events', async () => {
-      const spy = chai.spy()
-      ourbit.on('patch', spy)
-
       await ourbit.resumeFromTxId('mockTransaction')
       // tslint:disable-next-line no-unused-expression
-      expect(spy).to.not.have.been.called.once
+      expect(persistPatchSpy).to.not.have.been.called.once
     })
 
     it('should bring stateReference to current state', async () => {

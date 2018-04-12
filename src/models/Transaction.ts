@@ -1,8 +1,8 @@
 import Block from './Block'
+import InternalTransaction from './InternalTransaction'
 import Log, { IJSONLog } from './Log'
 
-import { Transaction as BlockstreamTransaction } from 'ethereumjs-blockstream'
-import { transaction } from 'mobx'
+import { globalState } from '../globalstate'
 import { hexToBigNumber } from '../utils'
 
 export interface IJSONTransaction {
@@ -67,6 +67,8 @@ export default class Transaction {
   public gas: BigNumber
   public input: string
 
+  public internalTransactions: InternalTransaction[]
+
   public constructor (block: Block, tx: IJSONTransaction) {
     this.block = block
 
@@ -74,13 +76,27 @@ export default class Transaction {
   }
 
   public getFull = async () => {
-    const txReceipt = await this.block.api.getTransactionReciept(this.hash)
-    console.log(txReceipt)
+    await this.setReceipt()
+    await this.setInternalTransactions()
+  }
+
+  private setReceipt = async () => {
+    const txReceipt = await globalState.api.getTransactionReciept(this.hash)
+    console.log('[setReceipt]', txReceipt)
     this.setSelf(txReceipt)
   }
 
-  private setSelf = (tx: IJSONTransactionInfo) => {
+  private setInternalTransactions = async () => {
+    try {
+      const traces = await globalState.api.traceTransaction(this.hash)
+      console.log('[setInternalTransactions]', traces)
+      this.internalTransactions = traces.map((itx) => new InternalTransaction(this, itx))
+    } catch (error) {
+      console.error('[setInternalTransactions] trace_replayTransaction not working, ignoring')
+    }
+  }
 
+  private setSelf = (tx: IJSONTransactionInfo) => {
     if (isTransaction(tx)) {
       this.nonce = hexToBigNumber(tx.nonce)
       this.hash = tx.hash

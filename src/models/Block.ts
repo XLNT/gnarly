@@ -46,11 +46,7 @@ export default class Block {
   public transactions: Transaction[]
   public uncles: string[]
 
-  public api: NodeApi
-
-  public constructor (block: IJSONBlock, api: NodeApi) {
-    this.api = api
-
+  public constructor (block: IJSONBlock) {
     this.number = hexToBigNumber(block.number)
     this.hash = block.hash
     this.parentHash = block.parentHash

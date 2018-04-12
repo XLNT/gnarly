@@ -28,10 +28,11 @@ const Store = types.model('Store', {
 })
 
 describe('Blockstream', () => {
-  let blockstream = null
-  let ourbit = null
-  let onBlockSpy = null
-  let stateReference = null
+  let blockstream
+  let ourbit
+  let onBlockSpy
+  let persistPatchSpy
+  let stateReference
   const storeInterface = new MockPersistInterface()
 
   beforeEach(() => {
@@ -45,10 +46,11 @@ describe('Blockstream', () => {
     })
 
     onBlockSpy = chai.spy()
+    persistPatchSpy = chai.spy()
     sandbox.on(storeInterface, ['getTransactions', 'deleteTransaction', 'saveTransaction', 'getTransaction'])
 
-    ourbit = new Ourbit(stateReference, storeInterface)
-    blockstream = new BlockStream('http:localhost:8545', ourbit, onBlockSpy)
+    ourbit = new Ourbit(stateReference, storeInterface, persistPatchSpy)
+    blockstream = new BlockStream(ourbit, onBlockSpy)
   })
 
   afterEach(() => {

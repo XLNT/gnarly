@@ -5,6 +5,7 @@ import { IJSONTransactionReceipt } from './Transaction'
 import {
   FilterOptions,
 } from 'ethereumjs-blockstream'
+import { IJSONInternalTransaction } from './InternalTransaction'
 
 export default class NodeApi {
 
@@ -38,6 +39,10 @@ export default class NodeApi {
     return this.doFetch('eth_getTransactionReceipt', [hash])
   }
 
+  public traceTransaction = async (hash: string): Promise<IJSONInternalTransaction[]> => {
+    return (await this.doFetch('trace_replayTransaction', [hash, ['trace']])).trace
+  }
+
   private doFetch = async (method: string, params: any[] = []): Promise<any> => {
     const res = await fetch(this.nodeEndpoint, {
       method: 'POST',
@@ -50,6 +55,9 @@ export default class NodeApi {
       }),
     })
     const data = await res.json()
+    if (data.result === undefined) {
+      throw new Error(`Invalid JSON response: ${JSON.stringify(data, null, 2)}`)
+    }
     return data.result
   }
 }

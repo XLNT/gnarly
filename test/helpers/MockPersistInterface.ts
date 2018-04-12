@@ -2,7 +2,7 @@ import {
   IPatch,
   IPersistInterface,
   ITransaction,
-} from '../../Ourbit'
+} from '../../src/Ourbit'
 
 export const mockPatch: IPatch = {
   id: 'mockPatch',
@@ -32,19 +32,23 @@ export const mockTransaction: ITransaction = {
 class MockPersistInterface implements IPersistInterface {
 
   public async getTransactions (fromTxId: null | string): Promise<ITransaction[]> {
-    return Promise.resolve([mockTransaction])
+    return [mockTransaction]
+  }
+
+  public async getLatestTransaction (): Promise<ITransaction> {
+    return mockTransaction
   }
 
   public async deleteTransaction (tx: ITransaction) {
-    return
+    return null
   }
 
   public async saveTransaction (tx: ITransaction) {
-    return
+    return null
   }
 
   public async getTransaction (txId: string): Promise<ITransaction> {
-    return Promise.resolve(mockTransaction)
+    return mockTransaction
   }
 }
 
