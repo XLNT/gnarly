@@ -28,13 +28,15 @@
   },
   "homepage": "https://github.com/XLNT/gnarly#readme",
   "peerDependencies": {
-    "mobx": "^4.1.1",
-    "mobx-state-tree": "^2.0.3"
+    "mobx": "^4.2.0",
+    "mobx-state-tree": "^2.0.4",
+    "mobx-utils": "^3.2.2"
   },
   "dependencies": {
-    "bignumber.js": "^6.0.0",
+    "bn.js": "^4.11.8",
     "ethereumjs-blockstream": "^3.1.0",
     "isomorphic-fetch": "^2.2.1",
+    "number-to-bn": "^1.7.0",
     "p-map": "^1.2.0",
     "pg": "^7.4.1",
     "sequelize": "^4.35.2",
@@ -42,19 +44,20 @@
     "typescript": "2.6.1",
     "uuid": "^3.2.1",
     "web3": "^1.0.0-beta.29",
-    "web3-eth-abi": "^1.0.0-beta.33"
+    "web3-eth-abi": "^1.0.0-beta.34",
+    "web3-utils": "^1.0.0-beta.34"
   },
   "devDependencies": {
-    "@types/uuid": "^3.4.3",
     "@types/chai": "^4.1.2",
     "@types/chai-spies": "0.0.0",
     "@types/mocha": "^2.2.48",
     "@types/node": "^9.4.0",
+    "@types/uuid": "^3.4.3",
     "chai": "^4.1.2",
     "chai-spies": "^1.0.0",
     "concurrently": "^3.5.1",
-    "mobx": "^3.4.1",
-    "mobx-state-tree": "^1.3.1",
+    "mobx": "^4.2.0",
+    "mobx-state-tree": "^2.0.4",
     "mobx-utils": "^3.2.2",
     "mocha": "^5.0.4",
     "nodemon": "^1.14.12",

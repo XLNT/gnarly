@@ -1,9 +1,11 @@
+import BN = require('bn.js')
+
 import Block from './Block'
 import InternalTransaction from './InternalTransaction'
 import Log, { IJSONLog } from './Log'
 
 import { globalState } from '../globalstate'
-import { hexToBigNumber } from '../utils'
+import { toBN } from '../utils'
 
 export interface IJSONTransaction {
   hash: string
@@ -48,23 +50,23 @@ export default class Transaction {
 
   public block: Block
 
-  public nonce: BigNumber
+  public nonce: BN
   public hash: string
-  public index: BigNumber
-  public blockNumber: BigNumber
+  public index: BN
+  public blockNumber: BN
   public blockHash: string
-  public cumulativeGasUsed: BigNumber | null
-  public gasUsed: BigNumber
+  public cumulativeGasUsed: BN | null
+  public gasUsed: BN
   public contractAddress: string | null
   public logs: Log[]
   public logsBloom: string
-  public status: BigNumber
+  public status: BN
 
   public from: string
   public to: string
-  public value: BigNumber
-  public gasPrice: BigNumber
-  public gas: BigNumber
+  public value: BN
+  public gasPrice: BN
+  public gas: BN
   public input: string
 
   public internalTransactions: InternalTransaction[]
@@ -82,39 +84,39 @@ export default class Transaction {
 
   private setReceipt = async () => {
     const txReceipt = await globalState.api.getTransactionReciept(this.hash)
-    console.log('[setReceipt]', txReceipt)
+    // console.log('[setReceipt]', txReceipt)
     this.setSelf(txReceipt)
   }
 
   private setInternalTransactions = async () => {
     try {
       const traces = await globalState.api.traceTransaction(this.hash)
-      console.log('[setInternalTransactions]', traces)
+      // console.log('[setInternalTransactions]', traces)
       this.internalTransactions = traces.map((itx) => new InternalTransaction(this, itx))
     } catch (error) {
-      console.error('[setInternalTransactions] trace_replayTransaction not working, ignoring')
+      console.error('[setInternalTransactions] trace_replayTransaction not working, ignoring', error)
     }
   }
 
   private setSelf = (tx: IJSONTransactionInfo) => {
     if (isTransaction(tx)) {
-      this.nonce = hexToBigNumber(tx.nonce)
+      this.nonce = toBN(tx.nonce)
       this.hash = tx.hash
-      this.index = hexToBigNumber(tx.transactionIndex)
-      this.blockNumber = hexToBigNumber(tx.blockNumber)
+      this.index = toBN(tx.transactionIndex)
+      this.blockNumber = toBN(tx.blockNumber)
       this.blockHash = tx.blockHash
       this.from = tx.from
       this.to = tx.to
-      this.value = hexToBigNumber(tx.value)
-      this.gasPrice = hexToBigNumber(tx.gasPrice)
-      this.gas = hexToBigNumber(tx.gas)
+      this.value = toBN(tx.value)
+      this.gasPrice = toBN(tx.gasPrice)
+      this.gas = toBN(tx.gas)
       this.input = tx.input
     } else if (isTransactionReceipt(tx)) {
-      this.cumulativeGasUsed = hexToBigNumber(tx.cumulativeGasUsed)
-      this.gasUsed = hexToBigNumber(tx.gasUsed)
+      this.cumulativeGasUsed = toBN(tx.cumulativeGasUsed)
+      this.gasUsed = toBN(tx.gasUsed)
       this.contractAddress = tx.contractAddress
       this.logs = tx.logs.map((l) => new Log(this, l))
-      this.status = hexToBigNumber(tx.status)
+      this.status = toBN(tx.status)
     } else {
       throw new Error(`Unexpected type ${tx} in Transaction#setSelf()`)
     }

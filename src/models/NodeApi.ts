@@ -1,10 +1,12 @@
+import BN = require('bn.js')
+import {
+  FilterOptions,
+} from 'ethereumjs-blockstream'
+
 import { IJSONBlock } from './Block'
 import { IJSONLog } from './Log'
 import { IJSONTransactionReceipt } from './Transaction'
 
-import {
-  FilterOptions,
-} from 'ethereumjs-blockstream'
 import { IJSONInternalTransaction } from './InternalTransaction'
 
 export default class NodeApi {
@@ -15,8 +17,8 @@ export default class NodeApi {
 
   }
 
-  public getBlockByNumber = async (num: number): Promise<IJSONBlock> => {
-    console.log('[getBlockByNumber]', num)
+  public getBlockByNumber = async (num: BN): Promise<IJSONBlock> => {
+    console.log('[getBlockByNumber]', num.toString(10), `0x${num.toString(16)}`)
     return this.doFetch('eth_getBlockByNumber', [`0x${num.toString(16)}`, true])
   }
 
@@ -55,9 +57,10 @@ export default class NodeApi {
       }),
     })
     const data = await res.json()
-    if (data.result === undefined) {
+    if (data.result === undefined || data.result === null) {
       throw new Error(`Invalid JSON response: ${JSON.stringify(data, null, 2)}`)
     }
+
     return data.result
   }
 }

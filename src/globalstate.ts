@@ -3,14 +3,15 @@
  * https://github.com/mobxjs/mobx/blob/master/src/core/globalstate.ts
  */
 
-import IABIItem from './models/ABIItem'
+import IABIItem, { IABIItemInput } from './models/ABIItem'
 import NodeApi from './models/NodeApi'
+import { enhanceAbiItem } from './utils'
 
-type ABISet = IABIItem[]
+type ABIItemSet = IABIItem[]
 
 export class GnarlyGlobals {
   // @TODO(shrugs) - do we need to move this to a contract artifact?
-  public abis: { [s: string]: ABISet }
+  public abis: { [s: string]: ABIItemSet } = {}
   public api: NodeApi
 
   public currentReason: string
@@ -19,6 +20,12 @@ export class GnarlyGlobals {
   public setApi = (api: NodeApi) => {
     this.api = api
   }
+
+  public addABI = (address: string, abi: IABIItemInput[]) => {
+    this.abis[address.toLowerCase()] = abi.map(enhanceAbiItem)
+  }
+
+  public getABI = (address: string): ABIItemSet => this.abis[address.toLowerCase()]
 }
 
 export let globalState: GnarlyGlobals = new GnarlyGlobals()

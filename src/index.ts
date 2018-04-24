@@ -20,7 +20,10 @@ export {
 
 export {
   forEach,
+  addressesEqual,
 } from './utils'
+
+export const addABI = globalState.addABI.bind(globalState)
 
 export const because = (reason, meta, fn) => {
   console.log(`[because] [start] ${reason}`)

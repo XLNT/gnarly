@@ -1,4 +1,9 @@
-import { hexToBigNumber } from '../utils'
+import BN = require('bn.js')
+import abi = require('web3-eth-abi')
+
+import { globalState } from '../globalstate'
+
+import { toBN } from '../utils'
 import Transaction from './Transaction'
 
 export interface IJSONLog {
@@ -14,11 +19,11 @@ export interface IJSONLog {
 }
 
 export default class Log {
-  public readonly logIndex: BigNumber
-  public readonly blockNumber: BigNumber
+  public readonly logIndex: BN
+  public readonly blockNumber: BN
   public readonly blockHash: string
   public readonly transactionHash: string
-  public readonly transactionIndex: BigNumber
+  public readonly transactionIndex: BN
   public readonly address: string
   public readonly data: string
   /**
@@ -29,6 +34,8 @@ export default class Log {
    */
   public readonly topics: string[]
   public readonly event: string
+  public readonly fullName: string
+  public readonly signature: string
   public readonly args: object
 
   private transaction: Transaction
@@ -36,16 +43,44 @@ export default class Log {
   public constructor (tx: Transaction, log: IJSONLog) {
     this.transaction = tx
 
-    this.logIndex = hexToBigNumber(log.logIndex)
-    this.blockNumber = hexToBigNumber(log.blockNumber)
+    this.logIndex = toBN(log.logIndex)
+    this.blockNumber = toBN(log.blockNumber)
     this.blockHash = log.blockHash
     this.transactionHash = log.transactionHash
-    this.transactionIndex = hexToBigNumber(log.transactionIndex)
+    this.transactionIndex = toBN(log.transactionIndex)
     this.address = log.address
     this.data = log.data
     this.topics = log.topics
-    // @TODO - parse these out
-    // this.event = log.event
-    // this.args = log.args
+
+    const registeredAbi = globalState.getABI(this.address)
+
+    if (!registeredAbi) { return }
+    // ^ we do not know about this contract, so we can't try to parse it
+
+    if (this.topics.length === 0) { return }
+    // ^ there are no topics, which means this is an anonymous event or something
+
+    // the first argument in topics (from solidity) is always the event signature
+    const eventSig = this.topics[0]
+
+    // find the inputs by signature
+    const logAbiItem = registeredAbi.find((item) => item.signature === eventSig)
+    if (logAbiItem === undefined) {
+      // ^ we don't have an input that matches this event (incomplete ABI?)
+      return
+    }
+
+    const args = abi.decodeLog(
+      logAbiItem.inputs,
+      this.data,
+      this.topics.slice(1),
+      // ^ ignore the signature
+    )
+
+    this.event = logAbiItem.name
+    this.fullName = logAbiItem.fullName
+    this.signature = logAbiItem.signature
+
+    this.args = args
   }
 }

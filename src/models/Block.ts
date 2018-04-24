@@ -1,9 +1,10 @@
 import NodeApi from './NodeApi'
 import Transaction, { IJSONTransaction } from './Transaction'
 
+import BN = require('bn.js')
 import { Block as BlockstreamBlock } from 'ethereumjs-blockstream'
 
-import { hexToBigNumber } from '../utils'
+import { toBN } from '../utils'
 
 export interface IJSONBlock {
   number: string
@@ -27,42 +28,42 @@ export interface IJSONBlock {
 }
 
 export default class Block {
-  public number: BigNumber
+  public number: BN
   public hash: string
   public parentHash: string
-  public nonce: BigNumber
+  public nonce: BN
   public sha3Uncles: string
   public logsBloom: string
   public transactionsRoot: string
   public stateRoot: string
   public miner: string
-  public difficulty: BigNumber
-  public totalDifficulty: BigNumber
+  public difficulty: BN
+  public totalDifficulty: BN
   public extraData: string
-  public size: BigNumber
-  public gasLimit: BigNumber
-  public gasUsed: BigNumber
-  public timestamp: BigNumber
+  public size: BN
+  public gasLimit: BN
+  public gasUsed: BN
+  public timestamp: BN
   public transactions: Transaction[]
   public uncles: string[]
 
   public constructor (block: IJSONBlock) {
-    this.number = hexToBigNumber(block.number)
+    this.number = toBN(block.number)
     this.hash = block.hash
     this.parentHash = block.parentHash
-    this.nonce = hexToBigNumber(block.nonce)
+    this.nonce = toBN(block.nonce)
     this.sha3Uncles = block.sha3Uncles
     this.logsBloom = block.logsBloom
     this.transactionsRoot = block.transactionsRoot
     this.stateRoot = block.stateRoot
     this.miner = block.miner
-    this.difficulty = hexToBigNumber(block.difficulty)
-    this.totalDifficulty = hexToBigNumber(block.totalDifficulty)
+    this.difficulty = toBN(block.difficulty)
+    this.totalDifficulty = toBN(block.totalDifficulty)
     this.extraData = block.extraData
-    this.size = hexToBigNumber(block.extraData)
-    this.gasLimit = hexToBigNumber(block.gasLimit)
-    this.gasUsed = hexToBigNumber(block.gasUsed)
-    this.timestamp = hexToBigNumber(block.timestamp)
+    this.size = toBN(block.extraData)
+    this.gasLimit = toBN(block.gasLimit)
+    this.gasUsed = toBN(block.gasUsed)
+    this.timestamp = toBN(block.timestamp)
     this.transactions = block.transactions.map((t) => new Transaction(this, t))
     this.uncles = block.uncles
   }

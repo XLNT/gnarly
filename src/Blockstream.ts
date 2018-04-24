@@ -1,10 +1,9 @@
-import 'isomorphic-fetch'
-
 import {
   Block as BlockstreamBlock,
   BlockAndLogStreamer,
   Log as BlockstreamLog,
 } from 'ethereumjs-blockstream'
+import 'isomorphic-fetch'
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
@@ -12,7 +11,7 @@ import { IJSONLog } from './models/Log'
 import Ourbit from './Ourbit'
 
 import {
-  hexToBigNumber,
+  toBN,
 } from './utils'
 
 import { globalState } from './globalstate'
@@ -45,16 +44,17 @@ class BlockStream {
     let startBlockNumber
     if (fromBlockHash === null) {
       // if no hash provided, we're starting from scratch
-      startBlockNumber = hexToBigNumber('0x0')
+      startBlockNumber = toBN(0)
     } else {
       // otherwise get the expected block's number
       const startFromBlock = await globalState.api.getBlockByHash(fromBlockHash)
-      startBlockNumber = hexToBigNumber(startFromBlock.number).plus(1)
+      console.log(toBN(startFromBlock.number).toString(10))
+      startBlockNumber = toBN(startFromBlock.number).add(toBN(1))
       // ^ +1 because we already know about this block and we want the next
     }
 
     // get the latest block
-    let latestBlockNumber = hexToBigNumber(
+    let latestBlockNumber = toBN(
       (await globalState.api.getLatestBlock()).number,
     )
 
@@ -64,11 +64,13 @@ class BlockStream {
       console.log(
         `[fast-forward] Starting from ${startBlockNumber.toNumber()} to ${latestBlockNumber.toNumber()}`,
       )
-      for (let i = startBlockNumber.toNumber(); i < latestBlockNumber.toNumber(); i++) {
+      let i = startBlockNumber.clone()
+      while (i.lt(latestBlockNumber)) {
         const block = await globalState.api.getBlockByNumber(i)
         console.log(`[fast-forward] block ${block.number} (${block.hash})`)
+        i = i.add(toBN(1))
         await this.streamer.reconcileNewBlock(block)
-        latestBlockNumber = hexToBigNumber((await globalState.api.getLatestBlock()).number)
+        latestBlockNumber = toBN((await globalState.api.getLatestBlock()).number)
       }
     }
 
