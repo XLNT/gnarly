@@ -48,7 +48,6 @@ class BlockStream {
     } else {
       // otherwise get the expected block's number
       const startFromBlock = await globalState.api.getBlockByHash(fromBlockHash)
-      console.log(toBN(startFromBlock.number).toString(10))
       startBlockNumber = toBN(startFromBlock.number).add(toBN(1))
       // ^ +1 because we already know about this block and we want the next
     }

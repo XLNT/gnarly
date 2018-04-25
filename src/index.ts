@@ -26,7 +26,7 @@ export {
 export const addABI = globalState.addABI.bind(globalState)
 
 export const because = (reason, meta, fn) => {
-  console.log(`[because] [start] ${reason}`)
+  // console.log(`[because] [start] ${reason}`)
   globalState.currentReason = reason
   globalState.currentMeta = meta
 
@@ -34,5 +34,5 @@ export const because = (reason, meta, fn) => {
 
   globalState.currentReason = null
   globalState.currentMeta = null
-  console.log(`[because] [end] ${reason}`)
+  // console.log(`[because] [end] ${reason}`)
 }
