@@ -26,6 +26,16 @@ export class GnarlyGlobals {
   }
 
   public getABI = (address: string): ABIItemSet => this.abis[address.toLowerCase()]
+
+  public because = (reason: string, meta: any, fn: () => void) => {
+    this.currentReason = reason
+    this.currentMeta = meta
+
+    fn()
+
+    this.currentReason = null
+    this.currentMeta = null
+  }
 }
 
 export let globalState: GnarlyGlobals = new GnarlyGlobals()

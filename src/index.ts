@@ -21,13 +21,4 @@ export * from './reducer'
 export * from './stores'
 
 export const addABI = globalState.addABI.bind(globalState)
-
-export const because = (reason: string, meta: any, fn: () => void) => {
-  globalState.currentReason = reason
-  globalState.currentMeta = meta
-
-  fn()
-
-  globalState.currentReason = null
-  globalState.currentMeta = null
-}
+export const because = globalState.because.bind(globalState)
