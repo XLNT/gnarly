@@ -8,7 +8,7 @@ import Ourbit, {
 
 import Block, { IJSONBlock } from './models/Block'
 import NodeApi from './models/NodeApi'
-import Reducer, { ReducerType } from './reducer'
+import { IReducer, ReducerType } from './reducer'
 
 import { globalState } from './globalstate'
 
@@ -23,7 +23,7 @@ class Gnarly {
     private storeInterface: IPersistInterface,
     private nodeEndpoint: string,
     private typeStore: ITypeStore,
-    private reducers: Reducer[],
+    private reducers: IReducer[],
   ) {
     globalState.setApi(new NodeApi(nodeEndpoint))
 

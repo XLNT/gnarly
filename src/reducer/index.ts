@@ -57,7 +57,7 @@ export interface IReducerConfig {
  */
 export type TransactionProducer = (state: IStateTreeNode, block: Block) => Promise<void>
 
-export default interface IReducer {
+export interface IReducer {
   config: IReducerConfig
   stateType: IModelType<any, any>
   reduce: TransactionProducer

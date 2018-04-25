@@ -5,7 +5,6 @@
 
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import NodeApi from './models/NodeApi'
-import Reducer from './reducer'
 import { enhanceAbiItem } from './utils'
 
 type ABIItemSet = IABIItem[]

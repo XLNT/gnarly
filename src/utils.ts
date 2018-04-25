@@ -41,3 +41,7 @@ export const enhanceAbiItem = (item: IABIItemInput): IABIItem => {
     signature,
   }
 }
+
+// we dont' do anything special here, but it helps add structure
+// ¯\_(ツ)_/¯
+export const makeRootTypeStore = (typestore) => typestore
