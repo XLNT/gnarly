@@ -1,6 +1,6 @@
 {
-  "name": "gnarly",
-  "version": "0.0.1",
+  "name": "@xlnt/gnarly",
+  "version": "0.0.2",
   "description": "Condense blockchains into steady state with confidence.",
   "main": "dist/index.js",
   "types": "./src/types/gnarly.d.ts",

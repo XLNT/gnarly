@@ -8,11 +8,11 @@ import Ourbit, {
 
 import Block, { IJSONBlock } from './models/Block'
 import NodeApi from './models/NodeApi'
+import Reducer, { ReducerType } from './reducer'
 
 import { globalState } from './globalstate'
 
 export type OnBlockHandler = (block: Block) => () => Promise<void>
-export type TransactionProducer = (block: Block) => Promise<void>
 
 class Gnarly {
   public ourbit: Ourbit
@@ -23,7 +23,7 @@ class Gnarly {
     private storeInterface: IPersistInterface,
     private nodeEndpoint: string,
     private typeStore: ITypeStore,
-    private onBlock: TransactionProducer,
+    private reducers: Reducer[],
   ) {
     globalState.setApi(new NodeApi(nodeEndpoint))
 
@@ -58,9 +58,24 @@ class Gnarly {
     await this.blockstreamer.stop()
   }
 
-  private handleNewBlock = (block: IJSONBlock) => async () => {
-    const gnarlyBlock = await this.normalizeBlock(block)
-    await this.onBlock(gnarlyBlock)
+  private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
+    const block = await this.normalizeBlock(rawBlock)
+
+    for (const reducer of this.reducers) {
+      switch (reducer.config.type) {
+        case ReducerType.Idempotent:
+          if (!syncing) {
+            // only call Idempotent reducers if not syncing
+            await reducer.reduce(this.stateReference[reducer.config.key], block)
+          }
+          break
+        case ReducerType.TimeVarying:
+        case ReducerType.Atomic:
+          await reducer.reduce(this.stateReference[reducer.config.key], block)
+        default:
+          throw new Error(`Unexpected ReducerType ${reducer.config.type}`)
+      }
+    }
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {

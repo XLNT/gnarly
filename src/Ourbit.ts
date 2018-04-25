@@ -17,7 +17,7 @@ import * as uuid from 'uuid'
 import { globalState } from './globalstate'
 
 /*
- * urbit:
+ * ourbit:
  * a transaction is a discrete set of events that produce patches to the state
  *   but should be treated as a single unit that can be reverted.
  *   One transaction can produce multiple events that can produce multiple patches.
@@ -25,12 +25,13 @@ import { globalState } from './globalstate'
  * event => [patch]
  * tx_id = uuid for each transaction(), by which patches are indexed
  *
- * when using gnarly with blockchains, tx_id === block_id (fork_id, block_num)
+ * when using gnarly with blockchains, tx_id === block_hash
  *
+ * ourbit should;
  *  - handle resuming itself from either null, or some tx_id
  *    - pulling patches from that tx_id and apply them over provided initialState
- *    - urbit = new Urbit(stateReference, storeInterface)
- *    - urbit.applyPatchesFrom(tx_id = null)
+ *    - ourbit = new Ourbit(stateReference, storeInterface)
+ *    - ourbit.applyPatchesFrom(tx_id = null)
  *  - accept transaction stream, calls the provided reducer over those events
  *    - processTransaction(tx_id, (stateReference) => {
  *        because(reason, () => {

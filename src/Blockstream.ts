@@ -22,12 +22,16 @@ class BlockStream {
   private onBlockAddedSubscriptionToken
   private onBlockRemovedSubscriptionToken
   private reconciling
+  /**
+   * Whether or not the blockstreamer is syncing blocks from the past or not
+   */
+  private syncing = false
 
   private pendingTransactions: Array<Promise<any>> = []
 
   constructor (
     private ourbit: Ourbit,
-    private onBlock: (block: BlockstreamBlock) => () => Promise<any>,
+    private onBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
     private interval: number = 5000,
   ) {
 
@@ -63,6 +67,7 @@ class BlockStream {
       console.log(
         `[fast-forward] Starting from ${startBlockNumber.toNumber()} to ${latestBlockNumber.toNumber()}`,
       )
+      this.syncing = true
       let i = startBlockNumber.clone()
       while (i.lt(latestBlockNumber)) {
         const block = await globalState.api.getBlockByNumber(i)
@@ -71,6 +76,8 @@ class BlockStream {
         await this.streamer.reconcileNewBlock(block)
         latestBlockNumber = toBN((await globalState.api.getLatestBlock()).number)
       }
+
+      this.syncing = false
     }
 
     this.beginTracking()
@@ -87,7 +94,7 @@ class BlockStream {
     console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
     const pendingTransaction = this.ourbit.processTransaction(
       block.hash,
-      this.onBlock(block),
+      this.onBlock(block, this.syncing),
     )
     this.pendingTransactions.push(pendingTransaction)
   }
