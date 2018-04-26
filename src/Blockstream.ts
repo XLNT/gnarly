@@ -74,6 +74,8 @@ class BlockStream {
         console.log(`[fast-forward] block ${block.number} (${block.hash})`)
         i = i.add(toBN(1))
         await this.streamer.reconcileNewBlock(block)
+        // TODO: easy optimization, only check latest block on the last
+        // iteration
         latestBlockNumber = toBN((await globalState.api.getLatestBlock()).number)
       }
 
