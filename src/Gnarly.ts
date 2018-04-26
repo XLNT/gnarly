@@ -72,6 +72,7 @@ class Gnarly {
         case ReducerType.TimeVarying:
         case ReducerType.Atomic:
           await reducer.reduce(this.stateReference[reducer.config.key], block)
+          break
         default:
           throw new Error(`Unexpected ReducerType ${reducer.config.type}`)
       }

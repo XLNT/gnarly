@@ -55,6 +55,7 @@ export default class Log {
     const registeredAbi = globalState.getABI(this.address)
 
     if (!registeredAbi) { return }
+
     // ^ we do not know about this contract, so we can't try to parse it
 
     if (this.topics.length === 0) { return }
@@ -67,6 +68,7 @@ export default class Log {
     const logAbiItem = registeredAbi.find((item) => item.signature === eventSig)
     if (logAbiItem === undefined) {
       // ^ we don't have an input that matches this event (incomplete ABI?)
+      console.log(`[log] unable to find AbiItem with signature ${eventSig}`)
       return
     }
 
