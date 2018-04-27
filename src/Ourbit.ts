@@ -62,13 +62,16 @@ export interface IPathThing {
   extra: string[]
 }
 
+export type TypeStorer = (txId: string, patch: IPatch) => Promise<void>
+export type SetupFn = (reset: boolean) => Promise<any>
 export interface ITypeStore {
-  [key: string]: {
-    [key: string]: (txId: string, patch: IPatch) => Promise<void>,
+  [_: string]: { // reducer
+    [_: string]: TypeStorer | SetupFn,
   }
 }
 
 export interface IPersistInterface {
+  // transaction storage
   getTransactions: (fromTxId: null|string) => Promise<ITransaction[]>
   // @TODO ^ make this a generator that batches transaction returns
   getLatestTransaction: () => Promise<ITransaction>
@@ -78,6 +81,9 @@ export interface IPersistInterface {
   getTransaction: (txId: string) => Promise<ITransaction>
 
   // event log CRUD actions
+
+  // setup
+  setup: (reset: boolean) => Promise<any>
 }
 
 type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
@@ -146,7 +152,8 @@ class Ourbit {
     const allTxs = await this.store.getTransactions(txId)
     // @TODO(shrugs) - do we need to untrack this?
     this.untracked(() => {
-      allTxs.forEach((tx) => {
+      allTxs.forEach((tx, i) => {
+        console.log('[applyPatch]', i, tx.id, tx.patches)
         applyPatch(this.targetState, tx.patches)
       })
     })

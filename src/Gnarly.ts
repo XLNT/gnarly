@@ -4,6 +4,8 @@ import Ourbit, {
   IPatch,
   IPersistInterface,
   ITypeStore,
+  SetupFn,
+  TypeStorer,
 } from './Ourbit'
 
 import Block, { IJSONBlock } from './models/Block'
@@ -17,6 +19,8 @@ export type OnBlockHandler = (block: Block) => () => Promise<void>
 class Gnarly {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
+
+  public shouldResume: boolean = true
 
   constructor (
     private stateReference: IStateTreeNode,
@@ -41,13 +45,16 @@ class Gnarly {
 
   public shaka = async () => {
     let latestBlockHash
-    if (process.env.LATEST_BLOCK_HASH) {
+
+    if (!this.shouldResume && process.env.LATEST_BLOCK_HASH) {
       latestBlockHash = process.env.LATEST_BLOCK_HASH
     } else {
       const latestTransaction = await this.storeInterface.getLatestTransaction()
       latestBlockHash = latestTransaction ? latestTransaction.id : null
       // ^ latest transaction id happens to also be the latest block hash
       // so update this line if that ever becomes not-true
+      // let's re-hydrate local state by replaying transactions
+      await this.ourbit.resumeFromTxId(latestTransaction.id)
     }
 
     await this.blockstreamer.start(latestBlockHash)
@@ -56,6 +63,15 @@ class Gnarly {
 
   public bailOut = async () => {
     await this.blockstreamer.stop()
+  }
+
+  public reset = async (shouldReset: boolean = true) => {
+    this.shouldResume = !shouldReset
+    this.storeInterface.setup(shouldReset)
+    for (const key of Object.keys(this.typeStore)) {
+      const setup = this.typeStore[key].__setup as SetupFn
+      await setup(shouldReset)
+    }
   }
 
   private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
@@ -84,7 +100,8 @@ class Gnarly {
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {
-    await this.typeStore[patch.reducerKey][patch.domainKey](txId, patch)
+    const storer = this.typeStore[patch.reducerKey][patch.domainKey] as TypeStorer
+    await storer(txId, patch)
   }
 }
 

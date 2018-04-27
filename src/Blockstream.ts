@@ -12,10 +12,13 @@ import { IJSONLog } from './models/Log'
 import Ourbit from './Ourbit'
 
 import {
+  timeout,
   toBN,
 } from './utils'
 
 import { globalState } from './globalstate'
+
+const MAX_QUEUE_LENGTH = 10
 
 class BlockStream {
   private streamer: BlockAndLogStreamer<IJSONBlock, IJSONLog>
@@ -28,7 +31,8 @@ class BlockStream {
    */
   private syncing = false
 
-  private pendingTransactions: Queue = new Queue(1, Infinity)
+  private pendingTransactions: Queue = new Queue(1, MAX_QUEUE_LENGTH)
+  // only 100 pending transactions at once or something, dial this in
 
   constructor (
     private ourbit: Ourbit,
@@ -94,12 +98,18 @@ class BlockStream {
     console.log('pending', this.pendingTransactions.getPendingLength())
   }
 
-  private onBlockAdd = (block: BlockstreamBlock) => {
+  private onBlockAdd = async (block: BlockstreamBlock) => {
     console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
     const pendingTransaction = () => this.ourbit.processTransaction(
       block.hash,
       this.onBlock(block, this.syncing),
     )
+    // if we're at the top of the queue
+    // wait a bit and then add the thing
+    if (this.pendingTransactions.getQueueLength() === MAX_QUEUE_LENGTH) {
+      console.log(`[queue] Reached max queue size of ${MAX_QUEUE_LENGTH}`)
+      await timeout(1000)
+    }
     this.pendingTransactions.add(pendingTransaction)
   }
 

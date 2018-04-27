@@ -5,6 +5,12 @@ import {
   ITransaction,
 } from '../Ourbit'
 
+const toInterface = (model) => ({
+  id: model.get('id'),
+  patches: model.get('patches'),
+  inversePatches: model.get('inversePatches'),
+})
+
 class SequelizePersistInterface implements IPersistInterface {
   private connectionString
   private sequelize
@@ -13,7 +19,15 @@ class SequelizePersistInterface implements IPersistInterface {
 
   constructor (connectionString: string) {
     this.connectionString = connectionString
-    this.sequelize = new Sequelize(this.connectionString)
+    this.sequelize = new Sequelize(this.connectionString, {
+      logging: false,
+      pool: {
+        max: 5,
+        min: 0,
+        idle: 20000,
+        acquire: 20000,
+      },
+    })
 
     this.Transaction = this.sequelize.define('transaction', {
       id: {
@@ -25,17 +39,21 @@ class SequelizePersistInterface implements IPersistInterface {
     })
   }
 
-  public setup = async () => {
-    // @TODO(shrugs) - make this an env var or remove it entirely
-    await this.Transaction.sync({ force: true })
+  public setup = async (reset: boolean = false) => {
+    await this.Transaction.sync({ force: reset })
   }
 
   public getLatestTransaction = async () => {
-    return this.Transaction.findOne({ order: [['createdAt', 'DESC']] })
+    const tx = await this.Transaction.findOne({ order: [['createdAt', 'DESC']] })
+    return toInterface(tx)
   }
 
+  // @TODO(shrugs) - should this be fromTxId or toTxId?
   public getTransactions = async (fromTxId: null | string)  => {
-    return this.Transaction.findAll()
+    const txs = await this.Transaction.findAll({
+      order: [[ 'createdAt', 'ASC']],
+    })
+    return txs.map(toInterface)
   }
 
   public deleteTransaction = async (tx: ITransaction)  => {
@@ -49,7 +67,8 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public getTransaction = async (txId: string)  => {
-    return this.Transaction.findById(txId)
+    const tx = await this.Transaction.findById(txId)
+    return toInterface(tx)
   }
 }
 

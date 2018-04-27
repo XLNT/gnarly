@@ -249,3 +249,14 @@ Any/all of this can change, but here are the technologies currently used. Note t
 - Typescript
 - MobX
 - ethereumjs-blockstream
+
+
+---
+
+- how did we get an 'add' patch for a key that hadn't been set yet?
+  - yeah, we're definitely getting 'add' patches for things when they don't actually exist yet
+  - is it because we're dropping connections to postgres?
+  - see if the latest changes fixed that
+- why doesn't an optional array inside of an optional map work?
+  - if setting default, do we get patches for that?
+  - if not, why the hell not?

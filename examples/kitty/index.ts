@@ -9,11 +9,8 @@ import { types } from 'mobx-state-tree'
 import * as Sequelize from 'sequelize'
 import Gnarly, {
   addABI,
-  addressesEqual,
   because,
   Block,
-  forEach,
-  SequelizePersistInterface,
 } from '../../dist'
 
 // NOTE: this needs to be a parity archive+tracing node
