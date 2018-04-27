@@ -1,6 +1,6 @@
 {
   "name": "@xlnt/gnarly",
-  "version": "0.0.3-alpha.5",
+  "version": "0.0.3-alpha.6",
   "description": "Condense blockchains into steady state with confidence.",
   "main": "dist/index.js",
   "types": "./src/types/gnarly.d.ts",
@@ -12,8 +12,12 @@
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "tslint": "tslint -c tslint.json -p tsconfig.json"
+    "tslint": "tslint -c tslint.json -p tsconfig.json",
+    "do-publish": "npm run build && npm publish"
   },
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/XLNT/gnarly.git"
