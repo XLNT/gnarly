@@ -14,8 +14,9 @@ const JSONArrayTypeStore = (
     : 0
   switch (patch.op) {
     case 'add': {
+      // console.log(`${keyValueKeys.value} [add ${patch.key}]`, patch)
       switch (typeof patch.value) {
-        case 'string':
+        case 'string': {
           // this is a push
           const existing = await model.findOne({
             where: { [keyValueKeys.key]: patch.key },
@@ -25,6 +26,7 @@ const JSONArrayTypeStore = (
           existing.set(keyValueKeys.value, newValue)
           await existing.save()
           break
+        }
         default:
           // else it's an array, which means new thing
           await model.create({
@@ -37,6 +39,7 @@ const JSONArrayTypeStore = (
       break
     }
     case 'replace': {
+      // console.log(`${keyValueKeys.value} [replace ${patch.key}]`, patch)
       const existing = await model.findOne({
         where: { [keyValueKeys.key]: patch.key },
       })
@@ -48,6 +51,7 @@ const JSONArrayTypeStore = (
       break
     }
     case 'remove': {
+      // console.log(`${keyValueKeys.value} [remove ${patch.key}]`, patch)
       const existing = await model.findOne({
         where: { [keyValueKeys.key]: patch.key },
       })

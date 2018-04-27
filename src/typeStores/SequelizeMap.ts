@@ -7,7 +7,7 @@ const MapTypeStore = (
 ) => async (txId: string, patch: any) => {
   switch (patch.op) {
     case 'add': {
-      console.log(`${keyValueKeys.value} [add ${patch.key}]`, patch)
+      // console.log(`${keyValueKeys.value} [add ${patch.key}]`, patch)
       await model.create({
         txId,
         patchId: patch.id,
@@ -17,7 +17,7 @@ const MapTypeStore = (
       break
     }
     case 'replace': {
-      console.log(`${keyValueKeys.value} [replace ${patch.key}]`, patch)
+      // console.log(`${keyValueKeys.value} [replace ${patch.key}]`, patch)
       await model.update({
         txId,
         patchId: patch.id,
@@ -29,7 +29,7 @@ const MapTypeStore = (
       break
     }
     case 'remove': {
-      console.log(`${keyValueKeys.value} [remove ${patch.key}]`, patch)
+      // console.log(`${keyValueKeys.value} [remove ${patch.key}]`, patch)
       await model.destroy({
         where: { [keyValueKeys.key]: patch.key },
       })
