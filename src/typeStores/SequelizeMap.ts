@@ -1,5 +1,5 @@
 const MapTypeStore = (
-  table: any, // Sequelize
+  model: any, // Sequelize
   keyValueKeys: {
     key: string,
     value: string,
@@ -7,7 +7,8 @@ const MapTypeStore = (
 ) => async (txId: string, patch: any) => {
   switch (patch.op) {
     case 'add': {
-      await table.create({
+      console.log(`${keyValueKeys.value} [add ${patch.key}]`, patch)
+      await model.create({
         txId,
         patchId: patch.id,
         [keyValueKeys.key]: patch.key,
@@ -16,19 +17,20 @@ const MapTypeStore = (
       break
     }
     case 'replace': {
-      await table.update({
+      console.log(`${keyValueKeys.value} [replace ${patch.key}]`, patch)
+      await model.update({
         txId,
         patchId: patch.id,
         [keyValueKeys.key]: patch.key,
         [keyValueKeys.value]: patch.value,
       }, {
-          where: { [keyValueKeys.key]: patch.key },
-        },
-      )
+        where: { [keyValueKeys.key]: patch.key },
+      })
       break
     }
     case 'remove': {
-      await table.destroy({
+      console.log(`${keyValueKeys.value} [remove ${patch.key}]`, patch)
+      await model.destroy({
         where: { [keyValueKeys.key]: patch.key },
       })
       break

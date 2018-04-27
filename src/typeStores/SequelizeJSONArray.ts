@@ -1,6 +1,6 @@
 
 const JSONArrayTypeStore = (
-  table: any, // Sequelize
+  model: any, // Sequelize
   keyValueKeys: {
     key: string,
     value: string,
@@ -17,7 +17,7 @@ const JSONArrayTypeStore = (
       switch (typeof patch.value) {
         case 'string':
           // this is a push
-          const existing = await table.findOne({
+          const existing = await model.findOne({
             where: { [keyValueKeys.key]: patch.key },
           })
           const newValue = existing.get(keyValueKeys.value)
@@ -27,7 +27,7 @@ const JSONArrayTypeStore = (
           break
         default:
           // else it's an array, which means new thing
-          await table.create({
+          await model.create({
             txId,
             patchId: patch.id,
             [keyValueKeys.key]: patch.key,
@@ -37,7 +37,7 @@ const JSONArrayTypeStore = (
       break
     }
     case 'replace': {
-      const existing = await table.findOne({
+      const existing = await model.findOne({
         where: { [keyValueKeys.key]: patch.key },
       })
       existing.set('patchId', patch.id)
@@ -48,7 +48,7 @@ const JSONArrayTypeStore = (
       break
     }
     case 'remove': {
-      const existing = await table.findOne({
+      const existing = await model.findOne({
         where: { [keyValueKeys.key]: patch.key },
       })
       existing.set('patchId', patch.id)

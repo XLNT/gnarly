@@ -84,7 +84,6 @@ class Gnarly {
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {
-    console.log(patch)
     await this.typeStore[patch.reducerKey][patch.domainKey](txId, patch)
   }
 }

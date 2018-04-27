@@ -4,6 +4,7 @@ import {
   Log as BlockstreamLog,
 } from 'ethereumjs-blockstream'
 import 'isomorphic-fetch'
+import Queue = require('promise-queue')
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
@@ -27,7 +28,7 @@ class BlockStream {
    */
   private syncing = false
 
-  private pendingTransactions: Array<Promise<any>> = []
+  private pendingTransactions: Queue = new Queue(1, Infinity)
 
   constructor (
     private ourbit: Ourbit,
@@ -89,22 +90,23 @@ class BlockStream {
     clearInterval(this.reconciling)
     this.streamer.unsubscribeFromOnBlockAdded(this.onBlockAddedSubscriptionToken)
     this.streamer.unsubscribeFromOnBlockRemoved(this.onBlockRemovedSubscriptionToken)
-    await Promise.all(this.pendingTransactions)
+    await this.pendingTransactions.add(() => Promise.resolve())
+    console.log('pending', this.pendingTransactions.getPendingLength())
   }
 
   private onBlockAdd = (block: BlockstreamBlock) => {
     console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
-    const pendingTransaction = this.ourbit.processTransaction(
+    const pendingTransaction = () => this.ourbit.processTransaction(
       block.hash,
       this.onBlock(block, this.syncing),
     )
-    this.pendingTransactions.push(pendingTransaction)
+    this.pendingTransactions.add(pendingTransaction)
   }
 
   private onBlockInvalidated = (block: BlockstreamBlock) => {
     console.log(`[onBlockInvalidated] ${block.number} (${block.hash})`)
-    const pendingTransaction = this.ourbit.rollbackTransaction(block.hash)
-    this.pendingTransactions.push(pendingTransaction)
+    const pendingTransaction = () => this.ourbit.rollbackTransaction(block.hash)
+    this.pendingTransactions.add(pendingTransaction)
   }
 
   private beginTracking = () => {
