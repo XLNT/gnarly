@@ -59,6 +59,7 @@ export interface IPathThing {
   reducerKey: string
   domainKey: string
   key: string
+  extra: string[]
 }
 
 export interface ITypeStore {

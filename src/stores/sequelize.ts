@@ -20,8 +20,8 @@ class SequelizePersistInterface implements IPersistInterface {
         type: Sequelize.STRING,
         primaryKey: true,
       },
-      patches: Sequelize.JSON,
-      inversePatches: Sequelize.JSON,
+      patches: Sequelize.JSONB,
+      inversePatches: Sequelize.JSONB,
     })
   }
 

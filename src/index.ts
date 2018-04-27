@@ -21,6 +21,7 @@ export {
 export * from './utils'
 export * from './reducer'
 export * from './stores'
+export * from './typeStores'
 
 export const addABI = globalState.addABI.bind(globalState)
 export const because = globalState.because.bind(globalState)
