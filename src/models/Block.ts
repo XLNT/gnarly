@@ -1,7 +1,13 @@
-import NodeApi from './NodeApi'
-import Transaction, { IJSONTransaction } from './Transaction'
-
 import BN = require('bn.js')
+import pMap from 'p-map'
+
+import ExternalTransaction, {
+  IJSONExternalTransaction,
+} from './ExternalTransaction'
+import InternalTransaction from './InternalTransaction'
+import NodeApi from './NodeApi'
+import Transaction from './Transaction'
+
 import { Block as BlockstreamBlock } from 'ethereumjs-blockstream'
 
 import { toBN } from '../utils'
@@ -23,7 +29,7 @@ export interface IJSONBlock {
   gasLimit: string
   gasUsed: string
   timestamp: string
-  transactions: IJSONTransaction[]
+  transactions: IJSONExternalTransaction[]
   uncles: string[]
 }
 
@@ -44,7 +50,8 @@ export default class Block {
   public gasLimit: BN
   public gasUsed: BN
   public timestamp: BN
-  public transactions: Transaction[]
+  public transactions: ExternalTransaction[]
+  public allTransactions: Transaction[]
   public uncles: string[]
 
   public constructor (block: IJSONBlock) {
@@ -64,7 +71,34 @@ export default class Block {
     this.gasLimit = toBN(block.gasLimit)
     this.gasUsed = toBN(block.gasUsed)
     this.timestamp = toBN(block.timestamp)
-    this.transactions = block.transactions.map((t) => new Transaction(this, t))
+    this.transactions = block.transactions
+      .map((t) => new ExternalTransaction(this, t))
     this.uncles = block.uncles
+  }
+
+  public loadTransactions = async (): Promise<void> => {
+    await pMap(
+      this.transactions,
+      async (t) => t.getReceipt(),
+      { concurrency: 20 },
+    )
+  }
+
+  public loadAllTransactions = async (): Promise<void> => {
+    await pMap(
+      this.transactions,
+      async (t) => t.getInternalTransactions(),
+      { concurrency: 20 },
+    )
+    // this looks dumb, but just combines all of the external
+    //  and internal transactions in one single 1-dimensional list
+    //  for easy iteration
+    this.allTransactions = [].concat(
+      ...this.transactions,
+      [].concat(
+        ...this.transactions
+          .map((t) => t.internalTransactions),
+      ),
+    )
   }
 }

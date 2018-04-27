@@ -126,6 +126,7 @@ class Ourbit {
 
   /**
    * Applys inverse patches from a specific transaction, mutating the target state
+   * @TODO(shrugs) - make this a "fix-forward" operation and include event log
    * @param txId transaction id
    */
   public rollbackTransaction = async (txId: string) => {

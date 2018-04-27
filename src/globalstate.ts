@@ -3,7 +3,9 @@
  * https://github.com/mobxjs/mobx/blob/master/src/core/globalstate.ts
  */
 
+import { memoize } from 'async-decorators'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
+import Log from './models/Log'
 import NodeApi from './models/NodeApi'
 import { enhanceAbiItem } from './utils'
 
@@ -17,6 +19,11 @@ export class GnarlyGlobals {
   public currentReason: string
   public currentMeta: any
 
+  public getLogs = memoize(async (options) => {
+    const logs = await this.api.getLogs(options)
+    return logs.map((l) => new Log(null, l))
+  })
+
   public setApi = (api: NodeApi) => {
     this.api = api
   }
@@ -26,6 +33,12 @@ export class GnarlyGlobals {
   }
 
   public getABI = (address: string): ABIItemSet => this.abis[address.toLowerCase()]
+
+  public getMethod = (address: string, methodId: string): IABIItem => {
+    // replace with O(1) precomputed lookup
+    return (this.abis[address.toLowerCase()] || [])
+      .find((ai) => ai.shortId === methodId)
+  }
 
   public because = (reason: string, meta: any, fn: () => void) => {
     this.currentReason = reason

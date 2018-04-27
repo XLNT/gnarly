@@ -15,9 +15,11 @@ export interface IABIItemInput {
 
 export default interface IABIItem extends IABIItemInput {
   signature: string
-  // ^ 0x12345678
+  // ^ 0x1234567890.......
   fullName: string
   // ^ doThing(uint256)
+  shortId: string
+  // ^ 0x12345678 (guaranteed to be 10 characters)
 }
 
 export const isMethod = (item: IABIItem): boolean => item.type === 'function'

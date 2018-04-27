@@ -150,7 +150,7 @@ const onBlock = async (block) => {
     if (addressesEqual(tx.to, CRYPTO_KITTIES)) {
       // 3. Load the rest of the transaction info (logs, internal transactions)
       // NOTE: to get the full tx, you need a parity archive+tracing node
-      await tx.getFull()
+      await tx.getReceipt()
 
       // 4. for each log (sync)
       tx.logs.forEach((log) => {

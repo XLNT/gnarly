@@ -1,124 +1,43 @@
 import BN = require('bn.js')
-
-import Block from './Block'
-import InternalTransaction from './InternalTransaction'
-import Log, { IJSONLog } from './Log'
-
 import { globalState } from '../globalstate'
-import { toBN } from '../utils'
-
-export interface IJSONTransaction {
-  hash: string
-  nonce: string
-  blockHash: string
-  blockNumber: string
-  transactionIndex: string
-  from: string
-  to: string
-  value: string
-  gasPrice: string
-  gas: string
-  input: string
-}
-
-function isTransaction (obj: any): obj is IJSONTransaction {
-  return 'nonce' in obj
-}
-
-export interface IJSONTransactionReceipt {
-  blockHash: string
-  blockNumber: string
-  contractAddress: string
-  cumulativeGasUsed: string
-  from: string
-  gasUsed: string
-  logs: IJSONLog[]
-  logsBloom: string
-  status: string
-  to: string
-  transactionHash: string
-  transactionIndex: string
-}
-
-function isTransactionReceipt (obj: any): obj is IJSONTransactionReceipt {
-  return 'status' in obj
-}
-
-export type IJSONTransactionInfo = IJSONTransaction | IJSONTransactionReceipt
+import { getMethodId } from '../utils'
 
 export default class Transaction {
-
-  public block: Block
-
-  public nonce: BN
-  public hash: string
-  public index: BN
-  public blockNumber: BN
-  public blockHash: string
-  public cumulativeGasUsed: BN | null
-  public gasUsed: BN
-  public contractAddress: string | null
-  public logs: Log[]
-  public logsBloom: string
-  public status: BN
-
   public from: string
   public to: string
   public value: BN
-  public gasPrice: BN
-  public gas: BN
   public input: string
+  public gasUsed: BN
+  public gas: BN
 
-  public internalTransactions: InternalTransaction[]
+  public method: string
+  // transfer
+  public methodName: string
+  // transfer(address)
+  public signature: string
+  // 0x1234567890
+  public methodId: string
+  // 0x12345678
+  public args: object = {}
 
-  public constructor (block: Block, tx: IJSONTransaction) {
-    this.block = block
+  public parse = () => {
+    if (!this.input) { return }
+    if (this.input.length < 10) { return }
+    // ^ has data, but not enough for a method call
 
-    this.setSelf(tx)
-  }
+    // parse out method id
+    const methodId = getMethodId(this.input)
 
-  public getFull = async () => {
-    await this.setReceipt()
-    await this.setInternalTransactions()
-  }
+    // look up abi in global state
+    const methodAbi = globalState.getMethod(this.to, methodId)
+    if (!methodAbi) { return }
 
-  private setReceipt = async () => {
-    const txReceipt = await globalState.api.getTransactionReciept(this.hash)
-    // console.log('[setReceipt]', txReceipt)
-    this.setSelf(txReceipt)
-  }
-
-  private setInternalTransactions = async () => {
-    try {
-      const traces = await globalState.api.traceTransaction(this.hash)
-      // console.log('[setInternalTransactions]', traces)
-      this.internalTransactions = traces.map((itx) => new InternalTransaction(this, itx))
-    } catch (error) {
-      console.error('[setInternalTransactions] trace_replayTransaction not working, ignoring', error)
-    }
-  }
-
-  private setSelf = (tx: IJSONTransactionInfo) => {
-    if (isTransaction(tx)) {
-      this.nonce = toBN(tx.nonce)
-      this.hash = tx.hash
-      this.index = toBN(tx.transactionIndex)
-      this.blockNumber = toBN(tx.blockNumber)
-      this.blockHash = tx.blockHash
-      this.from = tx.from
-      this.to = tx.to
-      this.value = toBN(tx.value)
-      this.gasPrice = toBN(tx.gasPrice)
-      this.gas = toBN(tx.gas)
-      this.input = tx.input
-    } else if (isTransactionReceipt(tx)) {
-      this.cumulativeGasUsed = toBN(tx.cumulativeGasUsed)
-      this.gasUsed = toBN(tx.gasUsed)
-      this.contractAddress = tx.contractAddress
-      this.logs = tx.logs.map((l) => new Log(this, l))
-      this.status = toBN(tx.status)
-    } else {
-      throw new Error(`Unexpected type ${tx} in Transaction#setSelf()`)
-    }
+    // we have a method abi, so parse it out
+    this.method = methodAbi.name
+    this.methodName = methodAbi.fullName
+    this.signature = methodAbi.signature
+    this.methodId = methodAbi.shortId
+    // @TODO(shrugs) - do that
+    this.args = {}
   }
 }

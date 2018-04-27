@@ -9,6 +9,8 @@ export {
 
 export { default as Block } from './models/Block'
 export { default as Transaction } from './models/Transaction'
+export { default as ExternalTransaction } from './models/ExternalTransaction'
+export { default as InternalTransaction } from './models/InternalTransaction'
 export { default as Log } from './models/Log'
 
 export {
@@ -22,3 +24,4 @@ export * from './stores'
 
 export const addABI = globalState.addABI.bind(globalState)
 export const because = globalState.because.bind(globalState)
+export const getLogs = globalState.getLogs.bind(globalState)

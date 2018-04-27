@@ -1,6 +1,7 @@
 import BN = require('bn.js')
 
 import { toBN } from '../utils'
+import ExternalTransaction from './ExternalTransaction'
 import Transaction from './Transaction'
 
 export interface IJSONInternalTransaction {
@@ -38,19 +39,18 @@ export interface IJSONInternalTransaction {
   // transactionHash: string
   // transactionPosition: string
   type: string
+  error: string | null
 }
 
-export default class InternalTransaction {
-  public transaction: Transaction
+export const isInternalTransaction = (obj: any): obj is InternalTransaction => 'internal' in obj
 
-  public action: {
-    callType: string,
-    from: string,
-    gas: BN,
-    input: string,
-    to: string,
-    value: BN,
-  }
+export default class InternalTransaction extends Transaction {
+  public internal: boolean = true
+
+  public transaction: ExternalTransaction
+
+  public callType: string
+
   public blockHash: string
   public blockNumber: BN
   public result: {
@@ -62,25 +62,41 @@ export default class InternalTransaction {
   public transactionHash: string
   // public transactionPosition: string
   public type: string
+  // ^ "call" | ??
 
-  constructor (tx: Transaction, itx: IJSONInternalTransaction) {
+  public error: string | null = null
+
+  constructor (tx: ExternalTransaction, itx: IJSONInternalTransaction) {
+    super()
+
     this.transaction = tx
-    this.action = {
-      ...itx.action,
-      gas: toBN(itx.action.gas),
-      value: toBN(itx.action.value),
-    }
+    this.callType = itx.action.callType
+    this.from = itx.action.from
+    this.to = itx.action.to
+    // @TODO(shrugs) - contractAddress for deploys?
+    this.input = itx.action.input
+    this.from = itx.action.from
+    this.gas = toBN(itx.action.gas)
+    this.value = toBN(itx.action.value)
     this.blockHash = tx.blockHash
     this.blockNumber = tx.blockNumber
+
+    this.subtraces = itx.subtraces
+    this.traceAddress = itx.traceAddress
+    this.transactionHash = tx.hash
+
+    // this.transactionPosition = tx.trans
+    this.type = itx.type
+
+    if (itx.error !== undefined) {
+      this.error = itx.error
+      return
+    }
+
     this.result = {
       ...itx.result,
       gasUsed: toBN(itx.result.gasUsed),
     }
-    this.subtraces = itx.subtraces
-    this.traceAddress = itx.traceAddress
-    this.transactionHash = tx.hash
-    // this.transactionPosition = tx.trans
-    this.type = itx.type
 
     // invariant: itx.transactionHash === this.transaction.hash
   }

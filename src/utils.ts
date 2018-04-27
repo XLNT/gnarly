@@ -34,14 +34,21 @@ const buildEventSignature = (item: IABIItem) => {
 export const enhanceAbiItem = (item: IABIItemInput): IABIItem => {
   const fullName = web3Utils._jsonInterfaceMethodToString(item)
   const signature = web3Utils.sha3(fullName)
+  const shortId = signature.substr(0, 10)
 
   return {
     ...item,
     fullName,
     signature,
+    shortId,
   }
 }
 
 // we dont' do anything special here, but it helps add structure
 // ¯\_(ツ)_/¯
 export const makeRootTypeStore = (typestore) => typestore
+
+export const getMethodId = (input: string) => input.substr(0, 10)
+// ^0x12345678
+
+export const toHex = (num: BN) => `0x${num.toString(16)}`

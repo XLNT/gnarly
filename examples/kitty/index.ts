@@ -178,7 +178,7 @@ const onBlock = async (block) => {
 
   forEach(block.transactions, async (tx) => {
     if (addressesEqual(tx.to, CRYPTO_KITTIES)) {
-      await tx.getFull()
+      await tx.getReceipt()
 
       tx.logs.forEach((log) => {
         if (log.event === 'Transfer') {

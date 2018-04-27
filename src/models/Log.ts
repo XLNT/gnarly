@@ -4,7 +4,7 @@ import abi = require('web3-eth-abi')
 import { globalState } from '../globalstate'
 
 import { toBN } from '../utils'
-import Transaction from './Transaction'
+import ExternalTransaction from './ExternalTransaction'
 
 export interface IJSONLog {
   address: string
@@ -32,15 +32,15 @@ export default class Log {
    * in solidity, the first argument is always the hash of the event signature
    * (this way it's easy to make a logFilter for events of a certain type)
    */
-  public readonly topics: string[]
-  public readonly event: string
-  public readonly fullName: string
-  public readonly signature: string
-  public readonly args: object
+  public topics: string[]
+  public event: string
+  public eventName: string
+  public signature: string
+  public args: object
 
-  private transaction: Transaction
+  private transaction: ExternalTransaction
 
-  public constructor (tx: Transaction, log: IJSONLog) {
+  public constructor (tx: ExternalTransaction | null, log: IJSONLog) {
     this.transaction = tx
 
     this.logIndex = toBN(log.logIndex)
@@ -51,7 +51,9 @@ export default class Log {
     this.address = log.address
     this.data = log.data
     this.topics = log.topics
+  }
 
+  public parse = () => {
     const registeredAbi = globalState.getABI(this.address)
 
     if (!registeredAbi) { return }
@@ -68,7 +70,6 @@ export default class Log {
     const logAbiItem = registeredAbi.find((item) => item.signature === eventSig)
     if (logAbiItem === undefined) {
       // ^ we don't have an input that matches this event (incomplete ABI?)
-      console.log(`[log] unable to find AbiItem with signature ${eventSig}`)
       return
     }
 
@@ -80,7 +81,7 @@ export default class Log {
     )
 
     this.event = logAbiItem.name
-    this.fullName = logAbiItem.fullName
+    this.eventName = logAbiItem.fullName
     this.signature = logAbiItem.signature
 
     this.args = args

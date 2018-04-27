@@ -4,8 +4,8 @@ import {
 } from 'ethereumjs-blockstream'
 
 import { IJSONBlock } from './Block'
+import { IJSONExternalTransactionReceipt } from './ExternalTransaction'
 import { IJSONLog } from './Log'
-import { IJSONTransactionReceipt } from './Transaction'
 
 import { IJSONInternalTransaction } from './InternalTransaction'
 
@@ -18,26 +18,26 @@ export default class NodeApi {
   }
 
   public getBlockByNumber = async (num: BN): Promise<IJSONBlock> => {
-    console.log('[getBlockByNumber]', num.toString(10), `0x${num.toString(16)}`)
+    // console.log('[getBlockByNumber]', num.toString(10), `0x${num.toString(16)}`)
     return this.doFetch('eth_getBlockByNumber', [`0x${num.toString(16)}`, true])
   }
 
   public getBlockByHash = async (hash: string): Promise<IJSONBlock | null> => {
-    console.log('[getBlockByHash]', hash)
+    // console.log('[getBlockByHash]', hash)
     return this.doFetch('eth_getBlockByHash', [hash, true])
   }
 
   public getLogs = async (filterOptions: FilterOptions): Promise<IJSONLog[]> => {
-    console.log('[getLogs]', filterOptions)
+    // console.log('[getLogs]', filterOptions)
     return this.doFetch('eth_getLogs', [filterOptions])
   }
 
   public getLatestBlock = async (): Promise<IJSONBlock> => {
-    console.log('[getLatestBlock]')
+    // console.log('[getLatestBlock]')
     return this.doFetch('eth_getBlockByNumber', ['latest', true])
   }
 
-  public getTransactionReciept = async (hash: string): Promise<IJSONTransactionReceipt> => {
+  public getTransactionReciept = async (hash: string): Promise<IJSONExternalTransactionReceipt> => {
     return this.doFetch('eth_getTransactionReceipt', [hash])
   }
 
