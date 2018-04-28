@@ -1,3 +1,5 @@
+#### joe made this: https://goel.io/joe
+
 #####=== Node ===#####
 
 # Logs
@@ -30,8 +32,8 @@ node_modules
 
 # Debug log from npm
 npm-debug.log
-lerna-debug.log
 
 
-lib
+dist
 .vscode
+

@@ -11,7 +11,7 @@ import Gnarly, {
   addABI,
   because,
   Block,
-} from '../../dist'
+} from '../../src'
 
 // NOTE: this needs to be a parity archive+tracing node
 // personally, I have one of these in AWS and port-forward my local 8545 to that
