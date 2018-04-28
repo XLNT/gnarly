@@ -1,0 +1,41 @@
+{
+  "name": "@xlnt/gnarly-reducer-erc721",
+  "version": "0.1.0",
+  "description": "A gnarly reducer for ERC721 Token information.",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "npm run build-ts && npm run tslint",
+    "ts-start": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "test": "mocha -r ts-node/register test/**/*.spec.ts",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint --project ."
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "gnarly"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:XLNT/gnarly-reducer-erc721.git"
+  },
+  "author": "Matt Condon <matt@XLNT.co>",
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "@xlnt/gnarly-core": "^0.0.3-alpha.5",
+    "mobx": "^4.2.0",
+    "mobx-state-tree": "^2.0.4"
+  },
+  "devDependencies": {
+    "@xlnt/gnarly-core": "^0.1.0",
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
