@@ -11,9 +11,8 @@
 clone this repo
 
 ```
-npm install
-npm run test
-npm run watch-ts
+lerna bootstrap
+lerna run test
 ```
 
 To use it in a project, implement the following components and then put them all together:
@@ -22,14 +21,6 @@ To use it in a project, implement the following components and then put them all
 - `storeInterface` — implement the interface to store gnarly's internal state
 - `ITypeStore` — implement the interface to store the actual info you want (add, update, delete)
 - `onBlock` — implement the state reduction function that gnarly uses to process events
-
-Note that if you `npm link` gnarly, because mobx requires a single mobx instance to function, you need to symlink your project's `mobx` and `mobx-state-tree` to gnarly's with something like
-
-```bash
-npm link gnarly
-ln -sF ./gnarly/node_modules/mobx `pwd`/node_modules/mobx
-ln -sF ./gnarly/node_modules/mobx-state-tree `pwd`/node_modules/mobx-state-tree
-```
 
 which enforces that they reference the same module.
 
