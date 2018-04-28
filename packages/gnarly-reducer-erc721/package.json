@@ -14,7 +14,7 @@
     "tslint": "tslint --project ."
   },
   "files": [
-    "dist"
+    "lib"
   ],
   "keywords": [
     "gnarly"
