@@ -18,7 +18,7 @@ import {
 
 import { globalState } from './globalstate'
 
-const MAX_QUEUE_LENGTH = 10
+const MAX_QUEUE_LENGTH = 100
 
 class BlockStream {
   private streamer: BlockAndLogStreamer<IJSONBlock, IJSONLog>
@@ -104,10 +104,11 @@ class BlockStream {
       block.hash,
       this.onBlock(block, this.syncing),
     )
+
     // if we're at the top of the queue
     // wait a bit and then add the thing
-    if (this.pendingTransactions.getQueueLength() === MAX_QUEUE_LENGTH) {
-      console.log(`[queue] Reached max queue size of ${MAX_QUEUE_LENGTH}`)
+    while (this.pendingTransactions.getQueueLength() + 1 >= MAX_QUEUE_LENGTH) {
+      console.log(`[queue] Reached max queue size of ${MAX_QUEUE_LENGTH}, waiting a bit...`)
       await timeout(1000)
     }
     this.pendingTransactions.add(pendingTransaction)
