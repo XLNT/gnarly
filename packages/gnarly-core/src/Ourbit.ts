@@ -194,12 +194,17 @@ class Ourbit {
 
     const patchId = uuid.v4()
     const pathParts = splitPath(patch.path)
+
     // parse storeKey and keyKey from path and provide to patch
-    this.patches.push({
+    const newPatch = {
       ...patch,
       id: patchId,
       ...pathParts,
-    })
+    }
+    if (newPatch.key === '1003') {
+      console.log('[FUCK]', patch)
+    }
+    this.patches.push(newPatch)
     this.inversePatches.push({
       ...inversePatch,
       id: patchId,
