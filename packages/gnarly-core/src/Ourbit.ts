@@ -95,9 +95,6 @@ class Ourbit {
 
   private skipping: boolean = false
 
-  private patches = []
-  private inversePatches = []
-
   constructor (
     targetState: IStateTreeNode,
     store: IPersistInterface,
@@ -106,8 +103,6 @@ class Ourbit {
     this.targetState = targetState
     this.store = store
     this.persistPatch = persistPatch
-
-    onPatch(this.targetState, this.handlePatch)
   }
 
   /**
@@ -116,19 +111,54 @@ class Ourbit {
    * @param fn mutating function
    */
   public processTransaction = async (txId: string, fn: () => void) => {
+    const patches = []
+    const inversePatches = []
+
+    const collectPatches = (patch: IJsonPatch, inversePatch: IJsonPatch) => {
+      // we have access to reason and meta here, thanks to the global
+      // so we need to log that in the database to track why patches were made
+      // // do we need to replace the json blob with a linked array of
+      // patches? how do we link the artifact with the event log?
+      // console.log(globalState.currentReason)
+
+      const patchId = uuid.v4()
+      const pathParts = splitPath(patch.path)
+
+      // parse storeKey and keyKey from path and provide to patch
+      patches.push({
+        ...patch,
+        id: patchId,
+        ...pathParts,
+      })
+      inversePatches.push({
+        ...inversePatch,
+        id: patchId,
+        ...pathParts,
+      })
+    }
+
+    // watch for patches
+    const dispose = onPatch(
+      this.targetState,
+      collectPatches,
+    )
+
+    // execute state function in mobx transaction
     transaction(() => {
       fn()
     })
 
+    // dispose watcher
+    dispose()
+
+    console.log('[trace] commit transaction')
+    // commit transaction
     await this.commitTransaction({
       id: txId,
-      patches: this.patches,
-      inversePatches: this.inversePatches,
+      patches,
+      inversePatches,
     })
-
-    // reset local state
-    this.patches = []
-    this.inversePatches = []
+    console.log('[trace] finish commit transaction')
   }
 
   /**
@@ -138,9 +168,7 @@ class Ourbit {
    */
   public rollbackTransaction = async (txId: string) => {
     const tx = await this.store.getTransaction(txId)
-    this.untracked(() => {
-      applyPatch(this.targetState, tx.inversePatches)
-    })
+    applyPatch(this.targetState, tx.inversePatches)
     await this.uncommitTransaction(tx)
   }
 
@@ -150,12 +178,9 @@ class Ourbit {
    */
   public async resumeFromTxId (txId: string) {
     const allTxs = await this.store.getTransactions(txId)
-    // @TODO(shrugs) - do we need to untrack this?
-    this.untracked(() => {
-      allTxs.forEach((tx, i) => {
-        console.log('[applyPatch]', i, tx.id, tx.patches)
-        applyPatch(this.targetState, tx.patches)
-      })
+    allTxs.forEach((tx, i) => {
+      console.log('[applyPatch]', i, tx.id, tx.patches)
+      applyPatch(this.targetState, tx.patches)
     })
   }
 
@@ -173,43 +198,6 @@ class Ourbit {
   private uncommitTransaction = async (tx: ITransaction) => {
     await this.store.deleteTransaction(tx)
     await this.notifyPatches(tx.id, tx.inversePatches)
-  }
-
-  private untracked = (fn) => {
-    this.skipping = true
-    fn()
-    this.skipping  = false
-  }
-
-  private handlePatch = (patch: IJsonPatch, inversePatch: IJsonPatch) => {
-    if (this.skipping) {
-      return
-    }
-
-    // we have access to reason and meta here, thanks to the global
-    // so we need to log that in the database to track why patches were made
-    // // do we need to replace the json blob with a linked array of
-    // patches? how do we link the artifact with the event log?
-    // console.log(globalState.currentReason)
-
-    const patchId = uuid.v4()
-    const pathParts = splitPath(patch.path)
-
-    // parse storeKey and keyKey from path and provide to patch
-    const newPatch = {
-      ...patch,
-      id: patchId,
-      ...pathParts,
-    }
-    if (newPatch.key === '1003') {
-      console.log('[FUCK]', patch)
-    }
-    this.patches.push(newPatch)
-    this.inversePatches.push({
-      ...inversePatch,
-      id: patchId,
-      ...pathParts,
-    })
   }
 }
 

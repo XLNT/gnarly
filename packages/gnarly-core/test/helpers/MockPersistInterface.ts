@@ -9,6 +9,7 @@ export const mockPatch: IPatch = {
   domainKey: 'ownerOf',
   key: '0x12345',
   op: 'add',
+  extra: [],
   path: '/kittyTracker/ownerOf/0x12345',
   reducerKey: 'kittyTracker',
   value: '0x0987',
@@ -19,6 +20,7 @@ export const mockInversePatch: IPatch = {
   domainKey: 'ownerOf',
   key: '0x12345',
   op: 'remove',
+  extra: [],
   path: '/kittyTracker/ownerOf/0x12345',
   reducerKey: 'kittyTracker',
 }
@@ -30,6 +32,10 @@ export const mockTransaction: ITransaction = {
 }
 
 class MockPersistInterface implements IPersistInterface {
+
+  public setup = async (reset: boolean = false) => {
+    // nothing to be done
+  }
 
   public async getTransactions (fromTxId: null | string): Promise<ITransaction[]> {
     return [mockTransaction]

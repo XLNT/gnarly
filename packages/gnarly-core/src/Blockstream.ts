@@ -94,8 +94,9 @@ class BlockStream {
     clearInterval(this.reconciling)
     this.streamer.unsubscribeFromOnBlockAdded(this.onBlockAddedSubscriptionToken)
     this.streamer.unsubscribeFromOnBlockRemoved(this.onBlockRemovedSubscriptionToken)
+    console.log('Pending Transactions:', this.pendingTransactions.getPendingLength())
     await this.pendingTransactions.add(() => Promise.resolve())
-    console.log('pending', this.pendingTransactions.getPendingLength())
+    console.log('[gnarly] Done!')
   }
 
   private onBlockAdd = async (block: BlockstreamBlock) => {
