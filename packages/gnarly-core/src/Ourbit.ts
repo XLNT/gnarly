@@ -110,7 +110,7 @@ class Ourbit {
    * @param txId transaction id
    * @param fn mutating function
    */
-  public processTransaction = async (txId: string, fn: () => void) => {
+  public processTransaction = async (txId: string, fn: () => Promise<void>) => {
     const patches = []
     const inversePatches = []
 
@@ -120,7 +120,6 @@ class Ourbit {
       // // do we need to replace the json blob with a linked array of
       // patches? how do we link the artifact with the event log?
       // console.log(globalState.currentReason)
-
       const patchId = uuid.v4()
       const pathParts = splitPath(patch.path)
 
@@ -136,29 +135,24 @@ class Ourbit {
         ...pathParts,
       })
     }
-
     // watch for patches
     const dispose = onPatch(
       this.targetState,
       collectPatches,
     )
 
-    // execute state function in mobx transaction
-    transaction(() => {
-      fn()
-    })
+    // produce state changes
+    await fn()
 
     // dispose watcher
     dispose()
 
-    console.log('[trace] commit transaction')
     // commit transaction
     await this.commitTransaction({
       id: txId,
       patches,
       inversePatches,
     })
-    console.log('[trace] finish commit transaction')
   }
 
   /**

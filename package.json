@@ -1,19 +1,22 @@
 {
-	"private": true,
-	"version": "0.0.4-alpha.1",
-	"devDependencies": {
-		"@types/chai": "^4.1.2",
-    	"@types/chai-spies": "0.0.0",
-    	"@types/mocha": "^2.2.48",
-    	"@types/node": "^9.4.0",
-    	"@types/uuid": "^3.4.3",
-		"lerna": "^2.11.0",
-    	"mobx": "^4.2.0",
-    	"mobx-state-tree": "^2.0.4",
-    	"mobx-utils": "^3.2.2",
-    	"nodemon": "^1.14.12",
-    	"ts-node": "^5.0.1",
-    	"tslint": "^5.9.1"
-	},
-	"workspaces": ["packages/*"]
+  "private": true,
+  "version": "0.0.4-alpha.1",
+  "devDependencies": {
+    "@types/chai": "^4.1.2",
+    "@types/chai-spies": "0.0.0",
+    "@types/mocha": "^2.2.48",
+    "@types/node": "^9.4.0",
+    "@types/uuid": "^3.4.3",
+    "lerna": "^2.11.0",
+    "mobx": "^4.2.0",
+    "mobx-state-tree": "^2.0.4",
+    "mobx-utils": "^3.2.2",
+    "nodemon": "^1.14.12",
+    "ts-node": "^5.0.1",
+    "tslint": "^5.9.1"
+  },
+  "scripts": {
+    "watch-ts": "lerna exec --parallel -- yarn run watch-ts"
+  },
+  "workspaces": ["packages/*"]
 }

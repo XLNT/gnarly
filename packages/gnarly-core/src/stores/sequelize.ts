@@ -1,4 +1,5 @@
-import Sequelize from 'sequelize'
+import Sequelize = require('sequelize')
+const { Op } = Sequelize
 
 import {
   IPersistInterface,
@@ -58,7 +59,7 @@ class SequelizePersistInterface implements IPersistInterface {
 
   public deleteTransaction = async (tx: ITransaction)  => {
     return this.Transaction.destroy({
-      where: { id: tx.id },
+      where: { id: { [Op.eq]: tx.id } },
     })
   }
 
