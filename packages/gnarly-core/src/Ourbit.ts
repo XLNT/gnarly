@@ -72,18 +72,17 @@ export interface ITypeStore {
 
 export interface IPersistInterface {
   // transaction storage
-  getTransactions: (fromTxId: null|string) => Promise<ITransaction[]>
-  // @TODO ^ make this a generator that batches transaction returns
-  getLatestTransaction: () => Promise<ITransaction>
-
-  deleteTransaction: (tx: ITransaction) => Promise<any>
-  saveTransaction: (tx: ITransaction) => Promise<any>
-  getTransaction: (txId: string) => Promise<ITransaction>
+  // @TODO - how do you get typescript to stop complaining about AsyncIterator symbols?
+  getAllTransactionsTo (toTxId: null | string): Promise<any>
+  getLatestTransaction (): Promise<ITransaction>
+  deleteTransaction (tx: ITransaction): Promise<any>
+  saveTransaction (tx: ITransaction): Promise<any>
+  getTransaction (txId: string): Promise<ITransaction>
 
   // event log CRUD actions
 
   // setup
-  setup: (reset: boolean) => Promise<any>
+  setup (reset: boolean): Promise<any>
 }
 
 type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
@@ -171,11 +170,14 @@ class Ourbit {
    * @param txId transaction id
    */
   public async resumeFromTxId (txId: string) {
-    const allTxs = await this.store.getTransactions(txId)
-    allTxs.forEach((tx, i) => {
-      console.log('[applyPatch]', i, tx.id, tx.patches)
-      applyPatch(this.targetState, tx.patches)
-    })
+    console.log(`[ourbit] Resuming from txId ${txId}`)
+    const allTxs = await this.store.getAllTransactionsTo(txId)
+    for await (const txBatch of allTxs) {
+      txBatch.forEach((tx) => {
+        console.log('[applyPatch]', tx.id, tx.patches.length)
+        applyPatch(this.targetState, tx.patches)
+      })
+    }
   }
 
   private notifyPatches = async (txId: string, patches: IPatch[]) => {

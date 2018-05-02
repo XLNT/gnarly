@@ -1,3 +1,6 @@
+
+import './asynciterator-polyfill'
+
 import { globalState } from './globalstate'
 
 export {

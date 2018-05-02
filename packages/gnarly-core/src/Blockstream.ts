@@ -75,6 +75,13 @@ class BlockStream {
       this.syncing = true
       let i = startBlockNumber.clone()
       while (i.lt(latestBlockNumber)) {
+        // if we're at the top of the queue
+        // wait a bit and then add the thing
+        while (this.pendingTransactions.getQueueLength() + 1 >= MAX_QUEUE_LENGTH) {
+          console.log(`[queue] Reached max queue size of ${MAX_QUEUE_LENGTH}, waiting a bit...`)
+          await timeout(5000)
+        }
+
         const block = await globalState.api.getBlockByNumber(i)
         console.log(`[fast-forward] block ${block.number} (${block.hash})`)
         i = i.add(toBN(1))
@@ -100,24 +107,20 @@ class BlockStream {
   }
 
   private onBlockAdd = async (block: BlockstreamBlock) => {
-    console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
-    const pendingTransaction = () => this.ourbit.processTransaction(
-      block.hash,
-      this.onBlock(block, this.syncing),
-    )
-
-    // if we're at the top of the queue
-    // wait a bit and then add the thing
-    while (this.pendingTransactions.getQueueLength() + 1 >= MAX_QUEUE_LENGTH) {
-      console.log(`[queue] Reached max queue size of ${MAX_QUEUE_LENGTH}, waiting a bit...`)
-      await timeout(1000)
+    const pendingTransaction = async () => {
+      console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
+      return this.ourbit.processTransaction(
+        block.hash,
+        this.onBlock(block, this.syncing),
+      )
     }
+
     this.pendingTransactions.add(pendingTransaction)
   }
 
   private onBlockInvalidated = (block: BlockstreamBlock) => {
     console.log(`[onBlockInvalidated] ${block.number} (${block.hash})`)
-    const pendingTransaction = () => this.ourbit.rollbackTransaction(block.hash)
+    const pendingTransaction = async () => this.ourbit.rollbackTransaction(block.hash)
     this.pendingTransactions.add(pendingTransaction)
   }
 

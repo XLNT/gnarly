@@ -57,6 +57,8 @@ class Gnarly {
       await this.ourbit.resumeFromTxId(latestTransaction.id)
     }
 
+    // and now catch up from latestBlockHash
+    //   (which is either forced by env or the last tx id)
     await this.blockstreamer.start(latestBlockHash)
     return this.bailOut.bind(this)
   }

@@ -12,6 +12,31 @@ const toInterface = (model) => ({
   inversePatches: model.get('inversePatches'),
 })
 
+async function* batch (model, query = {}, batchSize = 1000, mapper = (t) => t) {
+  const count = await model.count(query)
+
+  if (count === 0) {
+    return false
+  }
+
+  const pages = Math.max(Math.round(count / batchSize), 1)
+  let page = 1
+
+  console.log('pages;', pages)
+
+  while (page <= pages) {
+    const params = {
+      ...query,
+      offset: (page - 1) * batchSize,
+      limit: batchSize,
+    }
+
+    const gots = await model.findAll(params)
+    yield gots.map(mapper)
+    page = page + 1
+  }
+}
+
 class SequelizePersistInterface implements IPersistInterface {
   private connectionString
   private sequelize
@@ -49,12 +74,24 @@ class SequelizePersistInterface implements IPersistInterface {
     return toInterface(tx)
   }
 
-  // @TODO(shrugs) - should this be fromTxId or toTxId?
-  public getTransactions = async (fromTxId: null | string)  => {
-    const txs = await this.Transaction.findAll({
-      order: [[ 'createdAt', 'ASC']],
+  // fetch all transactions from txId to end until there are no more
+  // hmm, should probably use an auto-incrementing id to preserve insert order...
+  public getAllTransactionsTo = async function (toTxId: null | string):
+    Promise<any> {
+    const initial = await this.Transaction.findOne({
+      where: { id: { [Op.eq]: toTxId } },
     })
-    return txs.map(toInterface)
+    if (!initial) {
+      throw new Error(`Could not find txId ${toTxId}`)
+    }
+
+    const initialCreatedAt = initial.get('createdAt')
+    const query = {
+      where: { createdAt: { [Op.lte]: initialCreatedAt } },
+      order: [['createdAt', 'ASC']],
+    }
+
+    return batch(this.Transaction, query, 1000, toInterface)
   }
 
   public deleteTransaction = async (tx: ITransaction)  => {
