@@ -44,8 +44,7 @@ const makeReducer = (
     payable: false,
     stateMutability: 'nonpayable',
     type: 'function',
-  }],
-  )
+  }])
 
   // create the state type
   const ERC721Tracker = types

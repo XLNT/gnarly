@@ -4,16 +4,17 @@
 >
 > And that’s fuckin’ gnarly.
 
------> [Read the Medium post for more details](https://medium.com/xlnt-art/solving-severe-asynchronicity-with-gnarly-51f5310e5543) <-----
+-----> [Read the Medium post for more details](https://medium.com/xlnt-art/solving-severe-asynchronicity-with-gnarly-51f5310e5543)
 
-## Developer Install / Usage
+## Description
 
-clone this repo
+The simple description of gnarly is that it's a stream-processor for atomic events that persists its internal state to disk, following the solid-state-interpreter pattern ala Urbit.
 
-```
-lerna bootstrap
-lerna run test
-```
+This means it processes blocks (either from the past or in real-time) and can gracefully handle restarts, reorgs, forks, and more.
+
+Gnarly simplifies the process of taking information _from_ a blockchain and putting it somewhere else, usually in a webapp-friendly format like a SQL database or elasticsearch cluster.
+
+## Usage
 
 To use it in a project, implement the following components and then put them all together:
 
@@ -24,184 +25,116 @@ To use it in a project, implement the following components and then put them all
 
 which enforces that they reference the same module.
 
-Now let's write some typescript. See a full example of a kitty tracker in [./examples/kitty/index.ts](./examples/kitty/index.ts)
+Now let's write some typescript. You can place all of this in one file if you'd like.
 
 ```js
-// first, let's register the cryptokitties transfer abi with gnarly
-const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
-addABI(CRYPTO_KITTIES, [{
-    anonymous: false,
-    inputs: [
-      { indexed: false, name: 'from', type: 'address' },
-      { indexed: false, name: 'to', type: 'address' },
-      { indexed: false, name: 'tokenId', type: 'uint256' },
-    ],
-    name: 'Transfer',
-    type: 'event',
-  }],
-)
-```
+// first, let's import some stuff and get a connection to a sql database
+import { types } from 'mobx-state-tree'
+import Sequelize = require('sequelize')
 
-```js
-// next let's configure the kitty table in our store
-// this is just normal sequelize stuff
-const Kitty = sequelize.define('kitty', {
-  id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
-  txId: { type: Sequelize.STRING },
-  patchId: { type: Sequelize.STRING },
+import Gnarly, {
+  addABI,
+  addressesEqual,
+  because,
+  Block,
+  forEach,
+  makeRootTypeStore,
+  makeStateReference,
+  SequelizePersistInterface,
+} from '@xlnt/gnarly-core'
 
-  kittyId: { type: Sequelize.STRING },
-  owner: { type: Sequelize.STRING },
-}, {
-    indexes: [
-      { fields: ['kittyId'] },
-      { fields: ['owner'] },
-      { fields: ['txId'] },
-    ],
-  })
-```
+import makeERC721Reducer, {
+  makeSequelizeTypeStore as makeERC721TypeStore,
+} from '@xlnt/gnarly-reducer-erc721'
 
-```js
-// the TypeStore tells gnarly how to update the store for each type
-// must be (relatively) atomic and not swallow errors
-const MyTypeStore = {
-  kittyTracker: {
-    ownerOf: async (txId: string, patch: any) => {
-      switch (patch.op) {
-        case 'add': {
-          await Kitty.create({
-            txId,
-            patchId: patch.id,
-            kittyId: patch.key,
-            owner: patch.value,
-          })
-          break
-        }
-        case 'replace': {
-          await Kitty.update({
-            txId,
-            patchId: patch.id,
-            kittyId: patch.key,
-            owner: patch.value,
-          }, {
-              where: { kittyId: patch.key },
-            },
-          )
-          break
-        }
-        case 'remove': {
-          await Kitty.destroy({
-            where: { kittyId: patch.key },
-          })
-          break
-        }
-        default: {
-          throw new Error('wut')
-        }
-      }
-    },
+const nodeEndpoint = process.env.NODE_ENDPOINT
+// ^ http://127.0.0.1:8545 (or wherever your ethereum node is)
+const connectionString = process.env.CONNECTION_STRING
+// ^ postgres://...
+
+const sequelize = new Sequelize(connectionString, {
+  logging: false,
+  pool: {
+    max: 5,
+    min: 0,
+    idle: 20000,
+    acquire: 20000,
   },
-}
+})
 ```
 
 ```js
-// build the mobx-state-tree store
-// this describes a state that contains a map of owner address to token id
-// along with a single action, `setOwner` that sets a key/value
-const KittyTracker = types
-  .model('KittyTracker', {
-    ownerOf: types.optional(types.map(types.string), {}),
-  })
-  .actions((self) => ({
-    setOwner (tokenId, to) {
-      self.ownerOf.set(tokenId, to)
-    },
-  }))
+// now let's use the erc721 reducer (WIP)
+//   to construct a reducer and sequelize typestore for cryptokitties
+const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
+const erc721Reducer = makeERC721Reducer(
+  'cryptoKitties',
+  CRYPTO_KITTIES,
+  reasons.KittyTransfer,
+)
 
-const Store = types.model('Store', {
-  // ... any other stores you want in here ...
-  kittyTracker: types.optional(KittyTracker, {}),
+const typeStore = makeRootTypeStore({
+  cryptoKitties: makeERC721TypeStore(
+    'cryptoKitties',
+    sequelize,
+    Sequelize.DataTypes,
+  ),
 })
-
-// now create a reference to an instance of this state
-const stateReference = Store.create({
-  kittyTracker: KittyTracker.create(),
-})
-
 ```
 
 ```js
-// implement the state reduction function
-// simply modify your state in reaction to a new block
-// gnarly handles everything else behind the scenes!
-const onBlock = async (block) => {
-  // 1. for ever transaction in this block (async)...
-  forEach(block.transactions, async (tx) => {
-    // 2. if it's a direct transaction to the cryptokitties contract...
-    if (addressesEqual(tx.to, CRYPTO_KITTIES)) {
-      // 3. Load the rest of the transaction info (logs, internal transactions)
-      // NOTE: to get the full tx, you need a parity archive+tracing node
-      await tx.getReceipt()
-
-      // 4. for each log (sync)
-      tx.logs.forEach((log) => {
-        // 5. if the event is Transfer
-        if (log.event === 'Transfer') {
-          const { to, tokenId } = log.args
-
-          // 6. Give gnarly some context for this change using `because()`
-          // (this context is (will be) provided to the ui as part of the event log)
-          because('KITTY_TRANSFER', {}, () => {
-            // 7. finally, update the state using your action
-            stateReference.kittyTracker.setOwner(tokenId, to)
-          })
-        }
-      })
-    }
-  })
-}
+// now let's make the root state reference
+const reducers = [
+  erc721Reducer,
+]
+const stateReference = makeStateReference(reducers)
+// and tell gnarly to put its internal state into postgres using our connection
+const storeInterface = new SequelizePersistInterface(connectionString)
 ```
 
 ```js
 // finally, put it all together
 const gnarly = new Gnarly(
-  stateReference,
-  storeInterface,
-  nodeEndpoint,
-  MyTypeStore,
-  onBlock,
+  stateReference, // the local state that you modify in the reducer
+  storeInterface, // the interface to which gnarly stores internal state
+  nodeEndpoint,   // the location of your ethereum node
+  typeStore,      // the interface that converts patches to persisted state
+  reducers,       // the reducers
 )
 
 const main = async () => {
-  // reset gnarly's internal state
-  await storeInterface.setup()
-  // reset our app's derived state
-  await Counter.sync({ force: true })
-  await Kitty.sync({ force: true })
-  // start gnarly
+  await gnarly.reset(false)
+  // ^ reset the persistent store or not?
   await gnarly.shaka()
+  // ^ make the magic happen
 }
+// ...
 ```
 
-See a full example of a kitty tracker in [./examples/kitty/index.ts](./examples/kitty/index.ts)
+## Developer Installation / Setup
+
+clone this repo
+
+```
+lerna bootstrap
+lerna run test
+```
 
 ## TODO
 
 We'd love your help with any of this stuff
 
-- [x] literally just testing the code we've written at all, manually
-  - [x] does it work
 - [x] automated testing with mocha/chai/etc
-  - [ ] ourbit unit tests, with a stubbed store
+  - [ ] more ourbit unit tests
   - [ ] ourbit integration tests against sqlite (optional)
   - [ ] blockstream with stubbed getters calls ourbit correctly
-  - [ ] test that persistStateWithStore works corectly
   - [ ] test utils file
-  - [ ] gnarly itself works (integration test)
-- [ ] update README with example code
+  - [ ] gnarly integration tests
+- [x] update README with example code
 - [ ] any sort of overall architecture improvements
+- [ ] replace mobx-state-tree with mongodb & oplog
 - [ ] replace block reconciliation polling with a web3 filter
-- [ ] replace `getTransactions` with a generator that can page through results
+- [x] replace `getTransactions` with a generator that can page through results
 - [ ] what should the developer-friendly cli/binary look like? config ala redis? opinions wanted!
 ---
 
@@ -244,10 +177,6 @@ Any/all of this can change, but here are the technologies currently used. Note t
 
 ---
 
-- how did we get an 'add' patch for a key that hadn't been set yet?
-  - yeah, we're definitely getting 'add' patches for things when they don't actually exist yet
-  - yeah seriously, what's up with that? I doubt we're dropping connections, the uncaught exception handler would have exited
-  - is this annoying and weird and means we can't replay from failure yet
 - why doesn't an optional array inside of an optional map work?
   - if setting default, do we get patches for that?
   - if not, why the hell not?
