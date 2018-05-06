@@ -9,10 +9,6 @@ import {
   types,
 } from 'mobx-state-tree'
 
-import {
-  splitPath,
-} from './utils'
-
 import * as uuid from 'uuid'
 import { globalState } from './globalstate'
 
@@ -120,18 +116,15 @@ class Ourbit {
       // patches? how do we link the artifact with the event log?
       // console.log(globalState.currentReason)
       const patchId = uuid.v4()
-      const pathParts = splitPath(patch.path)
 
       // parse storeKey and keyKey from path and provide to patch
       patches.push({
         ...patch,
         id: patchId,
-        ...pathParts,
       })
       inversePatches.push({
         ...inversePatch,
         id: patchId,
-        ...pathParts,
       })
     }
     // watch for patches

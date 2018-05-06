@@ -9,17 +9,25 @@ import {
   IPathThing,
 } from './Ourbit'
 
-export const splitPath = (path: string): IPathThing => {
-  // Since the mobx patch path gets called with a leading '/',
-  // splitting the path('/') returns an array with the first element as
-  // an empty string
-  const [emptyString, reducerKey, domainKey, key, ...extra] = path.split('/')
-  return { reducerKey, domainKey, key, extra }
+export const parsePath = (path) => {
+  const [
+    _,
+    scope,
+    tableName,
+    pk,
+    indexOrKey,
+  ] = path.split('/')
+  return {
+    scope,
+    tableName,
+    pk,
+    indexOrKey,
+  }
 }
 
 export const toBN = (v: string | number | BN): BN => numberToBN(v)
 
-export const forEach = async (iterable, mapper, opts = { concurrency: 5 }) => {
+export const forEach = async (iterable, mapper, opts = { concurrency: 10 }) => {
   return pMap(iterable, mapper)
 }
 

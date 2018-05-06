@@ -60,6 +60,7 @@ export type TransactionProducer = (state: IStateTreeNode, block: Block) => Promi
 export interface IReducer {
   config: IReducerConfig
   stateType: IModelType<any, any>
+  createState: () => IStateTreeNode
   reduce: TransactionProducer
 }
 
@@ -70,14 +71,14 @@ export interface IReducer {
 export const makeStateReference = (reducers: IReducer[]): IStateTreeNode => {
   const storeTyping = reducers.reduce((memo, r) => ({
     ...memo,
-    [r.config.key]: types.optional(r.stateType, {}),
+    [r.config.key]: r.stateType,
   }), {})
 
   const Store = types.model('Store', storeTyping)
 
   const storeValues = reducers.reduce((memo, r) => ({
     ...memo,
-    [r.config.key]: r.stateType.create(),
+    [r.config.key]: r.createState(),
   }), {})
 
   return Store.create(storeValues)

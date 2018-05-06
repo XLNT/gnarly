@@ -1,7 +1,7 @@
 export {
-  default as SequelizeJSONArrayTypeStore,
-} from './SequelizeJSONArray'
+  default as SequelizeTypeStorer,
+} from './Sequelize'
 
 export {
-  default as SequelizeMapTypeStore,
-} from './SequelizeMap'
+  default as SequelizeKeyValueTypeStorer,
+} from './SequelizeKeyValue'

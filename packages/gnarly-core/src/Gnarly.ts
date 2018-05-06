@@ -13,6 +13,7 @@ import NodeApi from './models/NodeApi'
 import { IReducer, ReducerType } from './reducer'
 
 import { globalState } from './globalstate'
+import { parsePath } from './utils'
 
 export type OnBlockHandler = (block: Block) => () => Promise<void>
 
@@ -102,7 +103,8 @@ class Gnarly {
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {
-    const storer = this.typeStore[patch.reducerKey][patch.domainKey] as TypeStorer
+    const { scope } = parsePath(patch.path)
+    const storer = this.typeStore[scope].store as TypeStorer
     await storer(txId, patch)
   }
 }

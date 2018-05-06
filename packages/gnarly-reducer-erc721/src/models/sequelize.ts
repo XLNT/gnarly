@@ -1,16 +1,20 @@
 
 const sequelizeModels = (
-  key: string,
+  Sequelize: any,
   sequelize: any,
-  DataTypes: any,
+  key: string,
 ) => {
+  const { DataTypes } = Sequelize
   // ownerOf table
-  const ERC721OwnerOf = sequelize.define(`${key}_ownerOf`, {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  const ERC721Tokens = sequelize.define(`${key}_tokens`, {
     txId: { type: DataTypes.STRING },
     patchId: { type: DataTypes.STRING },
 
-    tokenId: { type: DataTypes.STRING },
+    // primary key
+    // @TODO - switch to id
+    tokenId: { type: DataTypes.STRING, primaryKey: true },
+
+    // 1:1 properties of token
     owner: { type: DataTypes.STRING },
   }, {
       indexes: [
@@ -20,14 +24,16 @@ const sequelizeModels = (
       ],
     })
 
-  // ownershipHistory table
-  const ERC721OwnershipHistory = sequelize.define(`${key}_ownershipHistory`, {
+  const ERC721TokenOwners = sequelize.define(`${key}_owners`, {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     txId: { type: DataTypes.STRING },
     patchId: { type: DataTypes.STRING },
 
-    tokenId: { type: DataTypes.STRING },
-    owners: { type: DataTypes.JSONB },
+    // properties of each owner
+    address: { type: DataTypes.STRING },
+
+    // this is a fk table so it needs an order key
+    order: { type: DataTypes.INTEGER },
   }, {
       indexes: [
         { fields: ['tokenId'] },
@@ -35,9 +41,22 @@ const sequelizeModels = (
       ],
     })
 
+  // token has many owners
+  ERC721Tokens.hasMany(ERC721TokenOwners, {
+    foreignKey: 'tokenId',
+    sourceKey: 'tokenId',
+    as: 'Owners',
+  })
+
+  ERC721TokenOwners.belongsTo(ERC721Tokens, {
+    foreignKey: 'tokenId',
+    targetKey: 'tokenId',
+    as: 'Token',
+  })
+
   return {
-    ERC721OwnerOf,
-    ERC721OwnershipHistory,
+    ERC721Tokens,
+    ERC721TokenOwners,
   }
 }
 

@@ -1,18 +1,25 @@
+import identity = require('lodash.identity')
 import Sequelize = require('sequelize')
 const { Op } = Sequelize
 
 import {
+  IPatch,
   IPersistInterface,
   ITransaction,
 } from '../Ourbit'
 
-const toInterface = (model) => ({
+const toInterface = (model): ITransaction => ({
   id: model.get('id'),
   patches: model.get('patches'),
   inversePatches: model.get('inversePatches'),
 })
 
-async function* batch (model, query = {}, batchSize = 1000, mapper = (t) => t) {
+async function* batch (
+  model: any,
+  query = {},
+  batchSize = 1000,
+  mapper: (v: any) => any = identity,
+) {
   const count = await model.count(query)
 
   if (count === 0) {
@@ -22,8 +29,6 @@ async function* batch (model, query = {}, batchSize = 1000, mapper = (t) => t) {
   const pages = Math.max(Math.round(count / batchSize), 1)
   let page = 1
 
-  console.log('pages;', pages)
-
   while (page <= pages) {
     const params = {
       ...query,
@@ -31,6 +36,7 @@ async function* batch (model, query = {}, batchSize = 1000, mapper = (t) => t) {
       limit: batchSize,
     }
 
+    // @TODO(shrugs) - replace with { raw: true }
     const gots = await model.findAll(params)
     yield gots.map(mapper)
     page = page + 1
