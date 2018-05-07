@@ -100,7 +100,7 @@ class Gnarly {
     }
 
     const diff = hd.end()
-', diff.change.details[0].size)
+    console.log('Array:', diff.change.details[0].size)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {
