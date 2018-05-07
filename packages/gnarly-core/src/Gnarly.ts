@@ -1,3 +1,4 @@
+import memwatch = require('memwatch-next')
 import { IStateTreeNode } from 'mobx-state-tree'
 import Blockstream from './Blockstream'
 import Ourbit, {
@@ -78,6 +79,7 @@ class Gnarly {
   }
 
   private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
+    const hd = new memwatch.HeapDiff()
     const block = await this.normalizeBlock(rawBlock)
 
     for (const reducer of this.reducers) {
@@ -96,6 +98,9 @@ class Gnarly {
           throw new Error(`Unexpected ReducerType ${reducer.config.type}`)
       }
     }
+
+    const diff = hd.end()
+', diff.change.details[0].size)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {

@@ -3,7 +3,8 @@
  * https://github.com/mobxjs/mobx/blob/master/src/core/globalstate.ts
  */
 
-import { memoize } from 'async-decorators'
+// @TODO(shrugs) - add memoize back and use redis or something
+// import { memoize } from 'async-decorators'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
 import NodeApi from './models/NodeApi'
@@ -19,10 +20,10 @@ export class GnarlyGlobals {
   public currentReason: string
   public currentMeta: any
 
-  public getLogs = memoize(async (options) => {
+  public getLogs = async (options) => {
     const logs = await this.api.getLogs(options)
     return logs.map((l) => new Log(null, l))
-  })
+  }
 
   public setApi = (api: NodeApi) => {
     this.api = api
