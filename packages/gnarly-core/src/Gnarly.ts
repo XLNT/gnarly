@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
 
-import { IStateTreeNode } from 'mobx-state-tree'
 import Blockstream from './Blockstream'
 import Ourbit, {
   IPatch,
@@ -22,11 +21,10 @@ export type OnBlockHandler = (block: Block) => () => Promise<void>
 class Gnarly extends EventEmitter {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
-
   public shouldResume: boolean = true
 
   constructor (
-    private stateReference: IStateTreeNode,
+    private stateReference: object,
     private storeInterface: IPersistInterface,
     private nodeEndpoint: string,
     private typeStore: ITypeStore,
@@ -112,7 +110,7 @@ class Gnarly extends EventEmitter {
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {
-    const { scope } = parsePath(patch.path)
+    const { scope } = parsePath(patch.op.path)
     const storer = this.typeStore[scope].store as TypeStorer
     await storer(txId, patch)
   }

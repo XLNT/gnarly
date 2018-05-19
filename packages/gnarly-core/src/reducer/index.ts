@@ -1,4 +1,3 @@
-import { IModelType, IStateTreeNode, types } from 'mobx-state-tree'
 import Block from '../models/Block'
 
 export enum ReducerType {
@@ -55,12 +54,11 @@ export interface IReducerConfig {
 /**
  * The reduce function takes state and block and produces action (implicit)
  */
-export type TransactionProducer = (state: IStateTreeNode, block: Block) => Promise<void>
+export type TransactionProducer = (state: object, block: Block) => Promise<void>
 
 export interface IReducer {
   config: IReducerConfig
-  stateType: IModelType<any, any>
-  createState: () => IStateTreeNode
+  state: object,
   reduce: TransactionProducer
 }
 
@@ -68,18 +66,9 @@ export interface IReducer {
  * Using the type information from the reducers array, build a root store
  * and a stateReference to that root store.
  */
-export const makeStateReference = (reducers: IReducer[]): IStateTreeNode => {
-  const storeTyping = reducers.reduce((memo, r) => ({
+export const makeStateReference = (reducers: IReducer[]): object => {
+  return reducers.reduce((memo, r) => ({
     ...memo,
-    [r.config.key]: r.stateType,
+    [r.config.key]: r.state,
   }), {})
-
-  const Store = types.model('Store', storeTyping)
-
-  const storeValues = reducers.reduce((memo, r) => ({
-    ...memo,
-    [r.config.key]: r.createState(),
-  }), {})
-
-  return Store.create(storeValues)
 }

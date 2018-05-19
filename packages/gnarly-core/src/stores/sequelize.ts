@@ -11,7 +11,6 @@ import {
 const toInterface = (model): ITransaction => ({
   id: model.get('id'),
   patches: model.get('patches'),
-  inversePatches: model.get('inversePatches'),
 })
 
 async function* batch (
@@ -67,7 +66,6 @@ class SequelizePersistInterface implements IPersistInterface {
         primaryKey: true,
       },
       patches: Sequelize.JSONB,
-      inversePatches: Sequelize.JSONB,
     })
   }
 

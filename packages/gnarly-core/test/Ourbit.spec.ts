@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import * as spies from 'chai-spies'
-import { clone, types } from 'mobx-state-tree'
+import { deepClone } from 'fast-json-patch'
 import 'mocha'
 import * as uuid from 'uuid'
 
@@ -12,24 +12,22 @@ const { expect, use } = chai
 use(spies)
 const sandbox = chai.spy.sandbox()
 
-// Helpers
-const KittyTracker = types
-  .model('KittyTracker', {
-    ownerOf: types.optional(types.map(types.string), {}),
-  })
-  .actions((self) => ({
-    transfer (tokenId, to) {
-      self.ownerOf.set(tokenId, to)
-    },
-  }))
+const kittyTracker = {
+  ownerOf: {},
+}
 
-const Store = types.model('Store', {
-  kittyTracker: types.optional(KittyTracker, {}),
-})
+const originalStateReference = {
+  kittyTracker,
+}
+
+let stateReference
+
+const transfer = (tokenId, to) => {
+  stateReference.kittyTracker.ownerOf[tokenId] = to
+}
 
 describe('Ourbit', () => {
   let ourbit
-  let stateReference
   let persistPatchSpy
   const storeInterface = new MockPersistInterface()
   let testFn
@@ -39,18 +37,20 @@ describe('Ourbit', () => {
     chai.spy.on(uuid, 'v4', () => {
       return 'mockPatch'
     })
-
-    stateReference = Store.create({
-      kittyTracker: KittyTracker.create(),
-    })
-
     persistPatchSpy = chai.spy()
 
+    stateReference = deepClone(originalStateReference)
+
     testFn = () => {
-      stateReference.kittyTracker.transfer('0x12345', '0x0987')
+      transfer('0x12345', '0x0987')
     }
 
-    sandbox.on(storeInterface, ['getTransactions', 'deleteTransaction', 'saveTransaction', 'getTransaction'])
+    sandbox.on(storeInterface, [
+      'getTransactions',
+      'deleteTransaction',
+      'saveTransaction',
+      'getTransaction',
+    ])
 
     ourbit = new Ourbit(stateReference, storeInterface, persistPatchSpy)
   })
@@ -63,9 +63,9 @@ describe('Ourbit', () => {
 
   describe('- processTransaction()', () => {
     it('should call saveTransaction with appropriate info', async () => {
-
-      ourbit.processTransaction('mockTransaction', testFn)
-      expect(storeInterface.saveTransaction).to.have.been.called.with(mockTransaction)
+      await ourbit.processTransaction('mockTransaction', testFn)
+      // tslint:disable-next-line no-unused-expression
+      expect(storeInterface.saveTransaction).to.have.been.called.once
     })
 
     it('should call persistPatch', async () => {
@@ -77,8 +77,10 @@ describe('Ourbit', () => {
 
   describe('- rollbackTransaction()', () => {
     it('should call deleteTransaction with appropriate info', async () => {
+      await ourbit.processTransaction('mockTransaction', testFn)
       await ourbit.rollbackTransaction('mockTransaction')
 
+      console.log('after:', stateReference)
       expect(storeInterface.deleteTransaction).to.have.been.called.with(mockTransaction)
     })
 
@@ -93,12 +95,12 @@ describe('Ourbit', () => {
     it('should rollback stateReference to previous state', async () => {
       await ourbit.processTransaction('mockTransaction', testFn)
 
-      let ownerOf = stateReference.kittyTracker.ownerOf.get('0x12345')
+      let ownerOf = stateReference.kittyTracker.ownerOf['0x12345']
       expect(ownerOf).to.equal('0x0987')
 
       await ourbit.rollbackTransaction('mockTransaction')
 
-      ownerOf = stateReference.kittyTracker.ownerOf.get('0x12345')
+      ownerOf = stateReference.kittyTracker.ownerOf['0x12345']
       expect(ownerOf).to.equal(undefined)
     })
   })
@@ -118,7 +120,7 @@ describe('Ourbit', () => {
 
     it('should bring stateReference to current state', async () => {
       await ourbit.resumeFromTxId('mockTransaction')
-      const ownerOf = stateReference.kittyTracker.ownerOf.get('0x12345')
+      const ownerOf = stateReference.kittyTracker.ownerOf['0x12345']
 
       expect(ownerOf).to.equal('0x0987')
     })

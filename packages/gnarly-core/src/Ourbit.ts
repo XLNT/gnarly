@@ -1,13 +1,14 @@
-import { transaction } from 'mobx'
 import {
   applyPatch,
-  IJsonPatch,
-  IStateTreeNode,
-  onPatch,
-} from 'mobx-state-tree'
+  generate,
+  observe,
+  Operation,
+  unobserve,
+ } from 'fast-json-patch'
 
 import * as uuid from 'uuid'
 import { globalState } from './globalstate'
+import { invertPatch, patchToOperation } from './utils'
 
 /*
  * ourbit:
@@ -28,31 +29,41 @@ import { globalState } from './globalstate'
  *  - accept transaction stream, calls the provided reducer over those events
  *    - processTransaction(tx_id, (stateReference) => {
  *        because(reason, () => {
- *          // do mobx manipulation
+ *          // do obj manipulation
  *        })
  *      })
  *  - handle persisting patches as they're produced (solid-state-interpreter-ing)
- *    - mobx.onPatch(storeInterface, (patch) => { storeInterface.persistPatch(tx_id) })
+ *    - onPatch(storeInterface, (patch) => { storeInterface.persistPatch(tx_id) })
  *  - handle rollbacks
  *    - urbit.rollback(tx_id)
- *      (mobx.applyPatch(stateReference, reversePatchesByTxId(tx_id)))
+ *      (applyPatch(stateReference, reversePatchesByTxId(tx_id)))
  */
 
-export interface IPatch extends IJsonPatch, IPathThing {
-  id: string
+/**
+ * a gnarly-specific path generated from patch.op.path
+ */
+export interface IPathThing {
+  scope: string
+  tableName: string
+  pk: string
+  indexOrKey: string
 }
 
+/**
+ * A full patch is the original patch plus an id and a previous value for inverting.
+ */
+export interface IPatch {
+  id: string
+  op: Operation,
+  oldValue?: any
+}
+
+/**
+ * A transaction is a set of patches.
+ */
 export interface ITransaction {
   id: string
   patches: IPatch[]
-  inversePatches: IPatch[]
-}
-
-export interface IPathThing {
-  reducerKey: string
-  domainKey: string
-  key: string
-  extra: string[]
 }
 
 export type TypeStorer = (txId: string, patch: IPatch) => Promise<void>
@@ -78,23 +89,17 @@ export interface IPersistInterface {
   setup (reset: boolean): Promise<any>
 }
 
+/**
+ * This function accept patches and persists them to a store.
+ */
 type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
 
 class Ourbit {
-  public targetState: IStateTreeNode
-  public store: IPersistInterface
-  private persistPatch: PersistPatchHandler
-
-  private skipping: boolean = false
-
   constructor (
-    targetState: IStateTreeNode,
-    store: IPersistInterface,
-    persistPatch: PersistPatchHandler,
+    public targetState: object,
+    public store: IPersistInterface,
+    private persistPatch: PersistPatchHandler,
   ) {
-    this.targetState = targetState
-    this.store = store
-    this.persistPatch = persistPatch
   }
 
   /**
@@ -103,44 +108,27 @@ class Ourbit {
    * @param fn mutating function
    */
   public processTransaction = async (txId: string, fn: () => Promise<void>) => {
-    const patches = []
-    const inversePatches = []
-
-    const collectPatches = (patch: IJsonPatch, inversePatch: IJsonPatch) => {
-      // we have access to reason and meta here, thanks to the global
-      // so we need to log that in the database to track why patches were made
-      // // do we need to replace the json blob with a linked array of
-      // patches? how do we link the artifact with the event log?
-      // console.log(globalState.currentReason)
-      const patchId = uuid.v4()
-
-      // parse storeKey and keyKey from path and provide to patch
-      patches.push({
-        ...patch,
-        id: patchId,
-      })
-      inversePatches.push({
-        ...inversePatch,
-        id: patchId,
-      })
-    }
     // watch for patches
-    const dispose = onPatch(
-      this.targetState,
-      collectPatches,
-    )
+    const observer = observe(this.targetState)
 
     // produce state changes
     await fn()
 
+    // collect and annotate patches
+    const patches = generate(observer)
+      .map((op): IPatch => ({
+        id: uuid.v4(),
+        op,
+        // @TODO(shrugs) - add oldValue here
+      }))
+
     // dispose watcher
-    dispose()
+    unobserve(this.targetState, observer)
 
     // commit transaction
     await this.commitTransaction({
       id: txId,
       patches,
-      inversePatches,
     })
   }
 
@@ -151,7 +139,6 @@ class Ourbit {
    */
   public rollbackTransaction = async (txId: string) => {
     const tx = await this.store.getTransaction(txId)
-    applyPatch(this.targetState, tx.inversePatches)
     await this.uncommitTransaction(tx)
   }
 
@@ -163,9 +150,9 @@ class Ourbit {
     console.log(`[ourbit] Resuming from txId ${txId}`)
     const allTxs = await this.store.getAllTransactionsTo(txId)
     for await (const txBatch of allTxs) {
-      txBatch.forEach((tx) => {
+      (txBatch as ITransaction[]).forEach((tx) => {
         console.log('[applyPatch]', tx.id, tx.patches.length)
-        applyPatch(this.targetState, tx.patches)
+        applyPatch(this.targetState, tx.patches.map(patchToOperation))
       })
     }
   }
@@ -177,13 +164,22 @@ class Ourbit {
   }
 
   private commitTransaction = async (tx: ITransaction) => {
+    // save transaction
     await this.store.saveTransaction(tx)
+    // apply to store
     await this.notifyPatches(tx.id, tx.patches)
+    // (no need to apply locally because they've been applied by the reducer)
   }
 
   private uncommitTransaction = async (tx: ITransaction) => {
+    // construct inverse patches
+    const inversePatches = tx.patches.map(invertPatch)
+    // apply locally
+    applyPatch(this.targetState, inversePatches.map(patchToOperation))
+    // apply to store
+    await this.notifyPatches(tx.id, inversePatches)
+    // delete transaction
     await this.store.deleteTransaction(tx)
-    await this.notifyPatches(tx.id, tx.inversePatches)
   }
 }
 

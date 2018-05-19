@@ -6,35 +6,30 @@ import {
 
 export const mockPatch: IPatch = {
   id: 'mockPatch',
-  domainKey: 'ownerOf',
-  key: '0x12345',
-  op: 'add',
-  extra: [],
-  path: '/kittyTracker/ownerOf/0x12345',
-  reducerKey: 'kittyTracker',
-  value: '0x0987',
-}
-
-export const mockInversePatch: IPatch = {
-  id: 'mockPatch',
-  domainKey: 'ownerOf',
-  key: '0x12345',
-  op: 'remove',
-  extra: [],
-  path: '/kittyTracker/ownerOf/0x12345',
-  reducerKey: 'kittyTracker',
+  op: {
+    op: 'add',
+    path: '/kittyTracker/ownerOf/0x12345',
+    value: '0x0987',
+  },
+  oldValue: undefined,
 }
 
 export const mockTransaction: ITransaction = {
   id: 'mockTransaction',
   patches: [mockPatch],
-  inversePatches: [mockInversePatch],
 }
 
 class MockPersistInterface implements IPersistInterface {
 
   public setup = async (reset: boolean = false) => {
     // nothing to be done
+  }
+
+  public async getAllTransactionsTo (toTxId: null | string):
+    Promise<any> {
+      return async function* () {
+        yield [mockTransaction]
+      }
   }
 
   public async getTransactions (fromTxId: null | string): Promise<ITransaction[]> {

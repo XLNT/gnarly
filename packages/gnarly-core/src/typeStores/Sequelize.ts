@@ -35,7 +35,7 @@ const buildTypeStore = (Sequelize, schema) => async (txId, patch) => {
     tableName,
     pk,
     indexOrKey,
-  } = parsePath(patch.path)
+  } = parsePath(patch.op.path)
 
   const hasIndexOrKey = indexOrKey !== undefined
   // ^ do we have an index OR a key?

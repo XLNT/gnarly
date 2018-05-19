@@ -1,6 +1,5 @@
 import * as chai from 'chai'
 import * as spies from 'chai-spies'
-import { clone, types } from 'mobx-state-tree'
 import 'mocha'
 import * as uuid from 'uuid'
 
@@ -12,20 +11,12 @@ import MockPersistInterface, { mockPatch, mockTransaction } from './helpers/Mock
 chai.use(spies)
 const sandbox = chai.spy.sandbox()
 
-// Helpers
-const KittyTracker = types
-  .model('KittyTracker', {
-    ownerOf: types.optional(types.map(types.string), {}),
-  })
-  .actions((self) => ({
-    transfer (tokenId, to) {
-      self.ownerOf.set(tokenId, to)
-    },
-  }))
-
-const Store = types.model('Store', {
-  kittyTracker: types.optional(KittyTracker, {}),
-})
+const kittyTracker = {
+  ownerOf: {},
+}
+const transfer = (tokenId, to) => {
+  kittyTracker.ownerOf[tokenId] = to
+}
 
 describe('Blockstream', () => {
   let blockstream
@@ -41,9 +32,7 @@ describe('Blockstream', () => {
       return 'mockPatch'
     })
 
-    stateReference = Store.create({
-      kittyTracker: KittyTracker.create(),
-    })
+    stateReference = kittyTracker
 
     onBlockSpy = chai.spy()
     persistPatchSpy = chai.spy()
