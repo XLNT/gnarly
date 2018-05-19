@@ -62,6 +62,9 @@ const makeReducer = (
         ),
       ),
     })
+    .volatile((self) => ({
+
+    }))
     .actions((self) => ({
       transfer (tokenId, from, to) {
         console.log(`[op] transferring token ${tokenId} to ${to}`)

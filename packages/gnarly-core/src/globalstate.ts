@@ -30,7 +30,8 @@ export class GnarlyGlobals {
   }
 
   public addABI = (address: string, abi: IABIItemInput[]) => {
-    this.abis[address.toLowerCase()] = abi.map(enhanceAbiItem)
+    this.abis[address.toLowerCase()] = (this.abis[address.toLowerCase()] || [])
+      .concat(abi.map(enhanceAbiItem))
   }
 
   public getABI = (address: string): ABIItemSet => this.abis[address.toLowerCase()]

@@ -1,12 +1,9 @@
 import { transaction } from 'mobx'
 import {
   applyPatch,
-  getSnapshot,
   IJsonPatch,
   IStateTreeNode,
   onPatch,
-  onSnapshot,
-  types,
 } from 'mobx-state-tree'
 
 import * as uuid from 'uuid'

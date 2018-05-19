@@ -1,7 +1,7 @@
 {
-  "name": "@xlnt/gnarly-reducer-erc721",
+  "name": "@xlnt/gnarly-reducer-events",
   "version": "0.1.10-2",
-  "description": "A gnarly reducer for ERC721 Token information.",
+  "description": "A gnarly reducer for arbitrary event information",
   "main": "lib/index.js",
   "scripts": {
     "prepare": "npm run build",
@@ -22,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:XLNT/gnarly.git"
+    "url": "git@github.com:XLNT/gnarly"
   },
   "author": "Matt Condon <matt@XLNT.co>",
   "license": "Apache-2.0",

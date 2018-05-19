@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events'
+
 import { IStateTreeNode } from 'mobx-state-tree'
 import Blockstream from './Blockstream'
 import Ourbit, {
@@ -17,7 +19,7 @@ import { parsePath } from './utils'
 
 export type OnBlockHandler = (block: Block) => () => Promise<void>
 
-class Gnarly {
+class Gnarly extends EventEmitter {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
 
@@ -30,6 +32,7 @@ class Gnarly {
     private typeStore: ITypeStore,
     private reducers: IReducer[],
   ) {
+    super()
     globalState.setApi(new NodeApi(nodeEndpoint))
 
     this.ourbit = new Ourbit(
@@ -44,16 +47,20 @@ class Gnarly {
     )
   }
 
-  public shaka = async () => {
+  public shaka = async (fromBlockHash: string) => {
     let latestBlockHash
 
-    if (!this.shouldResume && process.env.LATEST_BLOCK_HASH) {
-      latestBlockHash = process.env.LATEST_BLOCK_HASH
+    if (this.shouldResume) {
+      // we reset, so let's start from scratch
+      latestBlockHash = fromBlockHash || null
+      console.log(`Explicitely starting from ${latestBlockHash || 'HEAD'}`)
     } else {
+      // otherwise, let's get some info and replay state
       const latestTransaction = await this.storeInterface.getLatestTransaction()
       latestBlockHash = latestTransaction ? latestTransaction.id : null
       // ^ latest transaction id happens to also be the latest block hash
       // so update this line if that ever becomes not-true
+      console.log(`Attempting to reload state from ${latestBlockHash || 'HEAD'}`)
       // let's re-hydrate local state by replaying transactions
       await this.ourbit.resumeFromTxId(latestTransaction.id)
     }
@@ -96,6 +103,8 @@ class Gnarly {
           throw new Error(`Unexpected ReducerType ${reducer.config.type}`)
       }
     }
+
+    this.emit('block', block)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {

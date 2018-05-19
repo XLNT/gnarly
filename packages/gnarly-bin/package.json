@@ -1,7 +1,7 @@
 {
-  "name": "@xlnt/gnarly-reducer-erc721",
+  "name": "@xlnt/gnarly-bin",
   "version": "0.1.10-2",
-  "description": "A gnarly reducer for ERC721 Token information.",
+  "description": "A simple executable for running gnarly reducers.",
   "main": "lib/index.js",
   "scripts": {
     "prepare": "npm run build",
@@ -26,18 +26,18 @@
   },
   "author": "Matt Condon <matt@XLNT.co>",
   "license": "Apache-2.0",
-  "peerDependencies": {
-    "@xlnt/gnarly-core": ">=0.1.10-2",
-    "mobx": "^4.2.0",
-    "mobx-state-tree": "^2.0.4"
-  },
   "devDependencies": {
-    "@xlnt/gnarly-core": ">=0.1.10-2",
+    "dotenv": "^5.0.1",
     "ts-node": "^6.0.3",
     "tslint": "^5.9.1",
     "typescript": "^2.8.3"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@xlnt/gnarly-core": ">=0.1.10-2",
+    "@xlnt/gnarly-reducer-erc721": ">=0.1.10-2",
+    "sequelize": "^4.37.7"
   }
 }

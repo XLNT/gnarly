@@ -53,14 +53,14 @@ export default class Log {
     this.topics = log.topics
   }
 
-  public parse = () => {
+  public parse = (): boolean => {
     const registeredAbi = globalState.getABI(this.address)
 
-    if (!registeredAbi) { return }
+    if (!registeredAbi) { return false }
 
     // ^ we do not know about this contract, so we can't try to parse it
 
-    if (this.topics.length === 0) { return }
+    if (this.topics.length === 0) { return false }
     // ^ there are no topics, which means this is an anonymous event or something
 
     // the first argument in topics (from solidity) is always the event signature
@@ -70,7 +70,7 @@ export default class Log {
     const logAbiItem = registeredAbi.find((item) => item.signature === eventSig)
     if (logAbiItem === undefined) {
       // ^ we don't have an input that matches this event (incomplete ABI?)
-      return
+      return false
     }
 
     const args = abi.decodeLog(
@@ -85,5 +85,7 @@ export default class Log {
     this.signature = logAbiItem.signature
 
     this.args = args
+
+    return true
   }
 }

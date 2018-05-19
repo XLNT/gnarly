@@ -15,6 +15,7 @@ export { default as Transaction } from './models/Transaction'
 export { default as ExternalTransaction } from './models/ExternalTransaction'
 export { default as InternalTransaction } from './models/InternalTransaction'
 export { default as Log } from './models/Log'
+export { default as ABIITem, IABIItemInput } from './models/ABIItem'
 
 export {
   default,
