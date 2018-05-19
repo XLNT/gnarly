@@ -1,6 +1,3 @@
-import { observable } from 'mobx'
-import { types } from 'mobx-state-tree'
-
 import {
   addABI,
   addressesEqual,
@@ -26,32 +23,29 @@ const makeReducer = (
     addABI(addr, config[addr])
   }
 
-  // create the state type
-  const EventTracker = types
-    .model({
-      events: types.array(
-        types.model({
-          address: types.string,
-          event: types.string,
-          eventName: types.string,
-          signature: types.string,
-          args: types.frozen,
-        }),
-      ),
-    })
-    .actions((self) => ({
-      emit (log) {
-        self.events.push({
-          address: log.address,
-          event: log.event,
-          eventName: log.eventName,
-          signature: log.signature,
-          args: log.args,
-        })
-      },
-    }))
+  interface IEventTracker {
+    events: Array<{
+      address: string,
+      event: string,
+      eventName: string,
+      signature: string,
+      args: object,
+    }>
+  }
 
-  type IEventTracker = typeof EventTracker.Type
+  const eventTracker: IEventTracker = { events: [] }
+
+  const makeActions = (state: IEventTracker) => ({
+    emit: (log) => {
+      state.events.push({
+        address: log.address,
+        event: log.event,
+        eventName: log.eventName,
+        signature: log.signature,
+        args: log.args,
+      })
+    },
+  })
 
   // return the reducer
   return {
@@ -59,9 +53,9 @@ const makeReducer = (
       type: ReducerType.TimeVarying,
       key,
     },
-    stateType: EventTracker,
-    createState: () => EventTracker.create({ events: [] }),
+    state: eventTracker,
     reduce: async (state: IEventTracker, block: Block): Promise<void> => {
+      const actions = makeActions(state)
       const logs = await forEach(addrs, async (addr) => getLogs({
         fromBlock: toHex(block.number),
         toBlock: toHex(block.number),
@@ -72,7 +66,7 @@ const makeReducer = (
         const recognized = log.parse()
         if (recognized) {
           because('EVENT_EMITTED', {}, () => {
-            state.emit(log)
+            actions.emit(log)
           })
         }
       })

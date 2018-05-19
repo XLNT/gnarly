@@ -108,22 +108,29 @@ class Ourbit {
    * @param fn mutating function
    */
   public processTransaction = async (txId: string, fn: () => Promise<void>) => {
+    const operations = []
     // watch for patches
-    const observer = observe(this.targetState)
+    const observer = observe(this.targetState, (ops) => {
+      console.log(ops)
+      ops.forEach((op) => { operations.push(op) })
+    })
+
+    globalState.setGeneratePatches(() => {
+      generate(observer)
+    })
 
     // produce state changes
     await fn()
 
-    // collect and annotate patches
-    const patches = generate(observer)
-      .map((op): IPatch => ({
+    // dispose watcher
+    unobserve(this.targetState, observer)
+
+    // annotate patches
+    const patches = operations.map((op): IPatch => ({
         id: uuid.v4(),
         op,
         // @TODO(shrugs) - add oldValue here
       }))
-
-    // dispose watcher
-    unobserve(this.targetState, observer)
 
     // commit transaction
     await this.commitTransaction({

@@ -58,7 +58,10 @@ export default class NodeApi {
     })
     const data = await res.json()
     if (data.result === undefined || data.result === null) {
-      throw new Error(`Invalid JSON response: ${JSON.stringify(data, null, 2)}`)
+      throw new Error(`
+        Invalid JSON response: ${JSON.stringify(data, null, 2)}
+        for ${method} ${JSON.stringify(params, null, 2)}
+      `)
     }
 
     return data.result

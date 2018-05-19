@@ -48,7 +48,7 @@ class Gnarly extends EventEmitter {
   public shaka = async (fromBlockHash: string) => {
     let latestBlockHash
 
-    if (this.shouldResume) {
+    if (!this.shouldResume) {
       // we reset, so let's start from scratch
       latestBlockHash = fromBlockHash || null
       console.log(`Explicitely starting from ${latestBlockHash || 'HEAD'}`)
@@ -60,7 +60,7 @@ class Gnarly extends EventEmitter {
       // so update this line if that ever becomes not-true
       console.log(`Attempting to reload state from ${latestBlockHash || 'HEAD'}`)
       // let's re-hydrate local state by replaying transactions
-      await this.ourbit.resumeFromTxId(latestTransaction.id)
+      await this.ourbit.resumeFromTxId(latestBlockHash)
     }
 
     // and now catch up from latestBlockHash

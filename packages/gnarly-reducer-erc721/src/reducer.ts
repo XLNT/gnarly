@@ -1,16 +1,12 @@
-import { observable } from 'mobx'
-import { types } from 'mobx-state-tree'
-
 import {
   addABI,
-  addressesEqual,
   because,
   Block,
-  forEach,
   getLogs,
   IReducer,
   ReducerType,
   toHex,
+  operation,
 } from '@xlnt/gnarly-core'
 
 const makeReducer = (
@@ -42,46 +38,42 @@ const makeReducer = (
     type: 'function',
   }])
 
-  // create the state type
-  const ERC721Tracker = types
-    .model({
-      // a table with primary, unique keys
-      tokens: types.map(
-        types.model({
-          tokenId: types.string,
-          owner: types.string,
-        }),
-      ),
-      // a table with foreign keys
-      owners: types.map( // [identifier]: types.array
-        types.array(
-          types.model({
-            tokenId: types.string,
-            address: types.string,
-          }),
-        ),
-      ),
-    })
-    .volatile((self) => ({
-
-    }))
-    .actions((self) => ({
-      transfer (tokenId, from, to) {
-        console.log(`[op] transferring token ${tokenId} to ${to}`)
-        const existing = self.tokens.get(tokenId)
-        if (existing) {
-          existing.owner = to
-          self.owners.get(tokenId).push({ tokenId, address: to })
-        } else {
-          // init
-          self.tokens.set(tokenId, { tokenId, owner: to })
-          // @TODO - figure out why the setted array _must_ be observable
-          self.owners.set(tokenId, observable([{ tokenId, address: to }]))
-        }
+  interface IERC721Tracker {
+    tokens: {
+      [id: string]: {
+        tokenId: string,
+        owner: string,
       },
-    }))
+    },
+    owners: {
+      [id: string]: Array<{
+        tokenId: string,
+        address: string,
+      }>,
+    }
+  }
+  const erc721Tracker: IERC721Tracker = { tokens: {}, owners: {} }
 
-  type IERC721Tracker = typeof ERC721Tracker.Type
+  const makeActions = (state) => ({
+    transfer: (tokenId: string, from: string, to: string) => {
+      console.log(`[op] transferring token ${tokenId} to ${to}`)
+      const existing = state.tokens[tokenId]
+      if (existing) {
+        // push
+        existing.owner = to
+        state.owners[tokenId].push({ tokenId, address: to })
+      } else {
+        // init
+        // order-dependent because of foreign key
+        operation(() => {
+          state.tokens[tokenId] = { tokenId, owner: to }
+        })
+        operation(() => {
+          state.owners[tokenId] = [{ tokenId, address: to }]
+        })
+      }
+    },
+  })
 
   // return the reducer
   return {
@@ -89,9 +81,9 @@ const makeReducer = (
       type: ReducerType.TimeVarying,
       key,
     },
-    stateType: ERC721Tracker,
-    createState: () => ERC721Tracker.create({ tokens: {}, owners: {} }),
+    state: erc721Tracker,
     reduce: async (state: IERC721Tracker, block: Block): Promise<void> => {
+      const actions = makeActions(state)
       const logs = await getLogs({
         fromBlock: toHex(block.number),
         toBlock: toHex(block.number),
@@ -104,7 +96,7 @@ const makeReducer = (
           const { to, from, tokenId } = log.args
 
           because(reason, {}, () => {
-            state.transfer(tokenId, from, to)
+            actions.transfer(tokenId, from, to)
           })
         }
       })

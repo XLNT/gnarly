@@ -5,6 +5,7 @@
 
 // @TODO(shrugs) - add memoize back and use redis or something
 // import { memoize } from 'async-decorators'
+import { Observer } from 'fast-json-patch'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
 import NodeApi from './models/NodeApi'
@@ -19,6 +20,7 @@ export class GnarlyGlobals {
 
   public currentReason: string
   public currentMeta: any
+  private generatePatches: () => void
 
   public getLogs = async (options) => {
     const logs = await this.api.getLogs(options)
@@ -50,6 +52,17 @@ export class GnarlyGlobals {
 
     this.currentReason = null
     this.currentMeta = null
+  }
+
+  public operation = (fn: () => void) => {
+    fn()
+    if (this.generatePatches) {
+      this.generatePatches()
+    }
+  }
+
+  public setGeneratePatches = (fn: () => void) => {
+    this.generatePatches = fn
   }
 }
 

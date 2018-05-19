@@ -1,5 +1,7 @@
 import isPlainObject = require('lodash.isplainobject')
 
+import { AddOperation, ReplaceOperation } from 'fast-json-patch/lib/core'
+import { IPatch } from '../Ourbit'
 import {
   parsePath,
 } from '../utils'
@@ -27,7 +29,10 @@ const getForeignKeys = (model) => Object.keys(model.rawAttributes).filter((k) =>
  * without the dialect configuration or something, it's really dumb
  * https://github.com/sequelize/sequelize/issues/9121
  */
-const buildTypeStore = (Sequelize, schema) => async (txId, patch) => {
+const buildTypeStore = (Sequelize, schema) => async (
+  txId: string,
+  patch: IPatch,
+) => {
   const { Op, QueryTypes, literal } = Sequelize
 
   const {
@@ -47,7 +52,6 @@ const buildTypeStore = (Sequelize, schema) => async (txId, patch) => {
   const {
     id: patchId,
     op,
-    value,
   } = patch
 
   const withMeta = (v) => ({...v, txId, patchId})
@@ -78,12 +82,13 @@ const buildTypeStore = (Sequelize, schema) => async (txId, patch) => {
     tableName: ${tableName},
     pk: ${pk},
     indexOrKey: ${indexOrKey},
-    op: ${op},
-    value: ${JSON.stringify(value)},
+    op: ${op.op},
+    value: ${JSON.stringify((op as any).value)},
     selector: ${selector}
   `)
-  switch (op) {
+  switch (op.op) {
     case 'add': {
+      const value = (op as AddOperation<any>).value
       if (isPlainObject(value)) {
         // we're inserting a row
         if (isIndex) {
@@ -134,6 +139,7 @@ const buildTypeStore = (Sequelize, schema) => async (txId, patch) => {
       break
     }
     case 'replace': {
+      const value = (op as ReplaceOperation<any>).value
       if (!hasIndexOrKey || isIndex) {
         throw new Error(`
           No 'indexOrKey' in op ${op}
