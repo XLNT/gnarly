@@ -27,9 +27,7 @@
   "author": "Matt Condon <matt@XLNT.co>",
   "license": "Apache-2.0",
   "peerDependencies": {
-    "@xlnt/gnarly-core": ">=0.1.10-2",
-    "mobx": "^4.2.0",
-    "mobx-state-tree": "^2.0.4"
+    "@xlnt/gnarly-core": ">=0.1.10-2"
   },
   "devDependencies": {
     "@xlnt/gnarly-core": ">=0.1.10-2",

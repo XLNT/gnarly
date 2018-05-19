@@ -2895,18 +2895,6 @@ mkdirp@*, mkdirp@0.5.1, "mkdirp@>=0.5 0", mkdirp@^0.5.0, mkdirp@^0.5.1, mkdirp@~
   dependencies:
     minimist "0.0.8"
 
-mobx-state-tree@^2.0.4:
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/mobx-state-tree/-/mobx-state-tree-2.0.4.tgz#3aa20925d399f4bd0b6049d3a6725c8e137452d4"
-
-mobx-utils@^3.2.2:
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/mobx-utils/-/mobx-utils-3.2.2.tgz#1979fe85a27df496d4f17af288813ac4fd356fd5"
-
-mobx@^4.2.0:
-  version "4.2.1"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-4.2.1.tgz#dd4190daf1b43d41a3a228585253f9970b0a27dd"
-
 mocha@^5.0.4:
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/mocha/-/mocha-5.1.1.tgz#b774c75609dac05eb48f4d9ba1d827b97fde8a7b"

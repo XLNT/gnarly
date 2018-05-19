@@ -27,9 +27,6 @@
   },
   "homepage": "https://github.com/XLNT/gnarly#readme",
   "peerDependencies": {
-    "mobx": "^4.2.0",
-    "mobx-state-tree": "^2.0.4",
-    "mobx-utils": "^3.2.2"
   },
   "dependencies": {
     "bn.js": "^4.11.8",
