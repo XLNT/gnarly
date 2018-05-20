@@ -28,31 +28,31 @@ TBD - check `gnarly-bin` for inspo.
 
 First, clone this repo.
 
-```
+```bash
 lerna bootstrap
 ```
 
 Want to watch all of the files and recompile the typescript?
 
-```
+```bash
 yarn run watch-ts
 ```
 
 Want to build all of the typescript projects once?
 
-```
+```bash
 yarn run build-ts
 ```
 
 Want to build a mac and linux binary of `gnarly-bin`?
 
-```
+```bash
 yarn run build-bin
 ```
 
 Want to package that into a docker container?
 
-```
+```bash
 yarn run docker-build
 # yarn run docker-push
 ```
