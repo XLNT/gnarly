@@ -80,7 +80,6 @@ describe('Ourbit', () => {
       await ourbit.processTransaction('mockTransaction', testFn)
       await ourbit.rollbackTransaction('mockTransaction')
 
-      console.log('after:', stateReference)
       expect(storeInterface.deleteTransaction).to.have.been.called.with(mockTransaction)
     })
 

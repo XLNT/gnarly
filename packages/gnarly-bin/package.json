@@ -3,6 +3,7 @@
   "version": "0.1.10-2",
   "description": "A simple executable for running gnarly reducers.",
   "main": "lib/index.js",
+  "bin": "lib/index.js",
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run build-ts && npm run tslint",
@@ -12,7 +13,8 @@
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "tslint": "tslint --project ."
+    "tslint": "tslint --project .",
+    "pkg": "pkg --targets node9-linux-x64,node9-macos-x64 --out-path ./pkg ."
   },
   "files": [
     "lib"
@@ -28,6 +30,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "dotenv": "^5.0.1",
+    "pkg": "^4.3.1",
     "ts-node": "^6.0.3",
     "tslint": "^5.9.1",
     "typescript": "^2.8.3"

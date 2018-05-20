@@ -13,7 +13,11 @@
     "tslint": "^5.9.1"
   },
   "scripts": {
-    "watch-ts": "lerna exec --parallel -- yarn run watch-ts"
+    "watch-ts": "lerna exec --parallel -- yarn run watch-ts",
+    "build-ts": "lerna exec --parallel -- yarn run build-ts",
+    "build-bin": "lerna run pkg --scope=@xlnt/gnarly-bin && yarn run docker-build",
+    "docker-build": "docker build -t shrugs/gnarly-test:latest .",
+    "docker-push": "docker push shrugs/gnarly-test:latest"
   },
   "workspaces": ["packages/*"]
 }

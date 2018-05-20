@@ -111,7 +111,6 @@ class Ourbit {
     const operations = []
     // watch for patches
     const observer = observe(this.targetState, (ops) => {
-      console.log(ops)
       ops.forEach((op) => { operations.push(op) })
     })
 

@@ -28,7 +28,7 @@ const main = async () => {
   const connectionString = process.env.CONNECTION_STRING
 
   const sequelize = new Sequelize(connectionString, {
-    // logging: false,
+    logging: false,
     pool: {
       max: 5,
       min: 0,

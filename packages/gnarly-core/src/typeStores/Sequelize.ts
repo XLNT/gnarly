@@ -77,15 +77,15 @@ const buildTypeStore = (Sequelize, schema) => async (
     await model.create(withMeta(properties))
   }
 
-  console.log(`
-    scope: ${scope},
-    tableName: ${tableName},
-    pk: ${pk},
-    indexOrKey: ${indexOrKey},
-    op: ${op.op},
-    value: ${JSON.stringify((op as any).value)},
-    selector: ${selector}
-  `)
+  // console.log(`
+  //   scope: ${scope},
+  //   tableName: ${tableName},
+  //   pk: ${pk},
+  //   indexOrKey: ${indexOrKey},
+  //   op: ${op.op},
+  //   value: ${JSON.stringify((op as any).value)},
+  //   selector: ${selector}
+  // `)
   switch (op.op) {
     case 'add': {
       const value = (op as AddOperation<any>).value
@@ -188,7 +188,7 @@ const buildTypeStore = (Sequelize, schema) => async (
       throw new Error('wut')
   }
 
-  console.log()
+  // console.log()
 }
 
 export default buildTypeStore
