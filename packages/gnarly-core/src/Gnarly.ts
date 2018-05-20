@@ -55,9 +55,7 @@ class Gnarly extends EventEmitter {
     } else {
       // otherwise, let's get some info and replay state
       const latestTransaction = await this.storeInterface.getLatestTransaction()
-      latestBlockHash = latestTransaction ? latestTransaction.id : null
-      // ^ latest transaction id happens to also be the latest block hash
-      // so update this line if that ever becomes not-true
+      latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
       console.log(`Attempting to reload state from ${latestBlockHash || 'HEAD'}`)
       // let's re-hydrate local state by replaying transactions
       await this.ourbit.resumeFromTxId(latestBlockHash)

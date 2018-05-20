@@ -68,6 +68,7 @@ export interface IPatch {
  */
 export interface ITransaction {
   id: string
+  blockHash: string,
   patches: IPatch[]
 }
 
@@ -95,6 +96,10 @@ export interface IPersistInterface {
   setup (reset: boolean): Promise<any>
 }
 
+interface ITxExtra {
+  blockHash: string
+}
+
 /**
  * This function accept patches and persists them to a store.
  */
@@ -113,7 +118,11 @@ class Ourbit {
    * @param txId transaction id
    * @param fn mutating function
    */
-  public processTransaction = async (txId: string, fn: () => Promise<void>) => {
+  public processTransaction = async (
+    txId: string,
+    fn: () => Promise<void>,
+    extra: ITxExtra = { blockHash: '' },
+  ) => {
     const operations: IOperation[] = []
 
     const observer = observe(this.targetState, (ops) => {
@@ -146,6 +155,7 @@ class Ourbit {
     await this.commitTransaction({
       id: txId,
       patches,
+      ...extra,
     })
   }
 

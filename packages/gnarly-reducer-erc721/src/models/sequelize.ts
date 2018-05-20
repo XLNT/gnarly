@@ -35,11 +35,11 @@ const sequelizeModels = (
     // this is a fk table so it needs an order key
     order: { type: DataTypes.INTEGER },
   }, {
-      indexes: [
-        { fields: ['tokenId'] },
-        { fields: ['txId'] },
-      ],
-    })
+    indexes: [
+      { fields: ['tokenId'] },
+      { fields: ['txId'] },
+    ],
+  })
 
   // token has many owners
   ERC721Tokens.hasMany(ERC721TokenOwners, {

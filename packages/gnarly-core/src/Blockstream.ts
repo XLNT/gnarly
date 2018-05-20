@@ -112,6 +112,9 @@ class BlockStream {
       return this.ourbit.processTransaction(
         block.hash,
         this.onBlock(block, this.syncing),
+        {
+          blockHash: block.hash,
+        },
       )
     }
 

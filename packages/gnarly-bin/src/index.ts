@@ -67,7 +67,10 @@ const main = async () => {
     ),
   })
 
-  const storeInterface = new SequelizePersistInterface(connectionString)
+  const storeInterface = new SequelizePersistInterface(
+    Sequelize,
+    sequelize,
+  )
 
   const gnarly = new Gnarly(
     stateReference,

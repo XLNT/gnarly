@@ -1,6 +1,4 @@
 import identity = require('lodash.identity')
-import Sequelize = require('sequelize')
-const { Op } = Sequelize
 
 const raw = true
 
@@ -40,34 +38,35 @@ async function* batch (
 }
 
 class SequelizePersistInterface implements IPersistInterface {
-  private sequelize
-
   private Transaction
+  private Patch
 
   constructor (
-    private connectionString: string,
+    private Sequelize: any,
+    private sequelize: any,
   ) {
-    this.sequelize = new Sequelize(this.connectionString, {
-      logging: false,
-      pool: {
-        max: 5,
-        min: 0,
-        idle: 20000,
-        acquire: 20000,
-      },
+    this.Transaction = this.sequelize.define('transaction', {
+      id: { type: Sequelize.DataTypes.STRING, primaryKey: true },
+      blockHash: { type: Sequelize.DataTypes.STRING },
+    }, {
+      indexes: [
+        { fields: ['blockHash'], unique: true },
+      ],
     })
 
-    this.Transaction = this.sequelize.define('transaction', {
-      id: {
-        type: Sequelize.STRING,
-        primaryKey: true,
-      },
-      patches: Sequelize.JSONB,
+    this.Patch = this.sequelize.define('patch', {
+      id: { type: Sequelize.DataTypes.STRING, primaryKey: true },
+      op: { type: Sequelize.DataTypes.JSONB },
+      oldValue: { type: Sequelize.DataTypes.JSONB },
     })
+
+    this.Transaction.Patches = this.Transaction.hasMany(this.Patch)
+    this.Patch.Transaction = this.Patch.belongsTo(this.Transaction)
   }
 
   public setup = async (reset: boolean = false) => {
     await this.Transaction.sync({ force: reset })
+    await this.Patch.sync({ force: reset })
   }
 
   public getLatestTransaction = async () => {
@@ -84,7 +83,7 @@ class SequelizePersistInterface implements IPersistInterface {
     }
 
     const query = {
-      where: { createdAt: { [Op.lte]: initial.createdAt } },
+      where: { createdAt: { [this.Sequelize.Op.lte]: initial.createdAt } },
       order: [['createdAt', 'ASC']],
       raw,
     }
@@ -94,17 +93,19 @@ class SequelizePersistInterface implements IPersistInterface {
 
   public deleteTransaction = async (tx: ITransaction)  => {
     return this.Transaction.destroy({
-      where: { id: { [Op.eq]: tx.id } },
+      where: { id: { [this.Sequelize.Op.eq]: tx.id } },
     })
   }
 
   public saveTransaction = async (tx: ITransaction)  => {
-    return this.Transaction.create(tx)
+    return this.Transaction.create(tx, {
+      include: [this.Transaction.Patches],
+    })
   }
 
   public getTransaction = async (txId: string)  => {
     return this.Transaction.findOne({
-      where: { id: { [Op.eq]: txId } },
+      where: { id: { [this.Sequelize.Op.eq]: txId } },
       raw,
     })
   }
