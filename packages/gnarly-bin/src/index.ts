@@ -19,6 +19,10 @@ import makeERC721Reducer, {
   makeSequelizeTypeStore as makeERC721TypeStore,
 } from '@xlnt/gnarly-reducer-erc721'
 
+import makeBlockReducer, {
+  makeSequelizeTypeStore as makeBlockTypeStore,
+} from '@xlnt/gnarly-reducer-block-meta'
+
 const main = async () => {
   if (process.env.NODE_ENV !== 'production') {
     (await import('dotenv')).config()
@@ -36,7 +40,7 @@ const main = async () => {
       acquire: 20000,
     },
     retry: {
-      max: 10,
+      max: 1,
     },
   })
 
@@ -53,7 +57,10 @@ const main = async () => {
     reasons.KittyTransfer,
   )
 
+  const blockReducer = makeBlockReducer('blocks')
+
   const reducers = [
+    blockReducer,
     erc721Reducer,
   ]
 
@@ -64,6 +71,10 @@ const main = async () => {
       Sequelize,
       sequelize,
       'cryptoKitties',
+    ),
+    blocks: makeBlockTypeStore(
+      Sequelize,
+      sequelize,
     ),
   })
 
