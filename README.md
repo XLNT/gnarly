@@ -6,118 +6,55 @@
 
 -----> [Read the Medium post for more details](https://medium.com/xlnt-art/solving-severe-asynchronicity-with-gnarly-51f5310e5543)
 
+⚠ WIP ⚠
+
+Join #gnarly in https://xlnt.chat if you're interested in the state of the project.
+
 ## Description
 
 The simple description of gnarly is that it's a stream-processor for atomic events that persists its internal state to disk, following the solid-state-interpreter pattern ala Urbit.
 
-This means it processes blocks (either from the past or in real-time) and can gracefully handle restarts, reorgs, forks, and more.
+This means it processes blocks (either from the past or in real-time) and can gracefully handle restarts, reorgs, forks, and more. You tell it how to process your data and how to load that data into something else (like postgres, redshift, elasticsearch).
 
 Gnarly simplifies the process of taking information _from_ a blockchain and putting it somewhere else, usually in a webapp-friendly format like a SQL database or elasticsearch cluster.
 
 ## Usage
 
-To use it in a project, implement the following components and then put them all together:
+TBD - check `gnarly-bin` for inspo.
 
-- `stateReference` — the state that you want to manage, as a mobx-state-tree
-- `storeInterface` — implement the interface to store gnarly's internal state
-- `ITypeStore` — implement the interface to store the actual info you want (add, update, delete)
-- `onBlock` — implement the state reduction function that gnarly uses to process events
-
-which enforces that they reference the same module.
-
-Now let's write some typescript. You can place all of this in one file if you'd like.
-
-```js
-// first, let's import some stuff and get a connection to a sql database
-import { types } from 'mobx-state-tree'
-import Sequelize = require('sequelize')
-
-import Gnarly, {
-  addABI,
-  addressesEqual,
-  because,
-  Block,
-  forEach,
-  makeRootTypeStore,
-  makeStateReference,
-  SequelizePersistInterface,
-} from '@xlnt/gnarly-core'
-
-import makeERC721Reducer, {
-  makeSequelizeTypeStore as makeERC721TypeStore,
-} from '@xlnt/gnarly-reducer-erc721'
-
-const nodeEndpoint = process.env.NODE_ENDPOINT
-// ^ http://127.0.0.1:8545 (or wherever your ethereum node is)
-const connectionString = process.env.CONNECTION_STRING
-// ^ postgres://...
-
-const sequelize = new Sequelize(connectionString, {
-  logging: false,
-  pool: {
-    max: 5,
-    min: 0,
-    idle: 20000,
-    acquire: 20000,
-  },
-})
-```
-
-```js
-// now let's use the erc721 reducer (WIP)
-//   to construct a reducer and sequelize typestore for cryptokitties
-const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
-const erc721Reducer = makeERC721Reducer(
-  'cryptoKitties',
-  CRYPTO_KITTIES,
-  reasons.KittyTransfer,
-)
-
-const typeStore = makeRootTypeStore({
-  cryptoKitties: makeERC721TypeStore(
-    'cryptoKitties',
-    sequelize,
-    Sequelize.DataTypes,
-  ),
-})
-```
-
-```js
-// now let's make the root state reference
-const reducers = [
-  erc721Reducer,
-]
-const stateReference = makeStateReference(reducers)
-// and tell gnarly to put its internal state into postgres using our connection
-const storeInterface = new SequelizePersistInterface(connectionString)
-```
-
-```js
-// finally, put it all together
-const gnarly = new Gnarly(
-  stateReference, // the local state that you modify in the reducer
-  storeInterface, // the interface to which gnarly stores internal state
-  nodeEndpoint,   // the location of your ethereum node
-  typeStore,      // the interface that converts patches to persisted state
-  reducers,       // the reducers
-)
-
-const main = async () => {
-  await gnarly.reset(false)
-  // ^ reset the persistent store or not?
-  await gnarly.shaka()
-  // ^ make the magic happen
-}
-// ...
-```
+(previous documentation was out-of-date, will be writing new ones once the api is solid)
 
 ## Developer Installation / Setup
 
-clone this repo
+First, clone this repo.
 
 ```
 lerna bootstrap
-lerna run test
+```
+
+Want to watch all of the files and recompile the typescript?
+
+```
+yarn run watch-ts
+```
+
+Want to build all of the typescript projects once?
+
+```
+yarn run build-ts
+```
+
+Want to build a mac and linux binary of `gnarly-bin`?
+
+```
+yarn run build-bin
+```
+
+Want to package that into a docker container?
+
+```
+yarn run docker-build
+# yarn run docker-push
 ```
 
 ## TODO
@@ -132,7 +69,6 @@ We'd love your help with any of this stuff
   - [ ] gnarly integration tests
 - [x] update README with example code
 - [ ] any sort of overall architecture improvements
-- [ ] replace mobx-state-tree with mongodb & oplog
 - [ ] replace block reconciliation polling with a web3 filter
 - [x] replace `getTransactions` with a generator that can page through results
 - [ ] what should the developer-friendly cli/binary look like? config ala redis? opinions wanted!
