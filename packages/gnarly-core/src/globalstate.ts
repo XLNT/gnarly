@@ -5,11 +5,14 @@
 
 // @TODO(shrugs) - add memoize back and use redis or something
 // import { memoize } from 'async-decorators'
-import { Observer } from 'fast-json-patch'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
 import NodeApi from './models/NodeApi'
+import { IOperation, OpCollector } from './Ourbit'
 import { enhanceAbiItem } from './utils'
+
+type voidFunc = () => void
+type PatchGenerator = voidFunc
 
 type ABIItemSet = IABIItem[]
 
@@ -20,7 +23,8 @@ export class GnarlyGlobals {
 
   public currentReason: string
   public currentMeta: any
-  private generatePatches: () => void
+  private opCollector: OpCollector
+  private forceGeneratePatches: PatchGenerator
 
   public getLogs = async (options) => {
     const logs = await this.api.getLogs(options)
@@ -39,7 +43,7 @@ export class GnarlyGlobals {
   public getABI = (address: string): ABIItemSet => this.abis[address.toLowerCase()]
 
   public getMethod = (address: string, methodId: string): IABIItem => {
-    // replace with O(1) precomputed lookup
+    // @TODO(shrugs) replace with O(1) precomputed lookup
     return (this.abis[address.toLowerCase()] || [])
       .find((ai) => ai.shortId === methodId)
   }
@@ -54,15 +58,29 @@ export class GnarlyGlobals {
     this.currentMeta = null
   }
 
-  public operation = (fn: () => void) => {
+  /**
+   * Perform an explicit operation, which is most likely order-dependent
+   */
+  public operation = (fn: voidFunc) => {
     fn()
-    if (this.generatePatches) {
-      this.generatePatches()
-    }
+    this.forceGeneratePatches()
   }
 
-  public setGeneratePatches = (fn: () => void) => {
-    this.generatePatches = fn
+  /**
+   * Emit a specific operation, which is not tracked in the local state
+   * This should be used for immutable information
+   * (namely, event logs)
+   */
+  public emit = (op: IOperation) => {
+    this.opCollector(op)
+  }
+
+  public setOpCollector = (fn: OpCollector) => {
+    this.opCollector = fn
+  }
+
+  public setPatchGenerator = (fn: PatchGenerator) => {
+    this.forceGeneratePatches = fn
   }
 }
 

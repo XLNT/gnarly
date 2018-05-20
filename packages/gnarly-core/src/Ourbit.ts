@@ -2,9 +2,8 @@ import {
   applyPatch,
   generate,
   observe,
-  Operation,
   unobserve,
- } from 'fast-json-patch'
+} from 'fast-json-patch'
 
 import * as uuid from 'uuid'
 import { globalState } from './globalstate'
@@ -39,6 +38,12 @@ import { invertPatch, patchToOperation } from './utils'
  *      (applyPatch(stateReference, reversePatchesByTxId(tx_id)))
  */
 
+export interface IOperation {
+  path: string,
+  op: string,
+  value?: any,
+}
+
 /**
  * a gnarly-specific path generated from patch.op.path
  */
@@ -54,7 +59,7 @@ export interface IPathThing {
  */
 export interface IPatch {
   id: string
-  op: Operation,
+  op: IOperation,
   oldValue?: any
 }
 
@@ -73,6 +78,7 @@ export interface ITypeStore {
     [_: string]: TypeStorer | SetupFn,
   }
 }
+export type OpCollector = (op: IOperation) => void
 
 export interface IPersistInterface {
   // transaction storage
@@ -108,27 +114,32 @@ class Ourbit {
    * @param fn mutating function
    */
   public processTransaction = async (txId: string, fn: () => Promise<void>) => {
-    const operations = []
-    // watch for patches
+    const operations: IOperation[] = []
+
     const observer = observe(this.targetState, (ops) => {
       ops.forEach((op) => { operations.push(op) })
     })
 
-    globalState.setGeneratePatches(() => {
+    // watch for patches
+    globalState.setOpCollector((op: IOperation) => {
+      operations.push(op)
+    })
+
+    globalState.setPatchGenerator(() => {
       generate(observer)
     })
 
     // produce state changes
     await fn()
 
-    // dispose watcher
+    // unobserve
     unobserve(this.targetState, observer)
 
     // annotate patches
     const patches = operations.map((op): IPatch => ({
         id: uuid.v4(),
         op,
-        // @TODO(shrugs) - add oldValue here
+        // @TODO(shrugs) - add oldValue here somehow
       }))
 
     // commit transaction

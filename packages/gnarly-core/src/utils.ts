@@ -99,4 +99,23 @@ export const invertPatch = (patch: IPatch): IPatch => {
   return patch
 }
 
-export const patchToOperation = (patch: IPatch): Operation => patch.op
+export const patchToOperation = (patch: IPatch): Operation => patch.op as Operation
+export const appendTo = (
+  key: string,
+  domain: string,
+  pk: string,
+  value: any,
+) => {
+  // for now, typeStores interpret an add operation without an index
+  // as a normal sort of insert
+  // so there's actually nothing special to do here
+  // @TODO(shrugs) - this is not JSON Patch compliant because we should technically
+  // have the index of the insertion as the final path part
+  // but that requires a round trip to the database (previously done in-memory)
+  // and we don't have the need for that right now
+  return {
+    op: 'add',
+    path: `/${key}/${domain}/${pk}`,
+    value,
+  }
+}

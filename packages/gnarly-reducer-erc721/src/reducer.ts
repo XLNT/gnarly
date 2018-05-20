@@ -1,12 +1,14 @@
 import {
   addABI,
+  appendTo,
   because,
   Block,
+  emit,
   getLogs,
   IReducer,
+  operation,
   ReducerType,
   toHex,
-  operation,
 } from '@xlnt/gnarly-core'
 
 const makeReducer = (
@@ -39,20 +41,14 @@ const makeReducer = (
   }])
 
   interface IERC721Tracker {
-    tokens: {
+    tokens: { // 1:1
       [id: string]: {
         tokenId: string,
         owner: string,
       },
-    },
-    owners: {
-      [id: string]: Array<{
-        tokenId: string,
-        address: string,
-      }>,
     }
   }
-  const erc721Tracker: IERC721Tracker = { tokens: {}, owners: {} }
+  const erc721Tracker: IERC721Tracker = { tokens: {} }
 
   const makeActions = (state) => ({
     transfer: (tokenId: string, from: string, to: string) => {
@@ -61,16 +57,20 @@ const makeReducer = (
       if (existing) {
         // push
         existing.owner = to
-        state.owners[tokenId].push({ tokenId, address: to })
+        emit(appendTo(key, 'owners', tokenId, {
+          tokenId,
+          address: to,
+        }))
       } else {
         // init
         // order-dependent because of foreign key
         operation(() => {
           state.tokens[tokenId] = { tokenId, owner: to }
         })
-        operation(() => {
-          state.owners[tokenId] = [{ tokenId, address: to }]
-        })
+        emit(appendTo(key, 'owners', tokenId, {
+          tokenId,
+          address: to,
+        }))
       }
     },
   })

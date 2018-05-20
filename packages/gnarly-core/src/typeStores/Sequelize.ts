@@ -6,12 +6,6 @@ import {
   parsePath,
 } from '../utils'
 
-const transformValue = (value) => {
-  // if map, transform each key
-  // if array, map(transformValue)
-  // if discreet, return transformed value based on type
-}
-
 const withOrder = (order, value) => ({
   ...value,
   order: parseInt(order, 10),

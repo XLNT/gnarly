@@ -35,6 +35,9 @@ const main = async () => {
       idle: 20000,
       acquire: 20000,
     },
+    retry: {
+      max: 10,
+    },
   })
 
   const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
@@ -93,7 +96,7 @@ const main = async () => {
 }
 
 process.on('unhandledRejection', (error) => {
-  console.error(error)
+  console.error(error, error.stack)
   process.exit(1)
 })
 
