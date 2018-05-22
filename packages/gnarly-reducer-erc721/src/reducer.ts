@@ -57,7 +57,7 @@ const makeReducer = (
       if (existing) {
         // push
         existing.owner = to
-        emit(appendTo(key, 'owners', tokenId, {
+        emit(appendTo(key, 'owners', {
           tokenId,
           address: to,
         }))
@@ -67,7 +67,7 @@ const makeReducer = (
         operation(() => {
           state.tokens[tokenId] = { tokenId, owner: to }
         })
-        emit(appendTo(key, 'owners', tokenId, {
+        emit(appendTo(key, 'owners', {
           tokenId,
           address: to,
         }))

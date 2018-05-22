@@ -10,6 +10,8 @@ const sequelizeModels = (
   // @TODO - allow users to decide if they want to coerce these large numbers
   // into actual number types
   const Block = sequelize.define(tableName, {
+    uuid: { type: DataTypes.STRING },
+
     hash: { type: DataTypes.STRING, primaryKey: true },
     number: { type: DataTypes.STRING },
     parentHash: { type: DataTypes.STRING },
@@ -26,6 +28,10 @@ const sequelizeModels = (
     gasLimit: { type: DataTypes.STRING },
     gasUsed: { type: DataTypes.STRING },
     timestamp: { type: DataTypes.DATE },
+  }, {
+    indexes: [
+      { fields: ['uuid'] }
+    ],
   })
 
   if (Transaction) {

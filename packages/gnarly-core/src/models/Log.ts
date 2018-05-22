@@ -80,8 +80,8 @@ export default class Log {
       // ^ ignore the signature
     )
 
-    this.event = logAbiItem.name
-    this.eventName = logAbiItem.fullName
+    this.event = logAbiItem.fullName
+    this.eventName = logAbiItem.name
     this.signature = logAbiItem.signature
 
     this.args = args

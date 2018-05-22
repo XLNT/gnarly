@@ -9,7 +9,7 @@ import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
 import NodeApi from './models/NodeApi'
 import { IOperation, OpCollector } from './Ourbit'
-import { enhanceAbiItem } from './utils'
+import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 
 type voidFunc = () => void
 type PatchGenerator = voidFunc
@@ -37,7 +37,11 @@ export class GnarlyGlobals {
 
   public addABI = (address: string, abi: IABIItemInput[]) => {
     this.abis[address.toLowerCase()] = (this.abis[address.toLowerCase()] || [])
-      .concat(abi.map(enhanceAbiItem))
+      .concat(
+        abi
+        .filter(onlySupportedAbiItems)
+        .map(enhanceAbiItem),
+      )
   }
 
   public getABI = (address: string): ABIItemSet => this.abis[address.toLowerCase()]

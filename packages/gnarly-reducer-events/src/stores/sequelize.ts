@@ -7,11 +7,10 @@ import {
 const makeSequelizeTypeStore = (
   Sequelize: any,
   sequelize: any,
-  key: string,
 ) => {
   const {
     Events,
-  } = sequelizeModels(Sequelize, sequelize, key)
+  } = sequelizeModels(Sequelize, sequelize)
 
   // the type store
   return {

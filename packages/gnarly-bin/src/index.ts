@@ -23,6 +23,23 @@ import makeBlockReducer, {
   makeSequelizeTypeStore as makeBlockTypeStore,
 } from '@xlnt/gnarly-reducer-block-meta'
 
+import makeEventsReducer, {
+  makeSequelizeTypeStore as makeEventsTypeStore,
+} from '@xlnt/gnarly-reducer-events'
+
+const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
+const ETHER_GOO = '0x57b116da40f21f91aec57329ecb763d29c1b2355'
+import etherGooAbi = require('./abis/EtherGoo.json')
+
+enum Keys {
+  CryptoKitties = 'cryptoKitties',
+  Blocks = 'blocks',
+}
+
+// event UnitBought(address player, uint256 unitId, uint256 amount);
+// event UnitSold(address player, uint256 unitId, uint256 amount);
+// event PlayerAttacked(address attacker, address target, bool success, uint256 gooStolen);
+
 const main = async () => {
   if (process.env.NODE_ENV !== 'production') {
     (await import('dotenv')).config()
@@ -44,35 +61,37 @@ const main = async () => {
     },
   })
 
-  const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
-
-  const reasons = {
-    TransactionExists: 'TRANSACTION_EXISTS',
-    KittyTransfer: 'KITTY_TRANSFER',
-  }
-
   const erc721Reducer = makeERC721Reducer(
-    'cryptoKitties',
+    Keys.CryptoKitties,
     CRYPTO_KITTIES,
-    reasons.KittyTransfer,
+    'KITTY_TRANSFER',
   )
 
-  const blockReducer = makeBlockReducer('blocks')
+  const blockReducer = makeBlockReducer(Keys.Blocks)
+
+  const gooEventReducer = makeEventsReducer({
+    [ETHER_GOO]: etherGooAbi,
+  })
 
   const reducers = [
     blockReducer,
     erc721Reducer,
+    gooEventReducer,
   ]
 
   const stateReference = makeStateReference(reducers)
 
   const typeStore = makeRootTypeStore({
-    cryptoKitties: makeERC721TypeStore(
+    [Keys.CryptoKitties]: makeERC721TypeStore(
       Sequelize,
       sequelize,
-      'cryptoKitties',
+      Keys.CryptoKitties,
     ),
-    blocks: makeBlockTypeStore(
+    [Keys.Blocks]: makeBlockTypeStore(
+      Sequelize,
+      sequelize,
+    ),
+    events: makeEventsTypeStore(
       Sequelize,
       sequelize,
     ),

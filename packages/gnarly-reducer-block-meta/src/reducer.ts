@@ -11,9 +11,9 @@ import {
 const makeReducer = (
   key: string = 'blocks',
 ): IReducer => {
-  const makeActions = (state) => ({
+  const makeActions = (state: undefined) => ({
     emitBlock: (block: Block) => {
-      emit(appendTo(key, 'blocks', block.hash, {
+      emit(appendTo(key, 'blocks', {
         hash: block.hash,
         number: block.number.toString(),
         parentHash: block.parentHash,
@@ -36,7 +36,7 @@ const makeReducer = (
   // return the reducer
   return {
     config: {
-      type: ReducerType.TimeVarying,
+      type: ReducerType.Atomic,
       key,
     },
     state: undefined,

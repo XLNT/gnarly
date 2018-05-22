@@ -1,6 +1,7 @@
 import BN = require('bn.js')
 import { Operation } from 'fast-json-patch'
 import numberToBN = require('number-to-bn')
+import * as uuid from 'uuid'
 import web3Utils = require('web3-utils')
 
 import * as pMap from 'p-map'
@@ -40,6 +41,10 @@ export const addressesEqual = (left: string, right: string): boolean => {
 const buildEventSignature = (item: IABIItem): string => {
   return web3Utils._jsonInterfaceMethodToString(item)
 }
+
+const supportedTypes: string[] = ['function', 'event']
+export const onlySupportedAbiItems = (item: IABIItemInput): boolean =>
+  supportedTypes.includes(item.type)
 
 export const enhanceAbiItem = (item: IABIItemInput): IABIItem => {
   const fullName = web3Utils._jsonInterfaceMethodToString(item)
@@ -103,9 +108,10 @@ export const patchToOperation = (patch: IPatch): Operation => patch.op as Operat
 export const appendTo = (
   key: string,
   domain: string,
-  pk: string,
   value: any,
 ) => {
+  // forcefully add uuid to value
+  value.uuid = uuid.v4()
   // for now, typeStores interpret an add operation without an index
   // as a normal sort of insert
   // so there's actually nothing special to do here
@@ -115,7 +121,7 @@ export const appendTo = (
   // and we don't have the need for that right now
   return {
     op: 'add',
-    path: `/${key}/${domain}/${pk}`,
+    path: `/${key}/${domain}/${value.uuid}`,
     value,
   }
 }

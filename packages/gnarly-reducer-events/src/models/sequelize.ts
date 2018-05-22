@@ -2,11 +2,10 @@
 const sequelizeModels = (
   Sequelize: any,
   sequelize: any,
-  key: string,
 ) => {
   const { DataTypes } = Sequelize
-  const Events = sequelize.define(`${key}_events`, {
-    // id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  const Events = sequelize.define('events', {
+    uuid: { type: DataTypes.STRING },
     txId: { type: DataTypes.STRING },
     patchId: { type: DataTypes.STRING },
 
@@ -17,6 +16,7 @@ const sequelizeModels = (
     args: { type: DataTypes.JSONB },
   }, {
     indexes: [
+      { fields: ['uuid'] },
       { fields: ['address'] },
       { fields: ['event'] },
       { fields: ['txId'] },
