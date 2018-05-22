@@ -92,7 +92,7 @@ const makeReducer = (
 
       logs.forEach((log) => {
         log.parse()
-        if (log.event === 'Transfer') {
+        if (log.eventName === 'Transfer') {
           const { to, from, tokenId } = log.args
 
           because(reason, {}, () => {
