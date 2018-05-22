@@ -44,7 +44,7 @@ const buildTypeStore = (Sequelize, schema) => async (
   // ^ whether or not this is a numeric index or a string key
 
   const {
-    id: patchId,
+    uuid: patchId,
     op,
   } = patch
 

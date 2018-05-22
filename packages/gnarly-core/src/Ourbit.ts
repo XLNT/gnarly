@@ -58,9 +58,11 @@ export interface IPathThing {
  * A full patch is the original patch plus an id and a previous value for inverting.
  */
 export interface IPatch {
-  id: string
+  uuid: string
   op: IOperation,
-  oldValue?: any
+  oldValue?: any,
+  reason?: { key: string, meta?: any }
+  volatile: boolean
 }
 
 /**
@@ -123,33 +125,41 @@ class Ourbit {
     fn: () => Promise<void>,
     extra: ITxExtra = { blockHash: '' },
   ) => {
-    const operations: IOperation[] = []
+    const patches: IPatch[] = []
 
+    // watch for patches to the memory state
     const observer = observe(this.targetState, (ops) => {
-      ops.forEach((op) => { operations.push(op) })
+      const patchId = uuid.v4()
+      ops.forEach((op) => {
+        patches.push({
+          uuid: patchId,
+          op,
+          reason: globalState.getReason(),
+          volatile: false,
+        })
+      })
     })
 
-    // watch for patches
-    globalState.setOpCollector((op: IOperation) => {
-      operations.push(op)
-    })
-
+    // allow reducer to force-collect patches for order-dependent operations
     globalState.setPatchGenerator(() => {
       generate(observer)
     })
 
-    // produce state changes
+    // collect any operations that are directly emitted
+    globalState.setOpCollector((op: IOperation) => {
+      patches.push({
+        uuid: uuid.v4(),
+        op,
+        reason: globalState.getReason(),
+        volatile: true,
+      })
+    })
+
+    // produce operations
     await fn()
 
     // unobserve
     unobserve(this.targetState, observer)
-
-    // annotate patches
-    const patches = operations.map((op): IPatch => ({
-        id: uuid.v4(),
-        op,
-        // @TODO(shrugs) - add oldValue here somehow
-      }))
 
     // commit transaction
     await this.commitTransaction({
@@ -176,12 +186,16 @@ class Ourbit {
   public async resumeFromTxId (txId: string) {
     console.log(`[ourbit] Resuming from txId ${txId}`)
     const allTxs = await this.store.getAllTransactionsTo(txId)
-    for await (const txBatch of allTxs) {
-      (txBatch as ITransaction[]).forEach((tx) => {
+    let totalPatches = 0
+    for await (const batch of allTxs) {
+      const txBatch = batch as ITransaction[]
+      txBatch.forEach((tx) => {
+        totalPatches += tx.patches.length
         console.log('[applyPatch]', tx.id, tx.patches.length)
         applyPatch(this.targetState, tx.patches.map(patchToOperation))
       })
     }
+    console.log(`[ourbit] finished applying ${totalPatches} patches`)
   }
 
   private notifyPatches = async (txId: string, patches: IPatch[]) => {

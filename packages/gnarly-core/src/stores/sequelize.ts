@@ -1,6 +1,6 @@
 import identity = require('lodash.identity')
 
-const raw = true
+const plain = true
 
 import {
   IPatch,
@@ -15,7 +15,6 @@ async function* batch (
   mapper: (v: any) => any = identity,
 ) {
   const count = await model.count(query)
-
   if (count === 0) {
     return false
   }
@@ -30,9 +29,8 @@ async function* batch (
       limit: batchSize,
     }
 
-    // @TODO(shrugs) - replace with { raw: true }
     const gots = await model.findAll(params)
-    yield gots.map(mapper)
+    yield mapper(gots)
     page = page + 1
   }
 }
@@ -40,14 +38,17 @@ async function* batch (
 class SequelizePersistInterface implements IPersistInterface {
   private Transaction
   private Patch
+  private Reason
 
   constructor (
     private Sequelize: any,
     private sequelize: any,
   ) {
+    const { DataTypes } = Sequelize
+
     this.Transaction = this.sequelize.define('transaction', {
-      id: { type: Sequelize.DataTypes.STRING, primaryKey: true },
-      blockHash: { type: Sequelize.DataTypes.STRING },
+      id: { type: DataTypes.STRING, primaryKey: true },
+      blockHash: { type: DataTypes.STRING },
     }, {
       indexes: [
         { fields: ['blockHash'], unique: true },
@@ -55,59 +56,104 @@ class SequelizePersistInterface implements IPersistInterface {
     })
 
     this.Patch = this.sequelize.define('patch', {
-      id: { type: Sequelize.DataTypes.STRING, primaryKey: true },
-      op: { type: Sequelize.DataTypes.JSONB },
-      oldValue: { type: Sequelize.DataTypes.JSONB },
+      id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+      uuid: { type: DataTypes.STRING },
+      op: { type: DataTypes.JSONB },
+      oldValue: { type: DataTypes.JSONB },
+      volatile: { type: DataTypes.BOOLEAN, defaultValue: false },
+    }, {
+      indexes: [
+        { fields: ['uuid'] },
+      ],
+    })
+
+    this.Reason = this.sequelize.define('reason', {
+      id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+      key: { type: DataTypes.STRING },
+      meta: { type: DataTypes.JSONB },
+    }, {
+      indexes: [
+        { fields: ['key'] },
+      ],
     })
 
     this.Transaction.Patches = this.Transaction.hasMany(this.Patch)
     this.Patch.Transaction = this.Patch.belongsTo(this.Transaction)
+    this.Reason.Patches = this.Reason.hasMany(this.Patch)
+    this.Patch.Reason = this.Patch.belongsTo(this.Reason)
   }
 
   public setup = async (reset: boolean = false) => {
     await this.Transaction.sync({ force: reset })
+    await this.Reason.sync({ force: reset })
     await this.Patch.sync({ force: reset })
   }
 
-  public getLatestTransaction = async () => {
-    return this.Transaction.findOne({ order: [['createdAt', 'DESC']], raw })
+  public getLatestTransaction = async (): Promise<ITransaction> => {
+    return (await this.Transaction.findOne({
+      order: [['createdAt', 'DESC']],
+    })).get({ plain })
   }
 
   // fetch all transactions from txId to end until there are no more
   // hmm, should probably use an auto-incrementing id to preserve insert order...
   public getAllTransactionsTo = async function (toTxId: null | string):
     Promise<any> {
-    const initial = await this.getTransaction(toTxId)
-    if (!initial) {
-      throw new Error(`Could not find txId ${toTxId}`)
+    let initial
+    try {
+      initial = await this.getPlainTransaction(toTxId)
+    } catch (error) {
+      throw new Error(`Could not find txId ${toTxId} - ${error.stack}`)
     }
 
     const query = {
       where: { createdAt: { [this.Sequelize.Op.lte]: initial.createdAt } },
       order: [['createdAt', 'ASC']],
-      raw,
+      include: [{
+        model: this.Patch,
+        where: { volatile: { [this.Sequelize.Op.eq]: false } },
+      }],
     }
 
-    return batch(this.Transaction, query, 1000)
+    return batch(this.Transaction, query, 1000, (txs) => txs.map(
+      (tx) => tx.get({ plain }),
+    ))
   }
 
-  public deleteTransaction = async (tx: ITransaction)  => {
+  public deleteTransaction = async (tx: ITransaction) => {
     return this.Transaction.destroy({
       where: { id: { [this.Sequelize.Op.eq]: tx.id } },
     })
   }
 
-  public saveTransaction = async (tx: ITransaction)  => {
+  public saveTransaction = async (tx: ITransaction) => {
     return this.Transaction.create(tx, {
-      include: [this.Transaction.Patches],
+      include: [
+        this.Transaction.Patches,
+        {
+          association: this.Transaction.Patches,
+          include: this.Patch.Reason,
+        },
+      ],
     })
   }
 
-  public getTransaction = async (txId: string)  => {
-    return this.Transaction.findOne({
+  public getTransaction = async (txId: string): Promise<ITransaction> => {
+    return (await this.Transaction.findOne({
       where: { id: { [this.Sequelize.Op.eq]: txId } },
-      raw,
-    })
+      include: [{
+        model: this.Patch,
+        where: { volatile: { [this.Sequelize.Op.eq]: false } },
+      }],
+      rejectOnEmpty: true,
+    })).get({ plain })
+  }
+
+  private getPlainTransaction = async (txId: string): Promise<ITransaction> => {
+    return (await this.Transaction.findOne({
+      where: { id: { [this.Sequelize.Op.eq]: txId } },
+      rejectOnEmpty: true,
+    })).get({ plain })
   }
 }
 

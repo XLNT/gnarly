@@ -105,7 +105,7 @@ const main = async () => {
   process.on('SIGINT', gracefulExit)
   process.on('SIGTERM', gracefulExit)
 
-  await gnarly.reset(true)
+  await gnarly.reset(process.env.GNARLY_RESET === 'true')
   await gnarly.shaka(process.env.LATEST_BLOCK_HASH)
 }
 

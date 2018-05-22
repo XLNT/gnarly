@@ -58,6 +58,11 @@ export class GnarlyGlobals {
     this.currentMeta = null
   }
 
+  public getReason = () => ({
+    key: this.currentReason,
+    meta: this.currentMeta,
+  })
+
   /**
    * Perform an explicit operation, which is most likely order-dependent
    */
