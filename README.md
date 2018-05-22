@@ -1,3 +1,7 @@
+> ## 🛠 Status: In Development
+> gnarly is currently in development. If you'd like to play around with it, check out the usage instructions below.
+
+
 # 🤙 Gnarly
 
 > Gnarly’s reduces blockchain events into a steady state with confidence.
