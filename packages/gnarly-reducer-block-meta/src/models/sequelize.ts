@@ -30,7 +30,7 @@ const sequelizeModels = (
     timestamp: { type: DataTypes.DATE },
   }, {
     indexes: [
-      { fields: ['uuid'] }
+      { fields: ['uuid'] },
     ],
   })
 
