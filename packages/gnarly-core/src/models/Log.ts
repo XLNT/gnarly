@@ -57,14 +57,14 @@ export default class Log {
     const registeredAbi = globalState.getABI(this.address)
 
     if (!registeredAbi) { return false }
-
     // ^ we do not know about this contract, so we can't try to parse it
 
     if (this.topics.length === 0) { return false }
     // ^ there are no topics, which means this is an anonymous event or something
+    // and therefore we don't care about it (for now?)
 
-    // the first argument in topics (from solidity) is always the event signature
-    const eventSig = this.topics[0]
+    const [eventSig, topics] = this.topics
+    // ^ the first argument in topics (from solidity) is always the event signature
 
     // find the inputs by signature
     const logAbiItem = registeredAbi.find((item) => item.signature === eventSig)
@@ -73,12 +73,26 @@ export default class Log {
       return false
     }
 
-    const args = abi.decodeLog(
-      logAbiItem.inputs,
-      this.data,
-      this.topics.slice(1),
-      // ^ ignore the signature
-    )
+    let args
+    try {
+      args = abi.decodeLog(
+        logAbiItem.inputs,
+        this.data,
+        topics,
+        // ^ ignore the signature
+      )
+    } catch (error) {
+      // decodeLog failed for some reason (null address?)
+      console.error(`
+        Could not parse log:
+          abi: ${JSON.stringify(abi)}
+          inputs: ${JSON.stringify(logAbiItem.inputs)}
+          data: ${this.data}
+          topics: ${JSON.stringify(topics)}
+        ${error.stack}
+      `)
+      return false
+    }
 
     this.event = logAbiItem.fullName
     this.eventName = logAbiItem.name
