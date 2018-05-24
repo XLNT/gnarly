@@ -1,5 +1,6 @@
 import BN = require('bn.js')
 import { Operation } from 'fast-json-patch'
+import _ = require('lodash')
 import numberToBN = require('number-to-bn')
 import * as uuid from 'uuid'
 import web3Utils = require('web3-utils')
@@ -8,13 +9,14 @@ import * as pMap from 'p-map'
 
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import {
+  IOperation,
   IPatch,
   IPathThing,
 } from './Ourbit'
 
 export const parsePath = (path: string): IPathThing => {
   const [
-    _,
+    emptyString, // ignore this
     scope,
     tableName,
     pk,
@@ -72,39 +74,42 @@ export const timeout = async (ms: number = 1000) =>
   new Promise((resolve) =>
     setTimeout(resolve, ms))
 
-export const invertPatch = (patch: IPatch): IPatch => {
-  switch (patch.op.op) {
+export const invertOperation = (operation: IOperation): IOperation => {
+  switch (operation.op) {
     case 'add':
       return {
-        ...patch,
-        op: {
-          op: 'remove',
-          path: patch.op.path,
-        },
+        ...operation,
+        op: 'remove',
       }
     case 'remove':
       return {
-        ...patch,
-        op: {
-          op: 'add',
-          path: patch.op.path,
-          value: patch.oldValue,
-        },
+        ...operation,
+        op: 'add',
+        value: operation.oldValue,
       }
     case 'replace':
       return {
-        ...patch,
-        op: {
-          op: 'replace',
-          path: patch.op.path,
-          value: patch.oldValue,
-        },
+        ...operation,
+        op: 'replace',
+        value: operation.oldValue,
       }
   }
-  return patch
+
+  throw new Error(`Could not invert operation ${JSON.stringify(operation)}`)
 }
 
-export const patchToOperation = (patch: IPatch): Operation => patch.op as Operation
+export const invertPatch = (patch: IPatch): IPatch => ({
+  ...patch,
+  operations: patch.operations.map(invertOperation),
+})
+
+export const operationsOfPatch = (patch: IPatch): IOperation[] =>
+  patch.operations
+export const operationsOfPatches = (patches: IPatch[]): IOperation[] =>
+  _.flatMap(patches, operationsOfPatch)
+
+export const toOperation = (operation: IOperation): Operation => operation as Operation
+
 export const appendTo = (
   key: string,
   domain: string,

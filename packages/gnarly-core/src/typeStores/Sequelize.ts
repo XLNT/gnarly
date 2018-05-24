@@ -1,7 +1,7 @@
 import isPlainObject = require('lodash.isplainobject')
 
 import { AddOperation, ReplaceOperation } from 'fast-json-patch/lib/core'
-import { IPatch } from '../Ourbit'
+import { IOperation, IPatch } from '../Ourbit'
 import {
   parsePath,
 } from '../utils'
@@ -24,17 +24,23 @@ const getForeignKeys = (model) => Object.keys(model.rawAttributes).filter((k) =>
  * https://github.com/sequelize/sequelize/issues/9121
  */
 const buildTypeStore = (Sequelize, schema) => async (
-  txId: string,
-  patch: IPatch,
+  patchId: string,
+  operation: IOperation,
 ) => {
   const { Op, QueryTypes, literal } = Sequelize
+
+  const {
+    op,
+    value,
+    path,
+  } = operation
 
   const {
     scope,
     tableName,
     pk,
     indexOrKey,
-  } = parsePath(patch.op.path)
+  } = parsePath(path)
 
   const hasIndexOrKey = indexOrKey !== undefined
   // ^ do we have an index OR a key?
@@ -43,12 +49,7 @@ const buildTypeStore = (Sequelize, schema) => async (
   const isIndex = !Number.isNaN(index)
   // ^ whether or not this is a numeric index or a string key
 
-  const {
-    uuid: patchId,
-    op,
-  } = patch
-
-  const withMeta = (v) => ({...v, txId, patchId})
+  const withMeta = (v) => ({...v, patchId})
   const model = schema[tableName]
   const {
     primaryKeyAttribute,
@@ -80,9 +81,8 @@ const buildTypeStore = (Sequelize, schema) => async (
   //   value: ${JSON.stringify((op as any).value)},
   //   selector: ${selector}
   // `)
-  switch (op.op) {
+  switch (op) {
     case 'add': {
-      const value = (op as AddOperation<any>).value
       if (isPlainObject(value)) {
         // we're inserting a row
         if (isIndex) {
@@ -133,10 +133,9 @@ const buildTypeStore = (Sequelize, schema) => async (
       break
     }
     case 'replace': {
-      const value = (op as ReplaceOperation<any>).value
       if (!hasIndexOrKey || isIndex) {
         throw new Error(`
-          No 'indexOrKey' in op ${op}
+          No 'indexOrKey' in op ${operation}
           for value "${JSON.stringify(value)}" or the value was numeric.
           We expect a discreet string key here.
         `)

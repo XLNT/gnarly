@@ -1,12 +1,16 @@
+import {
+  makeSequelizeModels as makeGnarlyModels,
+} from '@xlnt/gnarly-core'
 
 const sequelizeModels = (
   Sequelize: any,
   sequelize: any,
-  Transaction: any, // the Gnarly Transaction Sequelize model
   key: string = '',
 ) => {
   const { DataTypes } = Sequelize
-  const tableName = key ? `${key}_blocks` : 'blocks'
+  const { Transaction, Patch } = makeGnarlyModels(Sequelize, sequelize)
+
+  const tableName = key ? `${key}_block` : 'block'
   // @TODO - allow users to decide if they want to coerce these large numbers
   // into actual number types
   const Block = sequelize.define(tableName, {
@@ -34,12 +38,16 @@ const sequelizeModels = (
     ],
   })
 
-  if (Transaction) {
-    Block.belongsTo(Transaction)
-  }
+  // this is a gnarly Transaction which is actually a blockchain Block
+  Block.Transaction = Block.belongsTo(Transaction, {
+    targetKey: 'blockHash',
+  })
+  Block.Patch = Block.belongsTo(Patch)
+  const TransactionToBlock = Transaction.hasOne(Block)
 
   return {
     Block,
+    TransactionToBlock,
   }
 }
 

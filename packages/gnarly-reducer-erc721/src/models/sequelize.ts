@@ -1,14 +1,16 @@
+import {
+  makeSequelizeModels as makeGnarlyModels,
+} from '@xlnt/gnarly-core'
 
 const sequelizeModels = (
   Sequelize: any,
   sequelize: any,
   key: string,
 ) => {
+  const { Patch } = makeGnarlyModels(Sequelize, sequelize)
   const { DataTypes } = Sequelize
   // ownerOf table
   const ERC721Tokens = sequelize.define(`${key}_tokens`, {
-    txId: { type: DataTypes.STRING },
-    patchId: { type: DataTypes.STRING },
 
     // primary key
     // @TODO - switch to id
@@ -20,14 +22,12 @@ const sequelizeModels = (
       indexes: [
         { fields: ['tokenId'] },
         { fields: ['owner'] },
-        { fields: ['txId'] },
       ],
     })
 
   const ERC721TokenOwners = sequelize.define(`${key}_owners`, {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    txId: { type: DataTypes.STRING },
-    patchId: { type: DataTypes.STRING },
+    uuid: { type: DataTypes.STRING },
 
     // properties of each owner
     address: { type: DataTypes.STRING },
@@ -37,9 +37,11 @@ const sequelizeModels = (
   }, {
     indexes: [
       { fields: ['tokenId'] },
-      { fields: ['txId'] },
     ],
   })
+
+  ERC721Tokens.belongsTo(Patch)
+  ERC721TokenOwners.belongsTo(Patch)
 
   // token has many owners
   ERC721Tokens.hasMany(ERC721TokenOwners, {

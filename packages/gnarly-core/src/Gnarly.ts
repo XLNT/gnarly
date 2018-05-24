@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 
 import Blockstream from './Blockstream'
 import Ourbit, {
+  IOperation,
   IPatch,
   IPersistInterface,
   ITypeStore,
@@ -73,7 +74,7 @@ class Gnarly extends EventEmitter {
 
   public reset = async (shouldReset: boolean = true) => {
     this.shouldResume = !shouldReset
-    this.storeInterface.setup(shouldReset)
+    await this.storeInterface.setup(shouldReset)
     for (const key of Object.keys(this.typeStore)) {
       const setup = this.typeStore[key].__setup as SetupFn
       await setup(shouldReset)
@@ -108,9 +109,15 @@ class Gnarly extends EventEmitter {
   }
 
   private persistPatchHandler = async (txId: string, patch: IPatch) => {
-    const { scope } = parsePath(patch.op.path)
+    for (const op of patch.operations) {
+      await this.persistOperation(patch.id, op)
+    }
+  }
+
+  private persistOperation = async (patchId: string, operation: IOperation) => {
+    const { scope } = parsePath(operation.path)
     const storer = this.typeStore[scope].store as TypeStorer
-    await storer(txId, patch)
+    await storer(patchId, operation)
   }
 }
 

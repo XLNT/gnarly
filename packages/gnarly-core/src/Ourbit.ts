@@ -2,12 +2,14 @@ import {
   applyPatch,
   generate,
   observe,
+  Operation,
   unobserve,
 } from 'fast-json-patch'
 
+import _ = require('lodash')
 import * as uuid from 'uuid'
 import { globalState } from './globalstate'
-import { invertPatch, patchToOperation } from './utils'
+import { invertPatch, operationsOfPatches, toOperation } from './utils'
 
 /*
  * ourbit:
@@ -38,10 +40,19 @@ import { invertPatch, patchToOperation } from './utils'
  *      (applyPatch(stateReference, reversePatchesByTxId(tx_id)))
  */
 
+/**
+ * An Operation is a state transition.
+ * It is invertable via oldValue.
+ * If it is volatile, it is not persisted in memory and is handled differently.
+ */
 export interface IOperation {
   path: string,
-  op: string,
+  op: 'add' | 'replace' | 'remove' | 'move' | 'copy' | 'test' | '_get',
+  // ^ we will only actually have add|replace|remove
+  // but fast-json-patch expects this type so whatever
   value?: any,
+  oldValue?: any,
+  volatile: boolean
 }
 
 /**
@@ -55,14 +66,12 @@ export interface IPathThing {
 }
 
 /**
- * A full patch is the original patch plus an id and a previous value for inverting.
+ * A Patch is a set of operations with a unique id and a reason for their existence.
  */
 export interface IPatch {
-  uuid: string
-  op: IOperation,
-  oldValue?: any,
+  id: string
   reason?: { key: string, meta?: any }
-  volatile: boolean
+  operations: IOperation[],
 }
 
 /**
@@ -74,7 +83,7 @@ export interface ITransaction {
   patches: IPatch[]
 }
 
-export type TypeStorer = (txId: string, patch: IPatch) => Promise<void>
+export type TypeStorer = (txId: string, patch: IOperation) => Promise<void>
 export type SetupFn = (reset: boolean) => Promise<any>
 export interface ITypeStore {
   [_: string]: { // reducer
@@ -129,14 +138,13 @@ class Ourbit {
 
     // watch for patches to the memory state
     const observer = observe(this.targetState, (ops) => {
-      const patchId = uuid.v4()
-      ops.forEach((op) => {
-        patches.push({
-          uuid: patchId,
-          op,
-          reason: globalState.getReason(),
+      patches.push({
+        id: uuid.v4(),
+        operations: ops.map((op) => ({
+          ...op,
           volatile: false,
-        })
+        })),
+        reason: globalState.getReason(),
       })
     })
 
@@ -148,10 +156,12 @@ class Ourbit {
     // collect any operations that are directly emitted
     globalState.setOpCollector((op: IOperation) => {
       patches.push({
-        uuid: uuid.v4(),
-        op,
+        id: uuid.v4(),
+        operations: [{
+          ...op,
+          volatile: true,
+        }],
         reason: globalState.getReason(),
-        volatile: true,
       })
     })
 
@@ -192,7 +202,8 @@ class Ourbit {
       txBatch.forEach((tx) => {
         totalPatches += tx.patches.length
         console.log('[applyPatch]', tx.id, tx.patches.length)
-        applyPatch(this.targetState, tx.patches.map(patchToOperation))
+        const allOperations = operationsOfPatches(tx.patches)
+        applyPatch(this.targetState, allOperations.map(toOperation))
       })
     }
     console.log(`[ourbit] finished applying ${totalPatches} patches`)
@@ -213,10 +224,14 @@ class Ourbit {
   }
 
   private uncommitTransaction = async (tx: ITransaction) => {
+    // @TODO(shrugs) - replace this with something like
+    // this.commitTransaction(invertTransaction(tx))
+
     // construct inverse patches
     const inversePatches = tx.patches.map(invertPatch)
+    const inverseOperations = operationsOfPatches(inversePatches)
     // apply locally
-    applyPatch(this.targetState, inversePatches.map(patchToOperation))
+    applyPatch(this.targetState, inverseOperations.map(toOperation))
     // apply to store
     await this.notifyPatches(tx.id, inversePatches)
     // delete transaction

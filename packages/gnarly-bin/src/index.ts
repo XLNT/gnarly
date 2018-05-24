@@ -55,6 +55,7 @@ const main = async () => {
     },
     retry: {
       max: 1,
+      // @TODO(shrugs) ^ make this configurable with a default of ~3
     },
   })
 

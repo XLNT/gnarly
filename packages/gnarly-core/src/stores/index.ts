@@ -1,2 +1,5 @@
 
-export { default as SequelizePersistInterface } from './sequelize'
+export {
+  default as SequelizePersistInterface,
+  makeSequelizeModels,
+} from './sequelize'

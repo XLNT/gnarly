@@ -8,6 +8,63 @@ import {
   ITransaction,
 } from '../Ourbit'
 
+// @TODO(shrugs) depluralize all these models -_-
+export const makeSequelizeModels = (
+  Sequelize: any,
+  sequelize: any,
+) => {
+  const { DataTypes } = Sequelize
+  const Transaction = sequelize.define('transaction', {
+    id: { type: DataTypes.STRING, primaryKey: true },
+    blockHash: { type: DataTypes.STRING },
+  }, {
+      indexes: [
+        { fields: ['blockHash'], unique: true },
+      ],
+    })
+
+  // @TODO - this is actually an Operation and a Patch
+  //  is a set of Operations
+  const Patch = sequelize.define('patch', {
+    id: { type: DataTypes.STRING, primaryKey: true },
+  })
+
+  const Operation = sequelize.define('operation', {
+    op: { type: DataTypes.JSONB },
+    oldValue: { type: DataTypes.JSONB },
+    volatile: { type: DataTypes.BOOLEAN, defaultValue: false },
+  })
+
+  const Reason = sequelize.define('reason', {
+    key: { type: DataTypes.STRING },
+    meta: { type: DataTypes.JSONB },
+  }, {
+    indexes: [
+      { fields: ['key'] },
+    ],
+  })
+
+  // transaction has many patches
+  Transaction.Patches = Transaction.hasMany(Patch)
+  // patch belongs to transaction
+  Patch.Transaction = Patch.belongsTo(Transaction)
+  // a patch has many operations
+  Patch.Operations = Patch.hasMany(Operation)
+  // an operation belongs to patch
+  Operation.Patch = Operation.belongsTo(Patch)
+  // a reason belongs to a patch
+  Reason.Patch = Reason.belongsTo(Patch)
+  // a patch has one reason
+  Patch.Reason = Patch.hasOne(Reason)
+
+  return {
+    Transaction,
+    Patch,
+    Reason,
+    Operation,
+  }
+}
+
 async function* batch (
   model: any,
   query = {},
@@ -39,6 +96,7 @@ class SequelizePersistInterface implements IPersistInterface {
   private Transaction
   private Patch
   private Reason
+  private Operation
 
   constructor (
     private Sequelize: any,
@@ -46,45 +104,25 @@ class SequelizePersistInterface implements IPersistInterface {
   ) {
     const { DataTypes } = Sequelize
 
-    this.Transaction = this.sequelize.define('transaction', {
-      id: { type: DataTypes.STRING, primaryKey: true },
-      blockHash: { type: DataTypes.STRING },
-    }, {
-      indexes: [
-        { fields: ['blockHash'], unique: true },
-      ],
-    })
+    const {
+      Transaction,
+      Patch,
+      Operation,
+      Reason,
+    } = makeSequelizeModels(
+      Sequelize,
+      sequelize,
+    )
 
-    this.Patch = this.sequelize.define('patch', {
-      id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-      uuid: { type: DataTypes.STRING },
-      op: { type: DataTypes.JSONB },
-      oldValue: { type: DataTypes.JSONB },
-      volatile: { type: DataTypes.BOOLEAN, defaultValue: false },
-    }, {
-      indexes: [
-        { fields: ['uuid'] },
-      ],
-    })
-
-    this.Reason = this.sequelize.define('reason', {
-      id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-      key: { type: DataTypes.STRING },
-      meta: { type: DataTypes.JSONB },
-    }, {
-      indexes: [
-        { fields: ['key'] },
-      ],
-    })
-
-    this.Transaction.Patches = this.Transaction.hasMany(this.Patch)
-    this.Patch.Transaction = this.Patch.belongsTo(this.Transaction)
-    this.Reason.Patches = this.Reason.hasMany(this.Patch)
-    this.Patch.Reason = this.Patch.belongsTo(this.Reason)
+    this.Transaction = Transaction
+    this.Patch = Patch
+    this.Operation = Operation
+    this.Reason = Reason
   }
 
   public setup = async (reset: boolean = false) => {
     await this.Transaction.sync({ force: reset })
+    await this.Operation.sync({ force: reset })
     await this.Reason.sync({ force: reset })
     await this.Patch.sync({ force: reset })
   }
@@ -111,7 +149,10 @@ class SequelizePersistInterface implements IPersistInterface {
       order: [['createdAt', 'ASC']],
       include: [{
         model: this.Patch,
-        where: { volatile: { [this.Sequelize.Op.eq]: false } },
+        include: [{
+          model: this.Operation,
+          where: { volatile: { [this.Sequelize.Op.eq]: false } },
+        }],
       }],
     }
 
@@ -128,13 +169,13 @@ class SequelizePersistInterface implements IPersistInterface {
 
   public saveTransaction = async (tx: ITransaction) => {
     return this.Transaction.create(tx, {
-      include: [
-        this.Transaction.Patches,
-        {
-          association: this.Transaction.Patches,
-          include: this.Patch.Reason,
-        },
-      ],
+      include: [{
+        association: this.Transaction.Patches,
+        include: [
+          this.Patch.Reason,
+          this.Patch.Operations,
+        ],
+      }],
     })
   }
 
@@ -143,7 +184,10 @@ class SequelizePersistInterface implements IPersistInterface {
       where: { id: { [this.Sequelize.Op.eq]: txId } },
       include: [{
         model: this.Patch,
-        where: { volatile: { [this.Sequelize.Op.eq]: false } },
+        include: [{
+          model: this.Operation,
+          where: { volatile: { [this.Sequelize.Op.eq]: false } },
+        }],
       }],
       rejectOnEmpty: true,
     })).get({ plain })
