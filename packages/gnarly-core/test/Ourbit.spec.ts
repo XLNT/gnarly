@@ -1,127 +1,170 @@
 import { deepClone } from '@xlnt/fast-json-patch'
-import * as chai from 'chai'
-import * as spies from 'chai-spies'
+import chai = require('chai')
+import spies = require('chai-spies')
 import 'mocha'
 import uuid = require('uuid')
+import { globalState } from '../src/globalstate'
+import * as utils from '../src/utils'
 
-import Ourbit from '../src/Ourbit'
-import { SequelizePersistInterface } from '../src/stores'
-import MockPersistInterface, { mockPatch, mockTransaction } from './helpers/MockPersistInterface'
+import Ourbit, {
+  IPersistInterface,
+  ITransaction,
+} from '../src/Ourbit'
+import {
+  SequelizePersistInterface,
+} from '../src/stores'
+import MockPersistInterface from './helpers/MockPersistInterface'
 
-const { expect, use } = chai
-use(spies)
+chai.use(spies)
+chai.should()
 const sandbox = chai.spy.sandbox()
 
-const kittyTracker = {
-  ownerOf: {},
-}
-
-const originalStateReference = {
-  kittyTracker,
-}
-
-let stateReference
-
-const transfer = (tokenId, to) => {
-  stateReference.kittyTracker.ownerOf[tokenId] = to
-}
+const TEST_REASON = 'TEST_REASON'
+const TEST_META = {}
 
 describe('Ourbit', () => {
-  let ourbit
-  let persistPatchSpy
-  const storeInterface = new MockPersistInterface()
-  let testFn
+  let store: IPersistInterface
+  let ourbit: Ourbit = null
+
+  let tx: ITransaction
+  let targetState
+  let persistPatch
+
+  const produceFirstPatch = async () => {
+    await ourbit.processTransaction(tx.id, async () => {
+      targetState.key = 'value'
+    }, { blockHash: tx.blockHash })
+  }
 
   beforeEach(() => {
-    // tslint:disable-next-line
-    chai.spy.on(uuid, 'v4', () => {
-      return 'mockPatch'
-    })
-    persistPatchSpy = chai.spy()
-
-    stateReference = deepClone(originalStateReference)
-
-    testFn = () => {
-      transfer('0x12345', '0x0987')
-    }
-
-    sandbox.on(storeInterface, [
-      'getTransactions',
-      'deleteTransaction',
-      'saveTransaction',
-      'getTransaction',
+    sandbox.on(uuid, 'v4', () => 'uuid')
+    sandbox.on(globalState, [
+      'setPatchGenerator',
+      'setOpCollector',
+      'getReason',
     ])
 
-    ourbit = new Ourbit(stateReference, storeInterface, persistPatchSpy)
+    tx = {
+      id: '0x1',
+      blockHash: '0x1',
+      patches: [{
+        id: 'uuid',
+        reason: undefined,
+        operations: [{
+          op: 'add',
+          path: '/key',
+          value: 'value',
+          volatile: false,
+        }],
+      }],
+    }
+
+    targetState = {}
+    store = new MockPersistInterface()
+
+    sandbox.on(store, [
+      'saveTransaction',
+    ])
+
+    persistPatch = chai.spy()
+    ourbit = new Ourbit(targetState, store, persistPatch)
   })
 
   afterEach(() => {
     sandbox.restore()
-    // tslint:disable-next-line
-    chai.spy.restore(uuid)
   })
 
-  describe('- processTransaction()', () => {
-    it('should call saveTransaction with appropriate info', async () => {
-      await ourbit.processTransaction('mockTransaction', testFn)
-      // tslint:disable-next-line no-unused-expression
-      expect(storeInterface.saveTransaction).to.have.been.called.once
-    })
+  it('should process a transaction', async () => {
+    await produceFirstPatch()
 
-    it('should call persistPatch', async () => {
-      await ourbit.processTransaction('mockTransaction', testFn)
-      // tslint:disable-next-line no-unused-expression
-      expect(persistPatchSpy).to.have.been.called.once
-    })
+    store.saveTransaction.should.have.been.called.with(tx)
   })
 
-  describe('- rollbackTransaction()', () => {
-    it('should call deleteTransaction with appropriate info', async () => {
-      await ourbit.processTransaction('mockTransaction', testFn)
-      await ourbit.rollbackTransaction('mockTransaction')
+  it('should include a reason if provided', async () => {
+    tx.patches[0].reason = { key: TEST_REASON, meta: TEST_META }
 
-      expect(storeInterface.deleteTransaction).to.have.been.called.with(mockTransaction)
-    })
+    await ourbit.processTransaction(tx.id, async () => {
+      globalState.because(TEST_REASON, TEST_META, () => {
+        targetState.key = 'value'
+      })
+    }, { blockHash: tx.blockHash })
 
-    it('should emit `patch` events', async () => {
-      await ourbit.processTransaction('mockTransaction', testFn)
-
-      await ourbit.rollbackTransaction('mockTransaction')
-      // tslint:disable-next-line no-unused-expression
-      expect(persistPatchSpy).to.have.been.called.twice
-    })
-
-    it('should rollback stateReference to previous state', async () => {
-      await ourbit.processTransaction('mockTransaction', testFn)
-
-      let ownerOf = stateReference.kittyTracker.ownerOf['0x12345']
-      expect(ownerOf).to.equal('0x0987')
-
-      await ourbit.rollbackTransaction('mockTransaction')
-
-      ownerOf = stateReference.kittyTracker.ownerOf['0x12345']
-      expect(ownerOf).to.equal(undefined)
-    })
+    store.saveTransaction.should.have.been.called.with(tx)
   })
 
-  describe('- resumeFromTxId()', () => {
-    it('should call getTransactions with appropriate info', async () => {
-      await ourbit.resumeFromTxId('mockTransaction')
-
-      expect(storeInterface.getTransactions).to.have.been.called.with('mockTransaction')
+  it('should allow manual collection', async () => {
+    tx.patches.push({
+      id: 'uuid',
+      reason: undefined,
+      operations: [{
+        op: 'replace',
+        path: '/key',
+        oldValue: 'value',
+        value: 'newValue',
+        volatile: false,
+      }],
     })
 
-    it('should  not emit `patch` events', async () => {
-      await ourbit.resumeFromTxId('mockTransaction')
-      // tslint:disable-next-line no-unused-expression
-      expect(persistPatchSpy).to.not.have.been.called.once
+    await ourbit.processTransaction(tx.id, async () => {
+      globalState.operation(() => {
+        targetState.key = 'value'
+      })
+      globalState.operation(() => {
+        targetState.key = 'newValue'
+      })
+    }, { blockHash: tx.blockHash })
+
+    store.saveTransaction.should.have.been.called.with(tx)
+  })
+
+  it('should accept volatile operations', async () => {
+    targetState.store = { domain: { array: [] } }
+    tx.patches.push({
+      id: 'uuid',
+      reason: undefined,
+      operations: [{
+        op: 'add',
+        path: '/store/domain/uuid',
+        value: { uuid: 'uuid', value: 'value' },
+        volatile: true,
+      }],
     })
 
-    it('should bring stateReference to current state', async () => {
-      await ourbit.resumeFromTxId('mockTransaction')
-      const ownerOf = stateReference.kittyTracker.ownerOf['0x12345']
+    await ourbit.processTransaction(tx.id, async () => {
+      globalState.operation(() => {
+        targetState.key = 'value'
+      })
+      globalState.emit(utils.appendTo('store', 'domain', {
+        value: 'value',
+      }))
+    }, { blockHash: tx.blockHash })
 
-      expect(ownerOf).to.equal('0x0987')
-    })
+    store.saveTransaction.should.have.been.called.with(tx)
+  })
+
+  it('should revert transactions', async () => {
+    await produceFirstPatch()
+    targetState.should.deep.equal({ key: 'value' })
+
+    await ourbit.processTransaction('0x2', async () => {
+      targetState.key = 'newValue'
+    }, { blockHash: tx.blockHash })
+
+    await ourbit.rollbackTransaction('0x2')
+    targetState.should.deep.equal({ key: 'value' })
+
+    await ourbit.rollbackTransaction(tx.id)
+    targetState.should.deep.equal({})
+  })
+
+  it('should be able to resume transactions after failure', async () => {
+    await produceFirstPatch()
+
+    const newState = {}
+    // new state, same store
+    const newOurbit = new Ourbit(newState, store, persistPatch)
+
+    await newOurbit.resumeFromTxId('0x1')
+    newState.should.deep.equal({ key: 'value' })
   })
 })

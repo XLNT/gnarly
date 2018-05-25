@@ -1,6 +1,5 @@
 import isPlainObject = require('lodash.isplainobject')
 
-import { AddOperation, ReplaceOperation } from 'fast-json-patch/lib/core'
 import { IOperation, IPatch } from '../Ourbit'
 import {
   parsePath,

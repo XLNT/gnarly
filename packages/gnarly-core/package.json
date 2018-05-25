@@ -9,8 +9,8 @@
     "build": "npm run build-ts && npm run tslint",
     "ts-start": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "test": "mocha -r ts-node/register test/utils.spec.ts",
-    "watch-test": "mocha --watch --watch-extensions ts -r ts-node/register test/utils.spec.ts",
+    "test": "mocha -r ts-node/register test/**/*.spec.ts",
+    "watch-test": "mocha --watch --watch-extensions ts -r ts-node/register test/**/*.spec.ts",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "tslint": "tslint --project ."

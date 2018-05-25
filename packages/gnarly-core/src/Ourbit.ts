@@ -11,35 +11,6 @@ import uuid = require('uuid')
 import { globalState } from './globalstate'
 import { invertPatch, operationsOfPatches, toOperation } from './utils'
 
-/*
- * ourbit:
- * a transaction is a discrete set of events that produce patches to the state
- *   but should be treated as a single unit that can be reverted.
- *   One transaction can produce multiple events that can produce multiple patches.
- * tx => [event]
- * event => [patch]
- * tx_id = uuid for each transaction(), by which patches are indexed
- *
- * when using gnarly with blockchains, tx_id === block_hash
- *
- * ourbit should;
- *  - handle resuming itself from either null, or some tx_id
- *    - pulling patches from that tx_id and apply them over provided initialState
- *    - ourbit = new Ourbit(stateReference, storeInterface)
- *    - ourbit.applyPatchesFrom(tx_id = null)
- *  - accept transaction stream, calls the provided reducer over those events
- *    - processTransaction(tx_id, (stateReference) => {
- *        because(reason, () => {
- *          // do obj manipulation
- *        })
- *      })
- *  - handle persisting patches as they're produced (solid-state-interpreter-ing)
- *    - onPatch(storeInterface, (patch) => { storeInterface.persistPatch(tx_id) })
- *  - handle rollbacks
- *    - urbit.rollback(tx_id)
- *      (applyPatch(stateReference, reversePatchesByTxId(tx_id)))
- */
-
 /**
  * An Operation is a state transition.
  * It is invertable via oldValue.
@@ -116,6 +87,24 @@ interface ITxExtra {
  */
 type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
 
+/*
+ * Ourbit
+ *
+ * > because I couldn't think of a better name than `urbit` and this is our's
+ *
+ * a transaction is a discrete set of events that produce patches to the state
+ *   but should be treated as a single atomic unit that can be reverted.
+ *
+ * when using gnarly with blockchains, the tx.id is the block hash
+ * because it happens to be globally unique
+ * (but this should not be relied on)
+ *
+ * ourbit's responsibilities:
+ *    - ourbit = new Ourbit(targetState, store, persistPatch)
+ *    - ourbit.resumeFromTxId(txId = null)
+ *    - ourbit.processTransaction(txId, operation producer)
+ *    - ourbit.rollbackTransaction(txId)
+ */
 class Ourbit {
   constructor (
     public targetState: object,
@@ -144,7 +133,7 @@ class Ourbit {
           ...op,
           volatile: false,
         })),
-        reason: globalState.getReason(),
+        reason: globalState.reason,
       })
     })
 
@@ -157,11 +146,8 @@ class Ourbit {
     globalState.setOpCollector((op: IOperation) => {
       patches.push({
         id: uuid.v4(),
-        operations: [{
-          ...op,
-          volatile: true,
-        }],
-        reason: globalState.getReason(),
+        operations: [op],
+        reason: globalState.reason,
       })
     })
 

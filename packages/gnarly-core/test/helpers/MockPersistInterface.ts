@@ -7,20 +7,12 @@ import {
   ITransaction,
 } from '../../src/Ourbit'
 
-export const mockPatch: IPatch = {
-  id: 'mockPatch',
-  operations: [{
-    op: 'add',
-    path: '/kittyTracker/ownerOf/0x12345',
-    value: '0x0987',
-    volatile: false,
-  }],
-}
-
-export const mockTransaction: ITransaction = {
-  id: 'mockTransaction',
-  blockHash: '0xblock',
-  patches: [mockPatch],
+async function* iter (
+  res: any[] = [],
+) {
+  for (const thing of res) {
+    yield thing
+  }
 }
 
 class MockPersistInterface implements IPersistInterface {
@@ -29,12 +21,11 @@ class MockPersistInterface implements IPersistInterface {
 
   public setup = async (reset: boolean = false) => {
     // nothing to be done
+    this.transactions = []
   }
 
   public async getAllTransactionsTo (toTxId: null | string): Promise<any> {
-    return async function* () {
-      yield this.transactions
-    }
+    return iter([this.transactions])
   }
 
   public async getTransactions (fromTxId: null | string): Promise<ITransaction[]> {
@@ -57,7 +48,7 @@ class MockPersistInterface implements IPersistInterface {
   }
 
   public async getTransaction (txId: string): Promise<ITransaction> {
-    return mockTransaction
+    return _.find(this.transactions, (t) => t.id === txId)
   }
 }
 

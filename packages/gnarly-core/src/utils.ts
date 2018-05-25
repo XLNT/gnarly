@@ -113,7 +113,7 @@ export const appendTo = (
   key: string,
   domain: string,
   value: any,
-) => {
+): IOperation => {
   // forcefully add uuid to value
   value.uuid = uuid.v4()
   // for now, typeStores interpret an add operation without an index
@@ -127,5 +127,6 @@ export const appendTo = (
     op: 'add',
     path: `/${key}/${domain}/${value.uuid}`,
     value,
+    volatile: true,
   }
 }

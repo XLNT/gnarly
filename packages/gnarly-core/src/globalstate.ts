@@ -21,8 +21,8 @@ export class GnarlyGlobals {
   public abis: { [s: string]: ABIItemSet } = {}
   public api: NodeApi
 
-  public currentReason: string
-  public currentMeta: any
+  public currentReason: string = null
+  public currentMeta: any = null
   private opCollector: OpCollector
   private forceGeneratePatches: PatchGenerator
 
@@ -56,16 +56,17 @@ export class GnarlyGlobals {
     this.currentReason = reason
     this.currentMeta = meta
 
-    fn()
+    this.operation(fn)
 
     this.currentReason = null
     this.currentMeta = null
   }
 
-  public getReason = () => ({
-    key: this.currentReason,
-    meta: this.currentMeta,
-  })
+  public get reason () {
+    return this.currentReason !== null
+      ? { key: this.currentReason, meta: this.currentMeta }
+      : undefined
+  }
 
   /**
    * Perform an explicit operation, which is most likely order-dependent

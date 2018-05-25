@@ -158,6 +158,7 @@ describe('utils', () => {
         uuid: 'uuid',
         test: true,
       })
+      op.volatile.should.eq(true)
     })
   })
 })
