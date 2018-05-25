@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core:ExternalTransaction')
+
 import BN = require('bn.js')
 
 import Block from './Block'
@@ -85,7 +88,6 @@ export default class ExternalTransaction extends Transaction {
 
   private setReceipt = async () => {
     const txReceipt = await globalState.api.getTransactionReciept(this.hash)
-    // console.log('[setReceipt]', txReceipt)
     this.setSelf(txReceipt)
   }
 
@@ -93,10 +95,9 @@ export default class ExternalTransaction extends Transaction {
     let traces
     try {
       traces = await globalState.api.traceTransaction(this.hash)
-      // console.log('[setInternalTransactions]', traces)
       this.internalTransactions = traces.map((itx) => new InternalTransaction(this, itx))
     } catch (error) {
-      console.error('[setInternalTransactions] trace_replayTransaction not working, ignoring', error, traces)
+      debug('trace_replayTransaction not working, ignoring %s - %s', error.stack, traces)
     }
   }
 

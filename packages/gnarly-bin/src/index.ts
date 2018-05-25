@@ -1,3 +1,8 @@
+import dotenv = require('dotenv')
+dotenv.config()
+
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly')
 
 /**
  * @TODO - handle lazy-require, config-based bootstrapping
@@ -38,10 +43,6 @@ enum Keys {
 }
 
 const main = async () => {
-  if (process.env.NODE_ENV !== 'production') {
-    (await import('dotenv')).config()
-  }
-
   const nodeEndpoint = process.env.NODE_ENDPOINT
   const connectionString = process.env.CONNECTION_STRING
 
@@ -115,7 +116,7 @@ const main = async () => {
       process.exit(1)
     }
     didRequestExit = true
-    console.log('Gracefully exiting. Send the signal again to force exit.')
+    debug('Gracefully exiting. Send the signal again to force exit.')
     await gnarly.bailOut()
     process.exit(0)
   }

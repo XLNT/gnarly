@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core')
+
 import { EventEmitter } from 'events'
 
 import Blockstream from './Blockstream'
@@ -52,12 +55,12 @@ class Gnarly extends EventEmitter {
     if (!this.shouldResume) {
       // we reset, so let's start from scratch
       latestBlockHash = fromBlockHash || null
-      console.log(`Explicitely starting from ${latestBlockHash || 'HEAD'}`)
+      debug('Explicitely starting from %s', latestBlockHash || 'HEAD')
     } else {
       // otherwise, let's get some info and replay state
       const latestTransaction = await this.storeInterface.getLatestTransaction()
       latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
-      console.log(`Attempting to reload state from ${latestBlockHash || 'HEAD'}`)
+      debug('Attempting to reload state from %s', latestBlockHash || 'HEAD')
       // let's re-hydrate local state by replaying transactions
       await this.ourbit.resumeFromTxId(latestBlockHash)
     }

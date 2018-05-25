@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core:api')
+
 import BN = require('bn.js')
 import {
   FilterOptions,
@@ -18,22 +21,22 @@ export default class NodeApi {
   }
 
   public getBlockByNumber = async (num: BN): Promise<IJSONBlock> => {
-    // console.log('[getBlockByNumber]', num.toString(10), `0x${num.toString(16)}`)
+    debug('[getBlockByNumber] %s %s', num.toString(10), `0x${num.toString(16)}`)
     return this.doFetch('eth_getBlockByNumber', [`0x${num.toString(16)}`, true])
   }
 
   public getBlockByHash = async (hash: string): Promise<IJSONBlock | null> => {
-    // console.log('[getBlockByHash]', hash)
+    debug('[getBlockByHash] %s', hash)
     return this.doFetch('eth_getBlockByHash', [hash, true])
   }
 
   public getLogs = async (filterOptions: FilterOptions): Promise<IJSONLog[]> => {
-    // console.log('[getLogs]', filterOptions)
+    debug('[getLogs] %j', filterOptions)
     return this.doFetch('eth_getLogs', [filterOptions])
   }
 
   public getLatestBlock = async (): Promise<IJSONBlock> => {
-    // console.log('[getLatestBlock]')
+    debug('[getLatestBlock]')
     return this.doFetch('eth_getBlockByNumber', ['latest', true])
   }
 

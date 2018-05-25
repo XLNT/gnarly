@@ -1,3 +1,9 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core:blockstream')
+const debugFastForward = makeDebug('gnarly-core:blockstream:fast-forward')
+const debugOnBlockAdd = makeDebug('gnarly-core:blockstream:onBlockAdd')
+const debugOnBlockInvalidated = makeDebug('gnarly-core:blockstream:onBlockInvalidated')
+
 import {
   Block as BlockstreamBlock,
   BlockAndLogStreamer,
@@ -69,8 +75,10 @@ class BlockStream {
     // if we're not at that block number, start pulling the blocks
     // from before until we catch up, then track latest
     if (latestBlockNumber.gt(startBlockNumber)) {
-      console.log(
-        `[fast-forward] Starting from ${startBlockNumber.toNumber()} to ${latestBlockNumber.toNumber()}`,
+      debugFastForward(
+        'Starting from %d and continuing to %d',
+        startBlockNumber.toNumber(),
+        latestBlockNumber.toNumber(),
       )
       this.syncing = true
       let i = startBlockNumber.clone()
@@ -78,12 +86,19 @@ class BlockStream {
         // if we're at the top of the queue
         // wait a bit and then add the thing
         while (this.pendingTransactions.getQueueLength() + 1 >= MAX_QUEUE_LENGTH) {
-          console.log(`[queue] Reached max queue size of ${MAX_QUEUE_LENGTH}, waiting a bit...`)
+          debugFastForward(
+            'Reached max queue size of %d, waiting a bit...',
+            MAX_QUEUE_LENGTH,
+          )
           await timeout(5000)
         }
 
         const block = await globalState.api.getBlockByNumber(i)
-        console.log(`[fast-forward] block ${block.number} (${block.hash})`)
+        debugFastForward(
+          'block %s (%s)',
+          block.number,
+          block.hash,
+        )
         i = i.add(toBN(1))
         await this.streamer.reconcileNewBlock(block)
         // TODO: easy optimization, only check latest block on the last
@@ -103,14 +118,19 @@ class BlockStream {
       this.streamer.unsubscribeFromOnBlockAdded(this.onBlockAddedSubscriptionToken)
       this.streamer.unsubscribeFromOnBlockRemoved(this.onBlockRemovedSubscriptionToken)
     }
-    console.log('Pending Transactions:', this.pendingTransactions.getPendingLength())
+    debug('Pending Transactions: %d', this.pendingTransactions.getPendingLength())
     await this.pendingTransactions.add(() => Promise.resolve())
-    console.log('[gnarly] Done!')
+    debug('Done! Exiting...')
   }
 
   private onBlockAdd = async (block: BlockstreamBlock) => {
     const pendingTransaction = async () => {
-      console.log(`[onBlockAdd] ${block.number} (${block.hash})`)
+      debugOnBlockAdd(
+        'block %s (%s)',
+        block.number,
+        block.hash,
+      )
+
       return this.ourbit.processTransaction(
         block.hash,
         this.onBlock(block, this.syncing),
@@ -124,7 +144,12 @@ class BlockStream {
   }
 
   private onBlockInvalidated = (block: BlockstreamBlock) => {
-    console.log(`[onBlockInvalidated] ${block.number} (${block.hash})`)
+    debugOnBlockInvalidated(
+      'block %s (%s)',
+      block.number,
+      block.hash,
+    )
+
     const pendingTransaction = async () => this.ourbit.rollbackTransaction(block.hash)
     this.pendingTransactions.add(pendingTransaction)
   }

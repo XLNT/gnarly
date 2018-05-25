@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core:Log')
+
 import BN = require('bn.js')
 import abi = require('web3-eth-abi')
 
@@ -83,14 +86,21 @@ export default class Log {
       )
     } catch (error) {
       // decodeLog failed for some reason (null address?)
-      console.error(`
-        Could not parse log:
-          abi: ${JSON.stringify(abi)}
-          inputs: ${JSON.stringify(logAbiItem.inputs)}
-          data: ${this.data}
-          topics: ${JSON.stringify(topics)}
-        ${error.stack}
-      `)
+      debug(
+        `Could not parse log:
+            abi: %j
+            inputs: %j
+            data: %s
+            topics: %j
+          %O
+        `,
+        abi,
+        logAbiItem.inputs,
+        this.data,
+        topics,
+        error.stack,
+      )
+
       return false
     }
 

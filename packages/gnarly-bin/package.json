@@ -32,7 +32,6 @@
   "author": "Matt Condon <matt@XLNT.co>",
   "license": "Apache-2.0",
   "devDependencies": {
-    "dotenv": "^5.0.1",
     "pkg": "^4.3.1",
     "ts-node": "^6.0.3",
     "tslint": "^5.9.1",
@@ -45,6 +44,8 @@
     "@xlnt/gnarly-core": "^0.3.0",
     "@xlnt/gnarly-reducer-block-meta": "^0.3.0",
     "@xlnt/gnarly-reducer-erc721": "^0.3.0",
+    "debug": "^3.1.0",
+    "dotenv": "^5.0.1",
     "sequelize": "^4.37.7"
   }
 }

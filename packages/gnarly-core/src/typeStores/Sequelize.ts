@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core:store:sequelize')
+
 import isPlainObject = require('lodash.isplainobject')
 
 import { IOperation, IPatch } from '../Ourbit'
@@ -71,15 +74,24 @@ const buildTypeStore = (Sequelize, schema) => async (
     await model.create(withMeta(properties))
   }
 
-  // console.log(`
-  //   scope: ${scope},
-  //   tableName: ${tableName},
-  //   pk: ${pk},
-  //   indexOrKey: ${indexOrKey},
-  //   op: ${op.op},
-  //   value: ${JSON.stringify((op as any).value)},
-  //   selector: ${selector}
-  // `)
+  debug(
+    `
+      scope: %s
+      tableName: %s
+      pk: %s
+      indexOrKey: %s
+      op: %s
+      value: %j
+      selector: %s
+    `,
+    scope,
+    tableName,
+    pk,
+    indexOrKey,
+    op,
+    (op as any).value,
+    selector,
+  )
   switch (op) {
     case 'add': {
       if (isPlainObject(value)) {
@@ -146,9 +158,6 @@ const buildTypeStore = (Sequelize, schema) => async (
       }), {
         where: window,
       })
-      // console.log(
-      //   `${op} ${model.tableName} SET ${indexOrKey} = ${JSON.stringify(value)} WHERE ${selector} = ${pk}`,
-      // )
       break
     }
     case 'remove': {
@@ -161,9 +170,6 @@ const buildTypeStore = (Sequelize, schema) => async (
       })
 
       if (isIndex) {
-        // console.log(
-        //   `... because we removed, update order - 1 for any indexes > ${indexOrKey}`,
-        // )
         // we removed an item, so subtract an order index from everything greater
         await model.update({
           order: literal('"order" - 1'),
@@ -179,8 +185,6 @@ const buildTypeStore = (Sequelize, schema) => async (
     default:
       throw new Error('wut')
   }
-
-  // console.log()
 }
 
 export default buildTypeStore

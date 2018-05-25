@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-core:ourbit')
+
 import {
   applyPatch,
   generate,
@@ -180,19 +183,19 @@ class Ourbit {
    * @param txId transaction id
    */
   public async resumeFromTxId (txId: string) {
-    console.log(`[ourbit] Resuming from txId ${txId}`)
+    debug('Resuming from txId %s', txId)
     const allTxs = await this.store.getAllTransactionsTo(txId)
     let totalPatches = 0
     for await (const batch of allTxs) {
       const txBatch = batch as ITransaction[]
       txBatch.forEach((tx) => {
         totalPatches += tx.patches.length
-        console.log('[applyPatch]', tx.id, tx.patches.length)
+        debug('[applyPatch] %s %d', tx.id, tx.patches.length)
         const allOperations = operationsOfPatches(tx.patches)
         applyPatch(this.targetState, allOperations.map(toOperation))
       })
     }
-    console.log(`[ourbit] finished applying ${totalPatches} patches`)
+    debug('finished applying %d patches', totalPatches)
   }
 
   private notifyPatches = async (txId: string, patches: IPatch[]) => {

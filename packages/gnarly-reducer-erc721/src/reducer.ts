@@ -1,3 +1,6 @@
+import makeDebug = require('debug')
+const debug = makeDebug('gnarly-reducer:erc721')
+
 import {
   addABI,
   appendTo,
@@ -52,7 +55,8 @@ const makeReducer = (
 
   const makeActions = (state) => ({
     transfer: (tokenId: string, from: string, to: string) => {
-      console.log(`[op] transferring token ${tokenId} to ${to}`)
+      debug('transferring token %s to %s', tokenId, to)
+
       const existing = state.tokens[tokenId]
       if (existing) {
         // push
