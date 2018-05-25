@@ -1,15 +1,17 @@
 interface IInputOutput {
   name: string
   type: string
+  indexed: boolean
 }
 
 export interface IABIItemInput {
-  constant: boolean
-  inputs: IInputOutput[]
+  anonymous?: boolean
+  constant?: boolean
+  inputs?: IInputOutput[]
   name: string
-  outputs: IInputOutput[]
-  payable: boolean
-  stateMutability: string
+  outputs?: IInputOutput[]
+  payable?: boolean
+  stateMutability?: string
   type: string
 }
 

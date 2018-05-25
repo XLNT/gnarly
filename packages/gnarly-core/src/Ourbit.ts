@@ -4,10 +4,10 @@ import {
   observe,
   Operation,
   unobserve,
-} from 'fast-json-patch'
+} from '@xlnt/fast-json-patch'
 
 import _ = require('lodash')
-import * as uuid from 'uuid'
+import uuid = require('uuid')
 import { globalState } from './globalstate'
 import { invertPatch, operationsOfPatches, toOperation } from './utils'
 

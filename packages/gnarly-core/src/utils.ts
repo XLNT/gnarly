@@ -1,11 +1,10 @@
+import { Operation } from '@xlnt/fast-json-patch'
 import BN = require('bn.js')
-import { Operation } from 'fast-json-patch'
 import _ = require('lodash')
 import numberToBN = require('number-to-bn')
-import * as uuid from 'uuid'
+import pMap = require('p-map')
+import uuid = require('uuid')
 import web3Utils = require('web3-utils')
-
-import * as pMap from 'p-map'
 
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import {
@@ -38,10 +37,6 @@ export const forEach = async (iterable, mapper, opts = { concurrency: 10 }) => {
 
 export const addressesEqual = (left: string, right: string): boolean => {
   return left && right && left.toLowerCase() === right.toLowerCase()
-}
-
-const buildEventSignature = (item: IABIItem): string => {
-  return web3Utils._jsonInterfaceMethodToString(item)
 }
 
 const supportedTypes: string[] = ['function', 'event']
@@ -80,18 +75,22 @@ export const invertOperation = (operation: IOperation): IOperation => {
       return {
         ...operation,
         op: 'remove',
+        oldValue: operation.value,
+        value: undefined,
       }
     case 'remove':
       return {
         ...operation,
         op: 'add',
         value: operation.oldValue,
+        oldValue: undefined,
       }
     case 'replace':
       return {
         ...operation,
         op: 'replace',
         value: operation.oldValue,
+        oldValue: operation.value,
       }
   }
 

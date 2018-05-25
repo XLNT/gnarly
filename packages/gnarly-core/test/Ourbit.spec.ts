@@ -1,8 +1,8 @@
+import { deepClone } from '@xlnt/fast-json-patch'
 import * as chai from 'chai'
 import * as spies from 'chai-spies'
-import { deepClone } from 'fast-json-patch'
 import 'mocha'
-import * as uuid from 'uuid'
+import uuid = require('uuid')
 
 import Ourbit from '../src/Ourbit'
 import { SequelizePersistInterface } from '../src/stores'

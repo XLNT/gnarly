@@ -1,12 +1,17 @@
-import * as chai from 'chai'
-import * as spies from 'chai-spies'
+import chai = require('chai')
+import spies = require('chai-spies')
 import 'mocha'
-import * as uuid from 'uuid'
+import uuid = require('uuid')
 
 import BlockStream from '../src/Blockstream'
-import Ourbit from '../src/Ourbit'
-import { SequelizePersistInterface } from '../src/stores'
-import MockPersistInterface, { mockPatch, mockTransaction } from './helpers/MockPersistInterface'
+import {
+  SequelizePersistInterface,
+} from '../src/stores'
+import MockPersistInterface, {
+  mockPatch,
+  mockTransaction,
+} from './helpers/MockPersistInterface'
+import OurbitMock from './helpers/OurbitMock'
 
 chai.use(spies)
 const sandbox = chai.spy.sandbox()
@@ -21,36 +26,36 @@ const transfer = (tokenId, to) => {
 describe('Blockstream', () => {
   let blockstream
   let ourbit
-  let onBlockSpy
-  let persistPatchSpy
+  let onBlock
   let stateReference
   const storeInterface = new MockPersistInterface()
 
   beforeEach(() => {
-    // tslint:disable-next-line
-    chai.spy.on(uuid, 'v4', () => {
-      return 'mockPatch'
-    })
+    sandbox.on(uuid, 'v4', () => 'mockPatch')
+    onBlock = chai.spy()
+    sandbox.on(storeInterface, [
+      'getTransactions',
+      'deleteTransaction',
+      'saveTransaction',
+      'getTransaction',
+    ])
 
     stateReference = kittyTracker
-
-    onBlockSpy = chai.spy()
-    persistPatchSpy = chai.spy()
-    sandbox.on(storeInterface, ['getTransactions', 'deleteTransaction', 'saveTransaction', 'getTransaction'])
-
-    ourbit = new Ourbit(stateReference, storeInterface, persistPatchSpy)
-    blockstream = new BlockStream(ourbit, onBlockSpy)
+    ourbit = new OurbitMock()
+    sandbox.on(ourbit, [
+      'processTransaction',
+      'rollbackTransaction',
+    ])
+    blockstream = new BlockStream(ourbit, onBlock)
   })
 
   afterEach(() => {
     sandbox.restore()
-    // tslint:disable-next-line
-    chai.spy.restore(uuid)
   })
 
-  describe('- start()', () => {
-  })
-
-  describe('- stop()', () => {
+  context('start', () => {
+    it('should start', async () => {
+      await blockstream.start()
+    })
   })
 })
