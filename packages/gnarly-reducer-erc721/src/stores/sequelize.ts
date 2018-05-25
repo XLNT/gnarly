@@ -16,9 +16,13 @@ const makeSequelizeTypeStore = (
 
   // the type store
   return {
-    __setup: async (reset: boolean = false) => {
-      await ERC721Tokens.sync({ force: reset })
-      await ERC721TokenOwners.sync({ force: reset })
+    __setup: async () => {
+      await ERC721Tokens.sync()
+      await ERC721TokenOwners.sync()
+    },
+    __setdown: async () => {
+      await ERC721TokenOwners.drop()
+      await ERC721Tokens.drop()
     },
     store: SequelizeTypeStorer(Sequelize, {
       tokens: ERC721Tokens,

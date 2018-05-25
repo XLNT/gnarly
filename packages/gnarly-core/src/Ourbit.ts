@@ -58,10 +58,11 @@ export interface ITransaction {
 }
 
 export type TypeStorer = (txId: string, patch: IOperation) => Promise<void>
-export type SetupFn = (reset: boolean) => Promise<any>
+export type SetupFn = () => Promise<any>
+export type SetdownFn = () => Promise<any>
 export interface ITypeStore {
   [_: string]: { // reducer
-    [_: string]: TypeStorer | SetupFn,
+    [_: string]: TypeStorer | SetupFn | SetdownFn,
   }
 }
 export type OpCollector = (op: IOperation) => void
@@ -78,7 +79,8 @@ export interface IPersistInterface {
   // event log CRUD actions
 
   // setup
-  setup (reset: boolean): Promise<any>
+  setup (): Promise<any>
+  setdown (): Promise<any>
 }
 
 interface ITxExtra {

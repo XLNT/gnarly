@@ -9,6 +9,7 @@ import Ourbit, {
   IPatch,
   IPersistInterface,
   ITypeStore,
+  SetdownFn,
   SetupFn,
   TypeStorer,
 } from './Ourbit'
@@ -77,10 +78,19 @@ class Gnarly extends EventEmitter {
 
   public reset = async (shouldReset: boolean = true) => {
     this.shouldResume = !shouldReset
-    await this.storeInterface.setup(shouldReset)
+    if (shouldReset) {
+      for (const key of Object.keys(this.typeStore)) {
+        const setdown = this.typeStore[key].__setdown as SetdownFn
+        await setdown()
+      }
+
+      await this.storeInterface.setdown()
+    }
+
+    await this.storeInterface.setup()
     for (const key of Object.keys(this.typeStore)) {
       const setup = this.typeStore[key].__setup as SetupFn
-      await setup(shouldReset)
+      await setup()
     }
   }
 

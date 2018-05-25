@@ -15,8 +15,11 @@ const makeSequelizeTypeStore = (
 
   // the type store
   return {
-    __setup: async (reset: boolean = false) => {
-      await Block.sync({ force: reset })
+    __setup: async () => {
+      await Block.sync()
+    },
+    __setdown: async () => {
+      await Block.drop()
     },
     store: SequelizeTypeStorer(Sequelize, {
       blocks: Block,

@@ -120,11 +120,18 @@ class SequelizePersistInterface implements IPersistInterface {
     this.Reason = Reason
   }
 
-  public setup = async (reset: boolean = false) => {
-    await this.Transaction.sync({ force: reset })
-    await this.Operation.sync({ force: reset })
-    await this.Reason.sync({ force: reset })
-    await this.Patch.sync({ force: reset })
+  public setup = async () => {
+    await this.Transaction.sync()
+    await this.Patch.sync()
+    await this.Operation.sync()
+    await this.Reason.sync()
+  }
+
+  public setdown = async () => {
+    await this.Reason.drop()
+    await this.Operation.drop()
+    await this.Patch.drop()
+    await this.Transaction.drop()
   }
 
   public getLatestTransaction = async (): Promise<ITransaction> => {

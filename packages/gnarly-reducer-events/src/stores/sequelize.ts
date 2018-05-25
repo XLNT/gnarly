@@ -14,8 +14,11 @@ const makeSequelizeTypeStore = (
 
   // the type store
   return {
-    __setup: async (reset: boolean = false) => {
-      await Events.sync({ force: reset })
+    __setup: async () => {
+      await Events.sync()
+    },
+    __setdown: async () => {
+      await Events.drop()
     },
     store: SequelizeTypeStorer(Sequelize, {
       events: Events,
