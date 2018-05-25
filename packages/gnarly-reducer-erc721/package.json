@@ -1,6 +1,6 @@
 {
   "name": "@xlnt/gnarly-reducer-erc721",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A gnarly reducer for ERC721 Token information.",
   "main": "lib/index.js",
   "scripts": {
@@ -30,7 +30,7 @@
     "@xlnt/gnarly-core": ">=0.1.10-2"
   },
   "devDependencies": {
-    "@xlnt/gnarly-core": "^0.3.0",
+    "@xlnt/gnarly-core": "^0.3.1",
     "ts-node": "^6.0.3",
     "tslint": "^5.9.1",
     "typescript": "^2.8.3"
