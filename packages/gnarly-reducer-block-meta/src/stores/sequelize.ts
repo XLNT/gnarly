@@ -19,7 +19,7 @@ const makeSequelizeTypeStore = (
       await Block.sync()
     },
     __setdown: async () => {
-      await Block.drop()
+      await Block.drop({ cascade: true })
     },
     store: SequelizeTypeStorer(Sequelize, {
       blocks: Block,

@@ -128,10 +128,10 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public setdown = async () => {
-    await this.Reason.drop()
-    await this.Operation.drop()
-    await this.Patch.drop()
-    await this.Transaction.drop()
+    await this.Reason.drop({ cascade: true })
+    await this.Operation.drop({ cascade: true })
+    await this.Patch.drop({ cascade: true })
+    await this.Transaction.drop({ cascade: true })
   }
 
   public getLatestTransaction = async (): Promise<ITransaction> => {

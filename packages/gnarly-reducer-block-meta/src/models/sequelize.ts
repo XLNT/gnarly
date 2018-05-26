@@ -18,6 +18,8 @@ const sequelizeModels = (
 
     hash: { type: DataTypes.STRING, primaryKey: true },
     number: { type: DataTypes.STRING },
+    unsafeNumber: { type: DataTypes.INTEGER },
+    // ^ unsafeNumber is unsafe because it's capped by postgres's integer range
     parentHash: { type: DataTypes.STRING },
     nonce: { type: DataTypes.STRING },
     sha3Uncles: { type: DataTypes.STRING },

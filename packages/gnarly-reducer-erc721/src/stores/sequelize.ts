@@ -21,8 +21,8 @@ const makeSequelizeTypeStore = (
       await ERC721TokenOwners.sync()
     },
     __setdown: async () => {
-      await ERC721TokenOwners.drop()
-      await ERC721Tokens.drop()
+      await ERC721TokenOwners.drop({ cascade: true })
+      await ERC721Tokens.drop({ cascade: true })
     },
     store: SequelizeTypeStorer(Sequelize, {
       tokens: ERC721Tokens,

@@ -18,7 +18,7 @@ const makeSequelizeTypeStore = (
       await Events.sync()
     },
     __setdown: async () => {
-      await Events.drop()
+      await Events.drop({ cascade: true })
     },
     store: SequelizeTypeStorer(Sequelize, {
       events: Events,

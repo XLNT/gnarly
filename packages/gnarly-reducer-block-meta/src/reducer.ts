@@ -18,6 +18,7 @@ const makeReducer = (
         transactionId: block.hash,
         // ^ assumes that gnarly.transactionId === block.hash
         number: block.number.toString(),
+        unsafeNumber: block.number.toString(),
         parentHash: block.parentHash,
         nonce: block.nonce.toString(),
         sha3Uncles: block.sha3Uncles,
