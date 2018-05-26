@@ -4,13 +4,14 @@
 
 # 🤙 Gnarly
 
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme) [![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=1)](https://github.com/ellerbrock/open-source-badges/)
+
+
 > Gnarly’s reduces blockchain events into a steady state with confidence.
 >
 > And that’s fuckin’ gnarly.
 
-⚠ WIP ⚠
-
-Join #gnarly in https://xlnt.chat if you're interested in chatting in real-time about the project.
+💬 Join #gnarly in https://xlnt.chat if you're interested in chatting in real-time about the project.
 
 ## Background
 
