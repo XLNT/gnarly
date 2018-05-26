@@ -79,6 +79,8 @@ lerna bootstrap
 
 ## Usage
 
+> ‼ Check out [XLNT/gnarly-demo](https://github.com/XLNT/gnarly-demo) for a demo of `gnarly` and `paperboy`.
+
 If you're a developer that would like to use gnarly, you can use the `gnarly-bin` project. The `gnarly-bin` project is a configuration-friendly approach for using gnarly. By telling it which reducers you care about, it produces a linux- and macos-friendly docker container that you can get started with immediately.
 
 *Note:* Right now, `gnarly-bin` doesn't actually do any of the configuration stuff; it's just some code. [See here for how it works](/packages/gnarly-bin/src/index.ts). Curently `gnarly-bin` is just configured with the above reducers to monitor CryptoKitty events and block metadata.
