@@ -59,11 +59,18 @@ class Gnarly extends EventEmitter {
       debug('Explicitely starting from %s', latestBlockHash || 'HEAD')
     } else {
       // otherwise, let's get some info and replay state
-      const latestTransaction = await this.storeInterface.getLatestTransaction()
-      latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
-      debug('Attempting to reload state from %s', latestBlockHash || 'HEAD')
-      // let's re-hydrate local state by replaying transactions
-      await this.ourbit.resumeFromTxId(latestBlockHash)
+      try {
+        const latestTransaction = await this.storeInterface.getLatestTransaction()
+        latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
+      } catch (error) {
+        debug('No latest transaction, so we\'re definitely starting from scratch')
+      }
+
+      if (latestBlockHash) {
+        debug('Attempting to reload state from %s', latestBlockHash || 'HEAD')
+        // let's re-hydrate local state by replaying transactions
+        await this.ourbit.resumeFromTxId(latestBlockHash)
+      }
     }
 
     // and now catch up from latestBlockHash

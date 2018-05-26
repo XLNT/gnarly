@@ -135,9 +135,14 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public getLatestTransaction = async (): Promise<ITransaction> => {
-    return (await this.Transaction.findOne({
-      order: [['createdAt', 'DESC']],
-    })).get({ plain })
+    try {
+      return (await this.Transaction.findOne({
+        order: [['createdAt', 'DESC']],
+        rejectOnEmpty: true,
+      })).get({ plain })
+    } catch (error) {
+      throw new Error(`Could not get latest transaction ${error.stack}`)
+    }
   }
 
   // fetch all transactions from txId to end until there are no more
@@ -187,24 +192,32 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public getTransaction = async (txId: string): Promise<ITransaction> => {
-    return (await this.Transaction.findOne({
-      where: { id: { [this.Sequelize.Op.eq]: txId } },
-      include: [{
-        model: this.Patch,
+    try {
+      return (await this.Transaction.findOne({
+        where: { id: { [this.Sequelize.Op.eq]: txId } },
         include: [{
-          model: this.Operation,
-          where: { volatile: { [this.Sequelize.Op.eq]: false } },
+          model: this.Patch,
+          include: [{
+            model: this.Operation,
+            where: { volatile: { [this.Sequelize.Op.eq]: false } },
+          }],
         }],
-      }],
-      rejectOnEmpty: true,
-    })).get({ plain })
+        rejectOnEmpty: true,
+      })).get({ plain })
+    } catch (error) {
+      throw new Error(`Could not find transaction ${txId} ${error.stack}`)
+    }
   }
 
   private getPlainTransaction = async (txId: string): Promise<ITransaction> => {
-    return (await this.Transaction.findOne({
-      where: { id: { [this.Sequelize.Op.eq]: txId } },
-      rejectOnEmpty: true,
-    })).get({ plain })
+    try {
+      return (await this.Transaction.findOne({
+        where: { id: { [this.Sequelize.Op.eq]: txId } },
+        rejectOnEmpty: true,
+      })).get({ plain })
+    } catch (error) {
+      throw new Error(`Could not get transaction ${txId} ${error.stack}`)
+    }
   }
 }
 

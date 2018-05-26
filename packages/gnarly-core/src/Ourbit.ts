@@ -201,6 +201,7 @@ class Ourbit {
   }
 
   private notifyPatches = async (txId: string, patches: IPatch[]) => {
+    debug('notifyPatches: %s, %j', txId, patches)
     for (const patch of patches) {
       await this.persistPatch(txId, patch)
     }

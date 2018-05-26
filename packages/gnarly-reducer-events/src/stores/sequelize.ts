@@ -12,7 +12,6 @@ const makeSequelizeTypeStore = (
     Events,
   } = sequelizeModels(Sequelize, sequelize)
 
-  // the type store
   return {
     __setup: async () => {
       await Events.sync()

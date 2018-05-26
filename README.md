@@ -131,6 +131,111 @@ yarn run docker-build
 # then `yarn run docker-push`
 ```
 
+## Writing a Reducer
+
+If the first-party reducers don't cover your needs, you can easily write your own reducer and plug it into your gnarly instance.
+
+Look at [gnarly-reducer-erc721](/packages/gnarly-reducer-erc721) or [gnarly-reducer-events](/packages/gnarly-reducer-events) or[gnarly-reducer-block-meta](/packages/gnarly-reducer-block-meta) for inspiration and up-to-date examples, but here we go!
+
+A reducer is a way to tell gnarly how to change the state you manage. You also include a `TypeStore` which tells gnarly how to store the state you're producing.
+
+Here's an example of a reducer to track events:
+
+```ts
+import {
+  addABI,
+  appendTo,
+  because,
+  Block,
+  emit,
+  forEach,
+  getLogs,
+  IABIItemInput,
+  ILog,
+  IReducer,
+  ReducerType,
+  toHex,
+} from '@xlnt/gnarly-core'
+import flatten = require('arr-flatten')
+
+// all events are part of the same domain
+const key = 'events'
+
+const makeReducer = (
+  config: { [_: string]: IABIItemInput[] } = {},
+): IReducer => {
+  const addrs = Object.keys(config)
+
+  // add the abis to the global registry
+  // this is how we determine if this event is one we care about or not
+  for (const addr of addrs) {
+    addABI(addr, config[addr])
+  }
+
+  // given a state, build a set of actions that operate over that state
+  // in this case, we don't have any mutable state! so `state` is null
+  const makeActions = (state: undefined) => ({
+    // define an `emit` action
+    emit: (log: ILog) => {
+      // this emit action uses gnarly.emit to produce an immutable
+      // append operation to the events domain within the reducer's key
+      // this operation includes all of the information your TypeStore needs
+      emit(appendTo(key, 'events', {
+        address: log.address,
+        event: log.event,
+        eventName: log.eventName,
+        signature: log.signature,
+        args: log.args,
+      }))
+    },
+  })
+
+  // we give gnarly a ReducerConfig, which tells it how this reducer
+  // operates and should be run
+  return {
+    config: {
+      // this reducer is an Atomic reducer
+      // (i.e., it doesn't care about _when_ it is run and doesn't operate on past information)
+      type: ReducerType.Atomic,
+      // it has a key of `key`
+      key,
+    },
+    // the default state is undefined. see gnarly-reducer-erc721 for a mutable state example
+    state: undefined,
+    // the reduction function! accept the previous state and the block
+    // and produce changes to the state
+    reduce: async (state: undefined, block: Block): Promise<void> => {
+      // let's build our actions from above
+      const actions = makeActions(state)
+
+      // let's pull the logs for every address we care about this block
+      const logs = await forEach(addrs, async (addr) => getLogs({
+        fromBlock: toHex(block.number),
+        toBlock: toHex(block.number),
+        address: addr,
+      }))
+
+      // then we'll look through those logs for ones that we recognize
+      flatten(logs).forEach((log) => {
+        const recognized = log.parse()
+        if (recognized) {
+          // and then emit them!
+          because('EVENT_EMITTED', {}, () => {
+            actions.emit(log)
+          })
+        }
+      })
+    },
+  }
+}
+
+export default makeReducer
+```
+
+That's how easy it is to make a reducer to track events on Ethereum. This reducer automatically stays up to date with the latest block and all those other fun features from above. Neat!
+
+Look in the [gnarly-reducer-events](/packages/gnarly-reducer-events) folder for the rest of the example files.
+
 ## TODO
 
 We'd love your help with any of this stuff

@@ -58,14 +58,18 @@ class BlockStream {
 
     let startBlockNumber
     if (fromBlockHash === null) {
-      // if no hash provided, we're starting from scratch
-      startBlockNumber = toBN(0)
+      // if no hash provided, we're starting from HEAD
+      startBlockNumber = toBN(
+        (await globalState.api.getLatestBlock()).number,
+      )
     } else {
       // otherwise get the expected block's number
       const startFromBlock = await globalState.api.getBlockByHash(fromBlockHash)
       startBlockNumber = toBN(startFromBlock.number).add(toBN(1))
       // ^ +1 because we already know about this block and we want the next
     }
+
+    debug('Beginning from block %d', startBlockNumber)
 
     // get the latest block
     let latestBlockNumber = toBN(
