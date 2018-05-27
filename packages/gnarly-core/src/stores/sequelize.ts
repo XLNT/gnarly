@@ -30,7 +30,9 @@ export const makeSequelizeModels = (
   })
 
   const Operation = sequelize.define('operation', {
+    path: { type: DataTypes.STRING },
     op: { type: DataTypes.JSONB },
+    value: { type: DataTypes.JSONB },
     oldValue: { type: DataTypes.JSONB },
     volatile: { type: DataTypes.BOOLEAN, defaultValue: false },
   })
@@ -197,9 +199,11 @@ class SequelizePersistInterface implements IPersistInterface {
         where: { id: { [this.Sequelize.Op.eq]: txId } },
         include: [{
           model: this.Patch,
+          required: false,
           include: [{
             model: this.Operation,
             where: { volatile: { [this.Sequelize.Op.eq]: false } },
+            required: false,
           }],
         }],
         rejectOnEmpty: true,

@@ -222,9 +222,13 @@ class Ourbit {
     // construct inverse patches
     const inversePatches = tx.patches.map(invertPatch)
     const inverseOperations = operationsOfPatches(inversePatches)
-    // apply locally
-    applyPatch(this.targetState, inverseOperations.map(toOperation))
-    // apply to store
+    debug('INVERTING: %j -> %j', tx.patches, inversePatches)
+    debug('OPERATIONS: %j', inverseOperations)
+
+    const mutableOperations = inverseOperations.filter((op) => !op.volatile)
+    // apply mutable changes locally
+    applyPatch(this.targetState, mutableOperations.map(toOperation))
+    // apply to store (mutable and volatile)
     await this.notifyPatches(tx.id, inversePatches)
     // delete transaction
     await this.store.deleteTransaction(tx)

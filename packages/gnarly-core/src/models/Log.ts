@@ -66,7 +66,7 @@ export default class Log {
     // ^ there are no topics, which means this is an anonymous event or something
     // and therefore we don't care about it (for now?)
 
-    const [eventSig, topics] = this.topics
+    const [eventSig, ...topics] = this.topics
     // ^ the first argument in topics (from solidity) is always the event signature
 
     // find the inputs by signature

@@ -10,7 +10,7 @@ import {
   Log as BlockstreamLog,
 } from 'ethereumjs-blockstream'
 import 'isomorphic-fetch'
-import Queue = require('promise-queue')
+import PQueue = require('p-queue')
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
@@ -37,8 +37,9 @@ class BlockStream {
    */
   private syncing = false
 
-  private pendingTransactions: Queue = new Queue(1, MAX_QUEUE_LENGTH)
-  // only 100 pending transactions at once or something, dial this in
+  private pendingTransactions: PQueue = new PQueue({
+    concurrency: 1,
+  })
 
   constructor (
     private ourbit: Ourbit,
@@ -89,7 +90,7 @@ class BlockStream {
       while (i.lt(latestBlockNumber)) {
         // if we're at the top of the queue
         // wait a bit and then add the thing
-        while (this.pendingTransactions.getQueueLength() + 1 >= MAX_QUEUE_LENGTH) {
+        while (this.pendingTransactions.size >= MAX_QUEUE_LENGTH) {
           debugFastForward(
             'Reached max queue size of %d, waiting a bit...',
             MAX_QUEUE_LENGTH,
@@ -122,8 +123,8 @@ class BlockStream {
       this.streamer.unsubscribeFromOnBlockAdded(this.onBlockAddedSubscriptionToken)
       this.streamer.unsubscribeFromOnBlockRemoved(this.onBlockRemovedSubscriptionToken)
     }
-    debug('Pending Transactions: %d', this.pendingTransactions.getPendingLength())
-    await this.pendingTransactions.add(() => Promise.resolve())
+    debug('Pending Transactions: %d', this.pendingTransactions.size)
+    await this.pendingTransactions.onIdle()
     debug('Done! Exiting...')
   }
 
@@ -148,13 +149,16 @@ class BlockStream {
   }
 
   private onBlockInvalidated = (block: BlockstreamBlock) => {
-    debugOnBlockInvalidated(
-      'block %s (%s)',
-      block.number,
-      block.hash,
-    )
+    const pendingTransaction = async () => {
+      debugOnBlockInvalidated(
+        'block %s (%s)',
+        block.number,
+        block.hash,
+      )
 
-    const pendingTransaction = async () => this.ourbit.rollbackTransaction(block.hash)
+      return this.ourbit.rollbackTransaction(block.hash)
+    }
+
     this.pendingTransactions.add(pendingTransaction)
   }
 

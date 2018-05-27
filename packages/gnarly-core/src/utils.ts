@@ -99,7 +99,11 @@ export const invertOperation = (operation: IOperation): IOperation => {
 
 export const invertPatch = (patch: IPatch): IPatch => ({
   ...patch,
-  operations: patch.operations.map(invertOperation),
+  operations: patch.operations.map(invertOperation).reverse(),
+  reason: {
+    key: 'ROLLBACK',
+    meta: { prevReason: patch.reason },
+  },
 })
 
 export const operationsOfPatch = (patch: IPatch): IOperation[] =>
