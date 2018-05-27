@@ -1,5 +1,6 @@
 import makeDebug = require('debug')
 const debug = makeDebug('gnarly-core:ourbit')
+const debugNotifyPatches = makeDebug('gnarly-core:ourbit:notifyPatches')
 
 import {
   applyPatch,
@@ -201,7 +202,7 @@ class Ourbit {
   }
 
   private notifyPatches = async (txId: string, patches: IPatch[]) => {
-    debug('notifyPatches: %s, %j', txId, patches)
+    debugNotifyPatches('notifyPatches: %s, %j', txId, patches)
     for (const patch of patches) {
       await this.persistPatch(txId, patch)
     }
