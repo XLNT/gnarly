@@ -6,7 +6,6 @@ import {
   applyPatch,
   generate,
   observe,
-  Operation,
   unobserve,
 } from '@xlnt/fast-json-patch'
 

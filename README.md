@@ -80,6 +80,12 @@ yarn global add lerna
 lerna bootstrap
 ```
 
+Now you should be able to run the tests with
+
+```bash
+lerna run test --scope=@xlnt/gnarly-core
+```
+
 ## Usage
 
 > ‼ Check out [XLNT/gnarly-demo](https://github.com/XLNT/gnarly-demo) for a demo of `gnarly` and `paperboy`.
