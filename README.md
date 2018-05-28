@@ -29,7 +29,7 @@ This model allows us to also tackle the "severe asychronicity" of most blockchai
         Gnarly is a centralized state store, so you immediately trade away decentralization for user experience. We have a plan (decentralized snapshots) to support client-side gnarly indexes, but this is still a ways away.
     </p>
     <p>
-        Syncing a gnarly indexer is _slow_; it's around 1 block/second on average in tests. This means that creating an index from something far in the fast is likely to take 15x shorter time than the time the events are being emitted. So if we want to index all of the CryptoKitties, which have been around for 6 months, it'll take around 12 days.
+        Syncing a gnarly indexer is _slow_; it's around 1 block/second on average in tests. This means that creating an index from something far in the past is likely to take 15x shorter time than the time the events are being emitted. So if we want to index all of the CryptoKitties, which have been around for 6 months, it'll take around 12 days.
     </p>
     <p>
         Obviously, it can easily keep up with the 15 second block times offered by the Ethereum main and test networks, so if you run a gnarly indexer as you launch your product, you won't experience this issue. We're naturally working hard on maximizing gnarly's processing speed.
