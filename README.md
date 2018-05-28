@@ -73,6 +73,9 @@ cd gnarly
 # install yarn if you haven't already
 # $ npm i -g yarn
 
+# install lerna
+yarn global add lerna
+
 # boostrap the packages within this project (install deps, linking, etc)
 lerna bootstrap
 ```

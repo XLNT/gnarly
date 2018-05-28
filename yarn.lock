@@ -50,9 +50,9 @@
   dependencies:
     "@types/node" "*"
 
-"@xlnt/fast-json-patch@^2.0.6":
-  version "2.0.6"
-  resolved "https://registry.yarnpkg.com/@xlnt/fast-json-patch/-/fast-json-patch-2.0.6.tgz#85a79bd1fb2b7858a1aa63136380ced106fbe16d"
+"@xlnt/fast-json-patch@^2.0.7":
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/@xlnt/fast-json-patch/-/fast-json-patch-2.0.7.tgz#05bf583f847835892402389d72feec4cda89a15f"
   dependencies:
     deep-equal "^1.0.1"
 
