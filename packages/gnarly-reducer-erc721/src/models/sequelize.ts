@@ -26,18 +26,13 @@ const sequelizeModels = (
     })
 
   const ERC721TokenOwners = sequelize.define(`${key}_owners`, {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    uuid: { type: DataTypes.STRING },
+    uuid: { type: DataTypes.STRING, primaryKey: true },
 
     // properties of each owner
     address: { type: DataTypes.STRING },
 
     // this is a fk table so it needs an order key
-    order: { type: DataTypes.INTEGER },
-  }, {
-    indexes: [
-      { fields: ['tokenId'] },
-    ],
+    // order: { type: DataTypes.INTEGER },
   })
 
   ERC721Tokens.belongsTo(Patch)

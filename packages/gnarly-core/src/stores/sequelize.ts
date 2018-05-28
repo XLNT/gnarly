@@ -202,7 +202,9 @@ class SequelizePersistInterface implements IPersistInterface {
           required: false,
           include: [{
             model: this.Operation,
-            where: { volatile: { [this.Sequelize.Op.eq]: false } },
+            required: false,
+          }, {
+            model: this.Reason,
             required: false,
           }],
         }],

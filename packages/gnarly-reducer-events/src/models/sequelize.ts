@@ -12,7 +12,7 @@ const sequelizeModels = (
   const { Patch } = makeGnarlyModels(Sequelize, sequelize)
 
   const Events = sequelize.define('events', {
-    uuid: { type: DataTypes.STRING },
+    uuid: { type: DataTypes.STRING, primaryKey: true },
 
     address: { type: DataTypes.STRING },
     event: { type: DataTypes.STRING },
@@ -21,7 +21,6 @@ const sequelizeModels = (
     args: { type: DataTypes.JSONB },
   }, {
     indexes: [
-      { fields: ['uuid'] },
       { fields: ['address'] },
       { fields: ['event'] },
     ],

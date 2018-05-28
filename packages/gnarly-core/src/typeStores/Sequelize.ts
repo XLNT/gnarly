@@ -56,13 +56,10 @@ const buildTypeStore = (Sequelize, schema) => async (
   const {
     primaryKeyAttribute,
   } = model
-  const foreignKeys = getForeignKeys(model)
-  const hasForeignKey = foreignKeys.length > 0
+  // const foreignKeys = getForeignKeys(model)
+  // const hasForeignKey = foreignKeys.length > 0
 
-  // @TODO - make this more intelligent? for now we only support one foreign key
-  const selector = hasForeignKey
-    ? foreignKeys[0]
-    : primaryKeyAttribute
+  const selector = primaryKeyAttribute
 
   // if there's a foreign key, it's probably belongs_to
   // so use that as the window

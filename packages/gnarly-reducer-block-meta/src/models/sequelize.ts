@@ -14,9 +14,9 @@ const sequelizeModels = (
   // @TODO - allow users to decide if they want to coerce these large numbers
   // into actual number types
   const Block = sequelize.define(tableName, {
-    uuid: { type: DataTypes.STRING },
+    uuid: { type: DataTypes.STRING, primaryKey: true },
 
-    hash: { type: DataTypes.STRING, primaryKey: true },
+    hash: { type: DataTypes.STRING },
     number: { type: DataTypes.STRING },
     unsafeNumber: { type: DataTypes.INTEGER },
     // ^ unsafeNumber is unsafe because it's capped by postgres's integer range
@@ -36,7 +36,7 @@ const sequelizeModels = (
     timestamp: { type: DataTypes.DATE },
   }, {
     indexes: [
-      { fields: ['uuid'] },
+      { fields: ['hash'], unique: true },
     ],
   })
 
