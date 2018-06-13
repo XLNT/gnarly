@@ -22,21 +22,21 @@ const TRANSFER_ABI: IABIItemInput = {
   type: 'event',
 }
 
-describe('utils', () => {
-  before(() => {
+describe('utils', function () {
+  before(function () {
     chai.spy.on(uuid, 'v4', () => 'uuid')
   })
 
-  after(() => {
+  after(function () {
     chai.spy.restore()
   })
-  context('parsePath', () => {
-    it('should parse path correctly', async () => {
+  context('parsePath', function () {
+    it('should parse path correctly', async function () {
       const parts = utils.parsePath('/scope/tableName/pk/indexOrKey')
       Object.keys(parts).should.deep.equal(Object.values(parts))
     })
 
-    it('should parse path without index correctly', async () => {
+    it('should parse path without index correctly', async function () {
       const parts = utils.parsePath('/scope/tableName/pk')
       parts.scope.should.equal('scope')
       parts.tableName.should.equal('tableName')
@@ -45,21 +45,21 @@ describe('utils', () => {
     })
   })
 
-  context('addressesEqual', () => {
-    it('should work on mixed case addresses', async () => {
+  context('addressesEqual', function () {
+    it('should work on mixed case addresses', async function () {
       utils.addressesEqual('0x1', '0x1').should.eq(true)
       utils.addressesEqual('0xA', '0xA').should.eq(true)
       utils.addressesEqual('0xA', '0xa').should.eq(true)
       utils.addressesEqual('0xa', '0xA').should.eq(true)
     })
 
-    it('should detect non equal addresses', async () => {
+    it('should detect non equal addresses', async function () {
       utils.addressesEqual('0x1', '0x2').should.eq(false)
     })
   })
 
-  context('enhanceAbiItem', () => {
-    it('should produce name, sig, shortId', async () => {
+  context('enhanceAbiItem', function () {
+    it('should produce name, sig, shortId', async function () {
       const enhanced = utils.enhanceAbiItem(TRANSFER_ABI)
       enhanced.fullName.should.eq('Transfer(address,address,uint256)')
       enhanced.signature.should.eq('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')
@@ -68,16 +68,16 @@ describe('utils', () => {
     })
   })
 
-  context('getMethodId', () => {
-    it('works', async () => {
+  context('getMethodId', function () {
+    it('works', async function () {
       utils.getMethodId(
         '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
       ).should.eq('0xddf252ad')
     })
   })
 
-  context('invertOperation', () => {
-    it('inverts an add operation', async () => {
+  context('invertOperation', function () {
+    it('inverts an add operation', async function () {
       const add: IOperation = {
         op: 'add',
         path: '/myThing',
@@ -92,7 +92,7 @@ describe('utils', () => {
       inverted.oldValue.should.eq(add.value)
     })
 
-    it('inverts a remove operation', async () => {
+    it('inverts a remove operation', async function () {
       const remove: IOperation = {
         op: 'remove',
         path: '/myThing',
@@ -107,7 +107,7 @@ describe('utils', () => {
       should.not.exist(inverted.oldValue)
     })
 
-    it('inverts a replace operation', async () => {
+    it('inverts a replace operation', async function () {
       const replace: IOperation = {
         op: 'replace',
         path: '/myThing',
@@ -123,34 +123,34 @@ describe('utils', () => {
       inverted.oldValue.should.eq(replace.value)
     })
 
-    it('should throw on invalid operation', async () => {
+    it('should throw on invalid operation', async function () {
       const invalid: IOperation = {
         op: 'move',
         path: '/myThing',
         volatile: false,
       }
-      const test = () => {
+      const test = function () {
         utils.invertOperation(invalid)
       }
       test.should.throw()
     })
 
-    it('silently fails on non-invertable operation', async () => {
+    it('silently fails on non-invertable operation', async function () {
       // @TODO(shrugs) - should this succeed or fail??
       const nonInvertable: IOperation = {
         op: 'add',
         path: '/myThing',
         volatile: false,
       }
-      const test = () => {
+      const test = function () {
         utils.invertOperation(nonInvertable)
       }
       test.should.not.throw()
     })
   })
 
-  context('appendTo', () => {
-    it('generates a valid op', async () => {
+  context('appendTo', function () {
+    it('generates a valid op', async function () {
       const op = utils.appendTo('key', 'domain', { test: true })
       op.op.should.eq('add')
       op.path.should.eq('/key/domain/uuid')
@@ -160,5 +160,40 @@ describe('utils', () => {
       })
       op.volatile.should.eq(true)
     })
+  })
+
+  context('cacheApiRequest', function () {
+
+    beforeEach(async function () {
+      this.spy = chai.spy()
+      const fn = async (arg: number) => {
+        this.spy(arg)
+        return arg
+      }
+
+      this.memoized = utils.cacheApiRequest(fn)
+    })
+
+    afterEach(async function () {
+      this.memoized.clear()
+    })
+
+    it ('should memoize the function that returns a promise', async function () {
+      await this.memoized(1)
+      await this.memoized(1)
+
+      this.spy.should.have.been.called.exactly(1)
+      this.spy.should.have.been.called.with(1)
+    })
+
+    // it('should expire after maxAge', async function () {
+    //   // this test is annnoying to run, but it should work
+    //   this.timeout(2500)
+    //   await this.memoized(1)
+    //   await utils.timeout(2000)
+    //   await this.memoized(1)
+
+    //   this.spy.should.have.been.called.exactly(2)
+    // })
   })
 })

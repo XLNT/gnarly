@@ -8,12 +8,39 @@ import {
 
 import { IJSONBlock } from '../models/Block'
 import { IJSONExternalTransactionReceipt } from '../models/ExternalTransaction'
-import { IJSONLog } from '../models/Log'
-
 import { IJSONInternalTransaction } from '../models/InternalTransaction'
+import { IJSONLog } from '../models/Log'
 import IngestApi from './IngestApi'
 
-export default class NodeApi implements IngestApi {
+import {
+  cacheApiRequest,
+} from '../utils'
+
+export default class Web3Api implements IngestApi {
+
+  private doFetch = cacheApiRequest(
+    async (method: string, params: any[] = []): Promise<any> => {
+      const res = await fetch(this.nodeEndpoint, {
+        method: 'POST',
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method,
+          params,
+        }),
+      })
+      const data = await res.json()
+      if (data.result === undefined || data.result === null) {
+        throw new Error(`
+          Invalid JSON response: ${JSON.stringify(data, null, 2)}
+          for ${method} ${JSON.stringify(params, null, 2)}
+        `)
+      }
+
+      return data.result
+    },
+  )
 
   public constructor (
     private nodeEndpoint: string,
@@ -46,27 +73,5 @@ export default class NodeApi implements IngestApi {
 
   public traceTransaction = async (hash: string): Promise<IJSONInternalTransaction[]> => {
     return (await this.doFetch('trace_replayTransaction', [hash, ['trace']])).trace
-  }
-
-  private doFetch = async (method: string, params: any[] = []): Promise<any> => {
-    const res = await fetch(this.nodeEndpoint, {
-      method: 'POST',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method,
-        params,
-      }),
-    })
-    const data = await res.json()
-    if (data.result === undefined || data.result === null) {
-      throw new Error(`
-        Invalid JSON response: ${JSON.stringify(data, null, 2)}
-        for ${method} ${JSON.stringify(params, null, 2)}
-      `)
-    }
-
-    return data.result
   }
 }

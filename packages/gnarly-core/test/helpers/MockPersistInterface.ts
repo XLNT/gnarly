@@ -24,6 +24,10 @@ class MockPersistInterface implements IPersistInterface {
     this.transactions = []
   }
 
+  public setdown = async () => {
+    //
+  }
+
   public async getAllTransactionsTo (toTxId: null | string): Promise<any> {
     return iter([this.transactions])
   }

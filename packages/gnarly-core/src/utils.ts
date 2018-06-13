@@ -1,6 +1,7 @@
 import { Operation } from '@xlnt/fast-json-patch'
 import BN = require('bn.js')
 import _ = require('lodash')
+import memoize from 'moize'
 import numberToBN = require('number-to-bn')
 import pMap = require('p-map')
 import uuid = require('uuid')
@@ -12,6 +13,13 @@ import {
   IPatch,
   IPathThing,
 } from './Ourbit'
+
+const API_CACHE_MAX_AGE = 1000
+
+export const cacheApiRequest = (fn) => memoize(fn, {
+  isPromise: true,
+  maxAge: API_CACHE_MAX_AGE,
+})
 
 export const parsePath = (path: string): IPathThing => {
   const [
