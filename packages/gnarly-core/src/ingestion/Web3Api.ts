@@ -6,18 +6,18 @@ import {
   FilterOptions,
 } from 'ethereumjs-blockstream'
 
-import { IJSONBlock } from './Block'
-import { IJSONExternalTransactionReceipt } from './ExternalTransaction'
-import { IJSONLog } from './Log'
+import { IJSONBlock } from '../models/Block'
+import { IJSONExternalTransactionReceipt } from '../models/ExternalTransaction'
+import { IJSONLog } from '../models/Log'
 
-import { IJSONInternalTransaction } from './InternalTransaction'
+import { IJSONInternalTransaction } from '../models/InternalTransaction'
+import IngestApi from './IngestApi'
 
-export default class NodeApi {
+export default class NodeApi implements IngestApi {
 
   public constructor (
     private nodeEndpoint: string,
   ) {
-
   }
 
   public getBlockByNumber = async (num: BN): Promise<IJSONBlock> => {

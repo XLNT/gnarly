@@ -5,9 +5,9 @@
 
 // @TODO(shrugs) - add memoize back and use redis or something
 // import { memoize } from 'async-decorators'
+import IngestApi from './ingestion/IngestApi'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
-import NodeApi from './models/NodeApi'
 import { IOperation, OpCollector } from './Ourbit'
 import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 
@@ -19,7 +19,7 @@ type ABIItemSet = IABIItem[]
 export class GnarlyGlobals {
   // @TODO(shrugs) - do we need to move this to a contract artifact?
   public abis: { [s: string]: ABIItemSet } = {}
-  public api: NodeApi
+  public api: IngestApi
 
   public currentReason: string = null
   public currentMeta: any = null
@@ -31,7 +31,7 @@ export class GnarlyGlobals {
     return logs.map((l) => new Log(null, l))
   }
 
-  public setApi = (api: NodeApi) => {
+  public setApi = (api: IngestApi) => {
     this.api = api
   }
 

@@ -14,8 +14,8 @@ import Ourbit, {
   TypeStorer,
 } from './Ourbit'
 
+import Web3Api from './ingestion/Web3Api'
 import Block, { IJSONBlock } from './models/Block'
-import NodeApi from './models/NodeApi'
 import { IReducer, ReducerType } from './reducer'
 
 import { globalState } from './globalstate'
@@ -36,7 +36,7 @@ class Gnarly extends EventEmitter {
     private reducers: IReducer[],
   ) {
     super()
-    globalState.setApi(new NodeApi(nodeEndpoint))
+    globalState.setApi(new Web3Api(nodeEndpoint))
 
     this.ourbit = new Ourbit(
       this.stateReference,

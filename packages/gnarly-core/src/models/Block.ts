@@ -4,11 +4,7 @@ import pMap from 'p-map'
 import ExternalTransaction, {
   IJSONExternalTransaction,
 } from './ExternalTransaction'
-import InternalTransaction from './InternalTransaction'
-import NodeApi from './NodeApi'
 import Transaction from './Transaction'
-
-import { Block as BlockstreamBlock } from 'ethereumjs-blockstream'
 
 import { toBN } from '../utils'
 
