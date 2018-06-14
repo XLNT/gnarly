@@ -1,143 +1,55 @@
 import makeDebug = require('debug')
 const debug = makeDebug('gnarly-core')
 
-import { EventEmitter } from 'events'
-
-import Blockstream from './Blockstream'
-import Ourbit, {
-  IOperation,
-  IPatch,
-  IPersistInterface,
-  ITypeStore,
-  SetdownFn,
-  SetupFn,
-  TypeStorer,
-} from './Ourbit'
-
-import Web3Api from './ingestion/Web3Api'
-import Block, { IJSONBlock } from './models/Block'
-import { IReducer, ReducerType } from './reducer'
-
 import { globalState } from './globalstate'
-import { parsePath } from './utils'
 
-export type OnBlockHandler = (block: Block) => () => Promise<void>
+import IIngestApi from './ingestion/IngestApi'
+import { IReducer } from './reducer'
+import { IPersistInterface } from './stores'
 
-class Gnarly extends EventEmitter {
-  public ourbit: Ourbit
-  public blockstreamer: Blockstream
-  public shouldResume: boolean = true
+import ReducerRunner, { makeRunner } from './ReducerRunner'
+
+class Gnarly {
+  private runners: ReducerRunner[] = []
 
   constructor (
-    private stateReference: object,
-    private storeInterface: IPersistInterface,
-    private nodeEndpoint: string,
-    private typeStore: ITypeStore,
+    ingestApi: IIngestApi,
+    store: IPersistInterface,
     private reducers: IReducer[],
   ) {
-    super()
-    globalState.setApi(new Web3Api(nodeEndpoint))
-
-    this.ourbit = new Ourbit(
-      this.stateReference,
-      this.storeInterface,
-      this.persistPatchHandler,
-    )
-
-    this.blockstreamer = new Blockstream(
-      this.ourbit,
-      this.handleNewBlock,
-    )
+    globalState.setApi(ingestApi)
+    globalState.setStore(store)
   }
 
-  public shaka = async (fromBlockHash: string) => {
-    let latestBlockHash
+  public shaka = async (fromBlockHash: string | null) => {
+    debug('Surfs up!')
+    this.reducers.forEach((reducer) => this.addReducer(reducer, fromBlockHash))
+  }
 
-    if (!this.shouldResume) {
-      // we reset, so let's start from scratch
-      latestBlockHash = fromBlockHash || null
-      debug('Explicitely starting from %s', latestBlockHash || 'HEAD')
-    } else {
-      // otherwise, let's get some info and replay state
-      try {
-        const latestTransaction = await this.storeInterface.getLatestTransaction()
-        latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
-      } catch (error) {
-        debug('No latest transaction, so we\'re definitely starting from scratch')
-      }
-
-      if (latestBlockHash) {
-        debug('Attempting to reload state from %s', latestBlockHash || 'HEAD')
-        // let's re-hydrate local state by replaying transactions
-        await this.ourbit.resumeFromTxId(latestBlockHash)
-      }
-    }
-
-    // and now catch up from latestBlockHash
-    //   (which is either forced by env or the last tx id)
-    await this.blockstreamer.start(latestBlockHash)
-    return this.bailOut.bind(this)
+  public addReducer = async (reducer: IReducer, fromBlockHash: string | null) => {
+    const runner = makeRunner(reducer)
+    this.runners.push(runner)
+    // start running the reducer, asynchronously
+    runner.run(fromBlockHash)
   }
 
   public bailOut = async () => {
-    await this.blockstreamer.stop()
+    debug('Gracefully decomposing reducers...')
+    await Promise.all(this.runners.map((r) => r.stop()))
+    debug('Now that was gnarly!')
   }
 
   public reset = async (shouldReset: boolean = true) => {
-    this.shouldResume = !shouldReset
+    // reset gnarly internal state
     if (shouldReset) {
-      for (const key of Object.keys(this.typeStore)) {
-        const setdown = this.typeStore[key].__setdown as SetdownFn
-        await setdown()
-      }
-
-      await this.storeInterface.setdown()
+      await globalState.store.setdown()
     }
+    await globalState.store.setup()
 
-    await this.storeInterface.setup()
-    for (const key of Object.keys(this.typeStore)) {
-      const setup = this.typeStore[key].__setup as SetupFn
-      await setup()
-    }
-  }
-
-  private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
-    const block = await this.normalizeBlock(rawBlock)
-
-    for (const reducer of this.reducers) {
-      switch (reducer.config.type) {
-        case ReducerType.Idempotent:
-          if (!syncing) {
-            // only call Idempotent reducers if not syncing
-            await reducer.reduce(this.stateReference[reducer.config.key], block)
-          }
-          break
-        case ReducerType.TimeVarying:
-        case ReducerType.Atomic:
-          await reducer.reduce(this.stateReference[reducer.config.key], block)
-          break
-        default:
-          throw new Error(`Unexpected ReducerType ${reducer.config.type}`)
-      }
-    }
-
-    this.emit('block', block)
-  }
-
-  private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {
-    return new Block(block)
-  }
-
-  private persistPatchHandler = async (txId: string, patch: IPatch) => {
-    for (const op of patch.operations) {
-      await this.persistOperation(patch.id, op)
-    }
-  }
-
-  private persistOperation = async (patchId: string, operation: IOperation) => {
-    const { scope } = parsePath(operation.path)
-    const storer = this.typeStore[scope].store as TypeStorer
-    await storer(patchId, operation)
+    // reset all reducer states
+    debug('%s reducer stores: %s...', shouldReset ? 'Resetting' : 'Setting up')
+    await Promise.all(this.runners.map((runner) => runner.reset(shouldReset)))
+    debug('Done with %s reducers.', shouldReset ? 'resetting' : 'setting up')
   }
 }
 

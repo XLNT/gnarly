@@ -7,10 +7,10 @@ import { globalState } from '../src/globalstate'
 import * as utils from '../src/utils'
 
 import Ourbit, {
-  IPersistInterface,
   ITransaction,
-} from '../src/Ourbit'
+} from '../src/ourbit'
 import {
+  IPersistInterface,
   SequelizePersistInterface,
 } from '../src/stores'
 import MockPersistInterface from './helpers/MockPersistInterface'
@@ -66,8 +66,10 @@ describe('Ourbit', () => {
       'saveTransaction',
     ])
 
+    globalState.setStore(store)
+
     persistPatch = chai.spy()
-    ourbit = new Ourbit(targetState, store, persistPatch)
+    ourbit = new Ourbit('test', targetState, persistPatch)
   })
 
   afterEach(() => {
@@ -162,7 +164,7 @@ describe('Ourbit', () => {
 
     const newState = {}
     // new state, same store
-    const newOurbit = new Ourbit(newState, store, persistPatch)
+    const newOurbit = new Ourbit('test', newState, persistPatch)
 
     await newOurbit.resumeFromTxId('0x1')
     newState.should.deep.equal({ key: 'value' })

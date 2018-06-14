@@ -1,4 +1,5 @@
 import Block from '../models/Block'
+import { ITypeStore } from '../typeStore'
 
 export enum ReducerType {
   /**
@@ -49,6 +50,11 @@ export interface IReducerConfig {
    * The name of the reducer in the root state.
    */
   key: string
+
+  /**
+   * The typestore to persist the reducer's state
+   */
+  typeStore: ITypeStore
 }
 
 /**
@@ -60,15 +66,4 @@ export interface IReducer {
   config: IReducerConfig
   state: object,
   reduce: TransactionProducer
-}
-
-/**
- * Using the type information from the reducers array, build a root store
- * and a stateReference to that root store.
- */
-export const makeStateReference = (reducers: IReducer[]): object => {
-  return reducers.reduce((memo, r) => ({
-    ...memo,
-    [r.config.key]: r.state,
-  }), {})
 }

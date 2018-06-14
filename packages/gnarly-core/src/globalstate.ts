@@ -5,10 +5,11 @@
 
 // @TODO(shrugs) - add memoize back and use redis or something
 // import { memoize } from 'async-decorators'
-import IngestApi from './ingestion/IngestApi'
+import IIngestApi from './ingestion/IngestApi'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
-import { IOperation, OpCollector } from './Ourbit'
+import { IOperation, OpCollector } from './ourbit/types'
+import { IPersistInterface } from './stores'
 import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 
 type voidFunc = () => void
@@ -19,7 +20,8 @@ type ABIItemSet = IABIItem[]
 export class GnarlyGlobals {
   // @TODO(shrugs) - do we need to move this to a contract artifact?
   public abis: { [s: string]: ABIItemSet } = {}
-  public api: IngestApi
+  public api: IIngestApi
+  public store: IPersistInterface
 
   public currentReason: string = null
   public currentMeta: any = null
@@ -31,8 +33,12 @@ export class GnarlyGlobals {
     return logs.map((l) => new Log(null, l))
   }
 
-  public setApi = (api: IngestApi) => {
+  public setApi = (api: IIngestApi) => {
     this.api = api
+  }
+
+  public setStore = (store: IPersistInterface) => {
+    this.store = store
   }
 
   public addABI = (address: string, abi: IABIItemInput[]) => {

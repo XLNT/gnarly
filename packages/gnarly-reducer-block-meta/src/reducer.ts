@@ -4,14 +4,16 @@ import {
   Block,
   emit,
   IReducer,
-  operation,
+  ITypeStore,
   ReducerType,
 } from '@xlnt/gnarly-core'
 
 const makeReducer = (
   key: string = 'blocks',
+  typeStore: ITypeStore,
+) => (
 ): IReducer => {
-  const makeActions = (state: undefined) => ({
+  const makeActions = (state: object) => ({
     emitBlock: (block: Block) => {
       emit(appendTo(key, 'blocks', {
         hash: block.hash,
@@ -36,14 +38,14 @@ const makeReducer = (
     },
   })
 
-  // return the reducer
   return {
     config: {
       type: ReducerType.Atomic,
       key,
+      typeStore,
     },
-    state: undefined,
-    reduce: async (state: undefined, block: Block): Promise<void> => {
+    state: {},
+    reduce: async (state: object, block: Block): Promise<void> => {
       const actions = makeActions(state)
       because('BLOCK_PRODUCED', {}, () => {
         actions.emitBlock(block)

@@ -10,13 +10,13 @@ import { IJSONBlock } from '../models/Block'
 import { IJSONExternalTransactionReceipt } from '../models/ExternalTransaction'
 import { IJSONInternalTransaction } from '../models/InternalTransaction'
 import { IJSONLog } from '../models/Log'
-import IngestApi from './IngestApi'
+import IIngestApi from './IngestApi'
 
 import {
   cacheApiRequest,
 } from '../utils'
 
-export default class Web3Api implements IngestApi {
+export default class Web3Api implements IIngestApi {
 
   private doFetch = cacheApiRequest(
     async (method: string, params: any[] = []): Promise<any> => {

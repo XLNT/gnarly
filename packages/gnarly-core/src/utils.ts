@@ -12,7 +12,7 @@ import {
   IOperation,
   IPatch,
   IPathThing,
-} from './Ourbit'
+} from './ourbit/types'
 
 const API_CACHE_MAX_AGE = 1000
 

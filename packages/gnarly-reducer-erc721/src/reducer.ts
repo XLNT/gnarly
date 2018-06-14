@@ -9,6 +9,7 @@ import {
   emit,
   getLogs,
   IReducer,
+  ITypeStore,
   operation,
   ReducerType,
   toHex,
@@ -16,6 +17,8 @@ import {
 
 const makeReducer = (
   key: string,
+  typeStore: ITypeStore,
+) => (
   darAddress: string,
   reason: string,
 ): IReducer => {
@@ -51,7 +54,6 @@ const makeReducer = (
       },
     }
   }
-  const erc721Tracker: IERC721Tracker = { tokens: {} }
 
   const makeActions = (state) => ({
     transfer: (tokenId: string, from: string, to: string) => {
@@ -79,13 +81,13 @@ const makeReducer = (
     },
   })
 
-  // return the reducer
   return {
     config: {
       type: ReducerType.TimeVarying,
       key,
+      typeStore,
     },
-    state: erc721Tracker,
+    state: { tokens: {} },
     reduce: async (state: IERC721Tracker, block: Block): Promise<void> => {
       const actions = makeActions(state)
       const logs = await getLogs({

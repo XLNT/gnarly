@@ -2,10 +2,9 @@ import '../../src/asynciterator-polyfill'
 
 import _ = require('lodash')
 import {
-  IPatch,
-  IPersistInterface,
   ITransaction,
 } from '../../src/Ourbit'
+import { IPersistInterface } from '../../src/stores'
 
 async function* iter (
   res: any[] = [],

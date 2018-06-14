@@ -15,7 +15,7 @@ import PQueue = require('p-queue')
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
 
-import Ourbit from './Ourbit'
+import Ourbit from './ourbit'
 
 import {
   timeout,

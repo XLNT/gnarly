@@ -10,14 +10,9 @@ const debug = makeDebug('gnarly')
 import Sequelize = require('sequelize')
 
 import Gnarly, {
-  addABI,
-  addressesEqual,
-  because,
-  Block,
-  forEach,
   makeRootTypeStore,
-  makeStateReference,
   SequelizePersistInterface,
+  Web3Api,
 } from '@xlnt/gnarly-core'
 
 import makeERC721Reducer, {
@@ -40,6 +35,7 @@ import etherGooAbi from './abis/EtherGoo'
 enum Keys {
   CryptoKitties = 'cryptoKitties',
   Blocks = 'blocks',
+  Events = 'events',
 }
 
 const main = async () => {
@@ -60,15 +56,26 @@ const main = async () => {
     },
   })
 
-  const erc721Reducer = makeERC721Reducer(
+  // @TODO(shrugs) - make the key implicit somehow
+  const erc721Reducer = makeERC721Reducer(Keys.CryptoKitties, makeERC721TypeStore(
+    Sequelize,
+    sequelize,
     Keys.CryptoKitties,
+  ))(
     CRYPTO_KITTIES,
     'KITTY_TRANSFER',
   )
 
-  const blockReducer = makeBlockReducer(Keys.Blocks)
+  const blockReducer = makeBlockReducer(Keys.Blocks, makeBlockTypeStore(
+    Sequelize,
+    sequelize,
+  ))(
+  )
 
-  const gooEventReducer = makeEventsReducer({
+  const gooEventReducer = makeEventsReducer(Keys.Events, makeEventsTypeStore(
+    Sequelize,
+    sequelize,
+  ))({
     [ETHER_GOO]: etherGooAbi,
     [CRYPTO_KITTIES]: etherGooAbi,
   })
@@ -79,34 +86,16 @@ const main = async () => {
     gooEventReducer,
   ]
 
-  const stateReference = makeStateReference(reducers)
-
-  const typeStore = makeRootTypeStore({
-    [Keys.CryptoKitties]: makeERC721TypeStore(
-      Sequelize,
-      sequelize,
-      Keys.CryptoKitties,
-    ),
-    [Keys.Blocks]: makeBlockTypeStore(
-      Sequelize,
-      sequelize,
-    ),
-    events: makeEventsTypeStore(
-      Sequelize,
-      sequelize,
-    ),
-  })
-
-  const storeInterface = new SequelizePersistInterface(
+  const store = new SequelizePersistInterface(
     Sequelize,
     sequelize,
   )
 
+  const ingestApi = new Web3Api(nodeEndpoint)
+
   const gnarly = new Gnarly(
-    stateReference,
-    storeInterface,
-    nodeEndpoint,
-    typeStore,
+    ingestApi,
+    store,
     reducers,
   )
 

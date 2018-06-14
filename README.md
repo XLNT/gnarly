@@ -185,7 +185,7 @@ const makeReducer = (
 
   // given a state, build a set of actions that operate over that state
   // in this case, we don't have any mutable state! so `state` is null
-  const makeActions = (state: undefined) => ({
+  const makeActions = (state: object) => ({
     // define an `emit` action
     emit: (log: ILog) => {
       // this emit action uses gnarly.emit to produce an immutable
@@ -212,10 +212,10 @@ const makeReducer = (
       key,
     },
     // the default state is undefined. see gnarly-reducer-erc721 for a mutable state example
-    state: undefined,
+    state: object,
     // the reduction function! accept the previous state and the block
     // and produce changes to the state
-    reduce: async (state: undefined, block: Block): Promise<void> => {
+    reduce: async (state: object, block: Block): Promise<void> => {
       // let's build our actions from above
       const actions = makeActions(state)
 

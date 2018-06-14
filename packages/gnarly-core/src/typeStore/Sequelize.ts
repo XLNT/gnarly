@@ -3,7 +3,7 @@ const debug = makeDebug('gnarly-core:store:sequelize')
 
 import isPlainObject = require('lodash.isplainobject')
 
-import { IOperation, IPatch } from '../Ourbit'
+import { IOperation, IPatch } from '../ourbit/types'
 import {
   parsePath,
 } from '../utils'

@@ -4,11 +4,10 @@ const plain = true
 
 import {
   IPatch,
-  IPersistInterface,
   ITransaction,
-} from '../Ourbit'
+} from '../ourbit/types'
+import { IPersistInterface } from '../stores'
 
-// @TODO(shrugs) depluralize all these models -_-
 export const makeSequelizeModels = (
   Sequelize: any,
   sequelize: any,
@@ -16,6 +15,7 @@ export const makeSequelizeModels = (
   const { DataTypes } = Sequelize
   const Transaction = sequelize.define('transaction', {
     id: { type: DataTypes.STRING, primaryKey: true },
+    reducerKey: { type: DataTypes.STRING, primaryKey: true },
     blockHash: { type: DataTypes.STRING },
   }, {
       indexes: [
@@ -23,8 +23,6 @@ export const makeSequelizeModels = (
       ],
     })
 
-  // @TODO - this is actually an Operation and a Patch
-  //  is a set of Operations
   const Patch = sequelize.define('patch', {
     id: { type: DataTypes.STRING, primaryKey: true },
   })
