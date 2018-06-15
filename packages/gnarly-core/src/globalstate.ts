@@ -41,6 +41,7 @@ export class GnarlyGlobals {
     this.store = store
   }
 
+  // @TODO(shrugs) - replace this with a map indexed by signatures
   public addABI = (address: string, abi: IABIItemInput[]) => {
     this.abis[address.toLowerCase()] = (this.abis[address.toLowerCase()] || [])
       .concat(

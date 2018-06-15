@@ -25,7 +25,6 @@ class ReducerRunner {
   constructor (
     private reducer: IReducer,
   ) {
-
     this.debug = makeDebug(`gnarly-core:runner:${reducer.config.key}`)
 
     this.ourbit = new Ourbit(
@@ -41,6 +40,7 @@ class ReducerRunner {
   }
 
   public run = async (fromBlockHash: string) => {
+    await globalState.store.saveReducer(this.reducer.config.key)
     let latestBlockHash = null
 
     switch (this.reducer.config.type) {
@@ -54,7 +54,7 @@ class ReducerRunner {
         if (this.shouldResume) {
           // we're resuming, so replay from store if possible
           try {
-            const latestTransaction = await globalState.store.getLatestTransaction()
+            const latestTransaction = await globalState.store.getLatestTransaction(this.reducer.config.key)
             latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
 
             this.debug('Attempting to reload state from %s', latestBlockHash || 'HEAD')
@@ -87,6 +87,7 @@ class ReducerRunner {
 
   public reset = async (shouldReset: boolean = true) => {
     this.shouldResume = !shouldReset
+
     if (shouldReset) {
       const setdown = this.reducer.config.typeStore.__setdown as SetdownFn
       await setdown()
@@ -112,7 +113,6 @@ class ReducerRunner {
   }
 
   private persistOperation = async (patchId: string, operation: IOperation) => {
-    const { scope } = parsePath(operation.path)
     const storer = this.reducer.config.typeStore.store as TypeStorer
     await storer(patchId, operation)
   }

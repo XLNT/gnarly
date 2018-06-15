@@ -19,19 +19,21 @@ class Gnarly {
   ) {
     globalState.setApi(ingestApi)
     globalState.setStore(store)
+    this.runners = this.reducers.map((reducer) => makeRunner(reducer))
   }
 
   public shaka = async (fromBlockHash: string | null) => {
     debug('Surfs up!')
-    this.reducers.forEach((reducer) => this.addReducer(reducer, fromBlockHash))
+    this.runners.forEach((runner) => runner.run(fromBlockHash))
   }
 
-  public addReducer = async (reducer: IReducer, fromBlockHash: string | null) => {
-    const runner = makeRunner(reducer)
-    this.runners.push(runner)
-    // start running the reducer, asynchronously
-    runner.run(fromBlockHash)
-  }
+  // @TODO(shrugs) - allow adding reducers at runtime
+  // public addReducer = async (reducer: IReducer, fromBlockHash: string | null) => {
+  //   const runner = makeRunner(reducer)
+  //   this.runners.push(runner)
+  //   // start running the reducer, asynchronously
+  //   runner.run(fromBlockHash)
+  // }
 
   public bailOut = async () => {
     debug('Gracefully decomposing reducers...')
@@ -48,6 +50,7 @@ class Gnarly {
 
     // reset all reducer states
     debug('%s reducer stores: %s...', shouldReset ? 'Resetting' : 'Setting up')
+
     await Promise.all(this.runners.map((runner) => runner.reset(shouldReset)))
     debug('Done with %s reducers.', shouldReset ? 'resetting' : 'setting up')
   }

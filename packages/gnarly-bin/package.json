@@ -7,7 +7,7 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run build-ts && npm run tslint",
-    "ts-start": "ts-node src/index.ts",
+    "ts-start": "ts-node --no-cache src/index.ts",
     "start": "node lib/index.js",
     "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
@@ -32,6 +32,7 @@
   "author": "Matt Condon <matt@XLNT.co>",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@xlnt/gnarly-reducer-events": "^0.3.3",
     "pkg": "^4.3.1",
     "ts-node": "^6.0.3",
     "tslint": "^5.9.1",

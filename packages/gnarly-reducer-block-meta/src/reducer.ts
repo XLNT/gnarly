@@ -15,7 +15,7 @@ const makeReducer = (
 ): IReducer => {
   const makeActions = (state: object) => ({
     emitBlock: (block: Block) => {
-      emit(appendTo(key, 'blocks', {
+      emit(appendTo('blocks', {
         hash: block.hash,
         transactionId: block.hash,
         // ^ assumes that gnarly.transactionId === block.hash

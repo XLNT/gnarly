@@ -191,7 +191,7 @@ const makeReducer = (
       // this emit action uses gnarly.emit to produce an immutable
       // append operation to the events domain within the reducer's key
       // this operation includes all of the information your TypeStore needs
-      emit(appendTo(key, 'events', {
+      emit(appendTo('events', {
         address: log.address,
         event: log.event,
         eventName: log.eventName,

@@ -104,7 +104,7 @@ class Ourbit {
    * @param txId transaction id
    */
   public rollbackTransaction = async (txId: string) => {
-    const tx = await globalState.store.getTransaction(txId)
+    const tx = await globalState.store.getTransaction(this.key, txId)
     await this.uncommitTransaction(tx)
   }
 
@@ -114,7 +114,7 @@ class Ourbit {
    */
   public async resumeFromTxId (txId: string) {
     debug('Resuming from txId %s', txId)
-    const allTxs = await globalState.store.getAllTransactionsTo(txId)
+    const allTxs = await globalState.store.getAllTransactionsTo(this.key, txId)
     let totalPatches = 0
     for await (const batch of allTxs) {
       const txBatch = batch as ITransaction[]
@@ -137,7 +137,7 @@ class Ourbit {
 
   private commitTransaction = async (tx: ITransaction) => {
     // save transaction
-    await globalState.store.saveTransaction(tx)
+    await globalState.store.saveTransaction(this.key, tx)
     // apply to store
     await this.notifyPatches(tx.id, tx.patches)
     // (no need to apply locally because they've been applied by the reducer)
@@ -157,7 +157,7 @@ class Ourbit {
     // apply to store (mutable and volatile)
     await this.notifyPatches(tx.id, inversePatches)
     // delete transaction
-    await globalState.store.deleteTransaction(tx)
+    await globalState.store.deleteTransaction(this.key, tx)
   }
 }
 

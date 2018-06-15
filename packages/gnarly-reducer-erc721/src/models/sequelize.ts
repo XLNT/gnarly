@@ -5,34 +5,32 @@ import {
 const sequelizeModels = (
   Sequelize: any,
   sequelize: any,
-  key: string,
 ) => {
-  const { Patch } = makeGnarlyModels(Sequelize, sequelize)
   const { DataTypes } = Sequelize
+  const { Patch } = makeGnarlyModels(Sequelize, sequelize)
   // ownerOf table
-  const ERC721Tokens = sequelize.define(`${key}_tokens`, {
-
-    // primary key
-    // @TODO - switch to id
+  const ERC721Tokens = sequelize.define('erc721_tokens', {
+    darAddress: { type: DataTypes.STRING, primaryKey: true },
     tokenId: { type: DataTypes.STRING, primaryKey: true },
 
     // 1:1 properties of token
     owner: { type: DataTypes.STRING },
   }, {
       indexes: [
+        { fields: ['darAddress'] },
         { fields: ['tokenId'] },
         { fields: ['owner'] },
       ],
     })
 
-  const ERC721TokenOwners = sequelize.define(`${key}_owners`, {
+  const ERC721TokenOwners = sequelize.define('erc721_owners', {
     uuid: { type: DataTypes.STRING, primaryKey: true },
 
     // properties of each owner
     address: { type: DataTypes.STRING },
 
     // this is a fk table so it needs an order key
-    // order: { type: DataTypes.INTEGER },
+    order: { type: DataTypes.INTEGER },
   })
 
   ERC721Tokens.belongsTo(Patch)

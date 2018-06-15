@@ -17,7 +17,6 @@ export interface IOperation {
  * a gnarly-specific path generated from patch.op.path
  */
 export interface IPathThing {
-  scope: string
   tableName: string
   pk: string
   indexOrKey: string

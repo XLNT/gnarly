@@ -19,11 +19,11 @@ chai.use(spies)
 chai.should()
 const sandbox = chai.spy.sandbox()
 
+const TEST_KEY = 'test'
 const TEST_REASON = 'TEST_REASON'
 const TEST_META = {}
 
 describe('Ourbit', () => {
-  let store: IPersistInterface
   let ourbit: Ourbit = null
 
   let tx: ITransaction
@@ -60,7 +60,7 @@ describe('Ourbit', () => {
     }
 
     targetState = {}
-    store = new MockPersistInterface()
+    const store = new MockPersistInterface()
 
     sandbox.on(store, [
       'saveTransaction',
@@ -69,7 +69,7 @@ describe('Ourbit', () => {
     globalState.setStore(store)
 
     persistPatch = chai.spy()
-    ourbit = new Ourbit('test', targetState, persistPatch)
+    ourbit = new Ourbit(TEST_KEY, targetState, persistPatch)
   })
 
   afterEach(() => {
@@ -79,7 +79,7 @@ describe('Ourbit', () => {
   it('should process a transaction', async () => {
     await produceFirstPatch()
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should include a reason if provided', async () => {
@@ -91,7 +91,7 @@ describe('Ourbit', () => {
       })
     }, { blockHash: tx.blockHash })
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should allow manual collection', async () => {
@@ -116,7 +116,7 @@ describe('Ourbit', () => {
       })
     }, { blockHash: tx.blockHash })
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should accept volatile operations', async () => {
@@ -136,12 +136,12 @@ describe('Ourbit', () => {
       globalState.operation(() => {
         targetState.key = 'value'
       })
-      globalState.emit(utils.appendTo('store', 'domain', {
+      globalState.emit(utils.appendTo('domain', {
         value: 'value',
       }))
     }, { blockHash: tx.blockHash })
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should revert transactions', async () => {
@@ -164,7 +164,7 @@ describe('Ourbit', () => {
 
     const newState = {}
     // new state, same store
-    const newOurbit = new Ourbit('test', newState, persistPatch)
+    const newOurbit = new Ourbit(TEST_KEY, newState, persistPatch)
 
     await newOurbit.resumeFromTxId('0x1')
     newState.should.deep.equal({ key: 'value' })

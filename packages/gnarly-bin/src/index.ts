@@ -10,7 +10,6 @@ const debug = makeDebug('gnarly')
 import Sequelize = require('sequelize')
 
 import Gnarly, {
-  makeRootTypeStore,
   SequelizePersistInterface,
   Web3Api,
 } from '@xlnt/gnarly-core'
@@ -27,8 +26,8 @@ import makeEventsReducer, {
   makeSequelizeTypeStore as makeEventsTypeStore,
 } from '@xlnt/gnarly-reducer-events'
 
-const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
-const ETHER_GOO = '0x57b116da40f21f91aec57329ecb763d29c1b2355'
+const CRYPTO_KITTIES_ADDRESS = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
+const ETHER_GOO_ADDRESS = '0x57b116da40f21f91aec57329ecb763d29c1b2355'
 
 import etherGooAbi from './abis/EtherGoo'
 
@@ -56,14 +55,11 @@ const main = async () => {
     },
   })
 
-  // @TODO(shrugs) - make the key implicit somehow
   const erc721Reducer = makeERC721Reducer(Keys.CryptoKitties, makeERC721TypeStore(
     Sequelize,
     sequelize,
-    Keys.CryptoKitties,
   ))(
-    CRYPTO_KITTIES,
-    'KITTY_TRANSFER',
+    CRYPTO_KITTIES_ADDRESS,
   )
 
   const blockReducer = makeBlockReducer(Keys.Blocks, makeBlockTypeStore(
@@ -72,18 +68,17 @@ const main = async () => {
   ))(
   )
 
-  const gooEventReducer = makeEventsReducer(Keys.Events, makeEventsTypeStore(
+  const eventsReducer = makeEventsReducer(Keys.Events, makeEventsTypeStore(
     Sequelize,
     sequelize,
   ))({
-    [ETHER_GOO]: etherGooAbi,
-    [CRYPTO_KITTIES]: etherGooAbi,
+    [ETHER_GOO_ADDRESS]: etherGooAbi,
   })
 
   const reducers = [
     blockReducer,
     erc721Reducer,
-    gooEventReducer,
+    eventsReducer,
   ]
 
   const store = new SequelizePersistInterface(

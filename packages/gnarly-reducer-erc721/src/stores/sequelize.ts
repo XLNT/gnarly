@@ -7,12 +7,11 @@ import {
 const makeSequelizeTypeStore = (
   Sequelize: any,
   sequelize: any,
-  key: string,
 ) => {
   const {
     ERC721Tokens,
     ERC721TokenOwners,
-  } = sequelizeModels(Sequelize, sequelize, key)
+  } = sequelizeModels(Sequelize, sequelize)
 
   // the type store
   return {

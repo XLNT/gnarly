@@ -1,13 +1,16 @@
 import { ITransaction } from '../ourbit/types'
 
 export interface IPersistInterface {
+
+  saveReducer (reducerKey: string): Promise<any>
+  deleteReducer (reducerKey: string): Promise<any>
   // transaction storage
   // @TODO - how do you get typescript to stop complaining about AsyncIterator symbols?
-  getAllTransactionsTo (toTxId: null | string): Promise<any>
-  getLatestTransaction (): Promise<ITransaction>
-  deleteTransaction (tx: ITransaction): Promise<any>
-  saveTransaction (tx: ITransaction): Promise<any>
-  getTransaction (txId: string): Promise<ITransaction>
+  getAllTransactionsTo (reducerKey: string, toTxId: null | string): Promise<any>
+  getLatestTransaction (reducerKey: string): Promise<ITransaction>
+  deleteTransaction (reducerKey: string, tx: ITransaction): Promise<any>
+  saveTransaction (reducerKey: string, tx: ITransaction): Promise<any>
+  getTransaction (reducerKey: string, txId: string): Promise<ITransaction>
 
   // event log CRUD actions
 

@@ -15,15 +15,17 @@ import {
   toHex,
 } from '@xlnt/gnarly-core'
 
+const TRANSFER_REASON = 'ERC721_TRANSFER'
+
 const makeReducer = (
   key: string,
   typeStore: ITypeStore,
 ) => (
   darAddress: string,
-  reason: string,
 ): IReducer => {
 
   // add the abi to the global registry
+  // @TODO(shrugs): add the full abi as a constant
   addABI(darAddress, [{
     anonymous: false,
     inputs: [
@@ -50,6 +52,7 @@ const makeReducer = (
     tokens: { // 1:1
       [id: string]: {
         tokenId: string,
+        darAddress: string,
         owner: string,
       },
     }
@@ -63,7 +66,7 @@ const makeReducer = (
       if (existing) {
         // push
         existing.owner = to
-        emit(appendTo(key, 'owners', {
+        emit(appendTo('owners', {
           tokenId,
           address: to,
         }))
@@ -71,9 +74,9 @@ const makeReducer = (
         // init
         // order-dependent because of foreign key
         operation(() => {
-          state.tokens[tokenId] = { tokenId, owner: to }
+          state.tokens[tokenId] = { tokenId, darAddress, owner: to }
         })
-        emit(appendTo(key, 'owners', {
+        emit(appendTo('owners', {
           tokenId,
           address: to,
         }))
@@ -101,7 +104,7 @@ const makeReducer = (
         if (log.eventName === 'Transfer') {
           const { to, from, tokenId } = log.args
 
-          because(reason, {}, () => {
+          because(TRANSFER_REASON, {}, () => {
             actions.transfer(tokenId, from, to)
           })
         }

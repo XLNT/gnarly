@@ -30,7 +30,7 @@ const makeReducer = (
 
   const makeActions = (state: object) => ({
     emit: (log: ILog) => {
-      emit(appendTo(key, 'events', {
+      emit(appendTo('events', {
         address: log.address,
         event: log.event,
         eventName: log.eventName,
@@ -44,6 +44,7 @@ const makeReducer = (
     config: {
       type: ReducerType.Atomic,
       key,
+      typeStore,
     },
     state: {},
     reduce: async (state: object, block: Block): Promise<void> => {
