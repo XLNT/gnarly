@@ -4,23 +4,26 @@ const debug = makeDebug('gnarly-reducer:erc721')
 import {
   addABI,
   appendTo,
-  because,
   Block,
-  emit,
+  EmitOperationFn,
   getLogs,
   IReducer,
-  operation,
+  ITypeStore,
   ReducerType,
   toHex,
 } from '@xlnt/gnarly-core'
 
+const TRANSFER_REASON = 'ERC721_TRANSFER'
+
 const makeReducer = (
   key: string,
+  typeStore: ITypeStore,
+) => (
   darAddress: string,
-  reason: string,
 ): IReducer => {
 
   // add the abi to the global registry
+  // @TODO(shrugs): add the full abi as a constant
   addABI(darAddress, [{
     anonymous: false,
     inputs: [
@@ -47,13 +50,13 @@ const makeReducer = (
     tokens: { // 1:1
       [id: string]: {
         tokenId: string,
+        darAddress: string,
         owner: string,
       },
     }
   }
-  const erc721Tracker: IERC721Tracker = { tokens: {} }
 
-  const makeActions = (state) => ({
+  const makeActions = (state: IERC721Tracker, { operation, emit }) => ({
     transfer: (tokenId: string, from: string, to: string) => {
       debug('transferring token %s to %s', tokenId, to)
 
@@ -61,7 +64,7 @@ const makeReducer = (
       if (existing) {
         // push
         existing.owner = to
-        emit(appendTo(key, 'owners', {
+        emit(appendTo('owners', {
           tokenId,
           address: to,
         }))
@@ -69,9 +72,9 @@ const makeReducer = (
         // init
         // order-dependent because of foreign key
         operation(() => {
-          state.tokens[tokenId] = { tokenId, owner: to }
+          state.tokens[tokenId] = { tokenId, darAddress, owner: to }
         })
-        emit(appendTo(key, 'owners', {
+        emit(appendTo('owners', {
           tokenId,
           address: to,
         }))
@@ -79,15 +82,19 @@ const makeReducer = (
     },
   })
 
-  // return the reducer
   return {
     config: {
       type: ReducerType.TimeVarying,
       key,
+      typeStore,
     },
-    state: erc721Tracker,
-    reduce: async (state: IERC721Tracker, block: Block): Promise<void> => {
-      const actions = makeActions(state)
+    state: { tokens: {} },
+    reduce: async (
+      state: IERC721Tracker,
+      block: Block,
+      { because, operation, emit },
+    ): Promise<void> => {
+      const actions = makeActions(state, { operation, emit })
       const logs = await getLogs({
         fromBlock: toHex(block.number),
         toBlock: toHex(block.number),
@@ -99,7 +106,7 @@ const makeReducer = (
         if (log.eventName === 'Transfer') {
           const { to, from, tokenId } = log.args
 
-          because(reason, {}, () => {
+          because(TRANSFER_REASON, {}, () => {
             actions.transfer(tokenId, from, to)
           })
         }

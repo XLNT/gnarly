@@ -88,14 +88,16 @@ export default class Log {
       // decodeLog failed for some reason (null address?)
       debug(
         `Could not parse log:
-            abi: %j
-            inputs: %j
+            blockHash: %s
+            eventSig: %s
+            abiItem: %j
             data: %s
             topics: %j
           %O
         `,
-        abi,
-        logAbiItem.inputs,
+        this.blockHash,
+        eventSig,
+        logAbiItem,
         this.data,
         topics,
         error.stack,

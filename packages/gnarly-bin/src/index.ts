@@ -10,14 +10,8 @@ const debug = makeDebug('gnarly')
 import Sequelize = require('sequelize')
 
 import Gnarly, {
-  addABI,
-  addressesEqual,
-  because,
-  Block,
-  forEach,
-  makeRootTypeStore,
-  makeStateReference,
   SequelizePersistInterface,
+  Web3Api,
 } from '@xlnt/gnarly-core'
 
 import makeERC721Reducer, {
@@ -32,14 +26,15 @@ import makeEventsReducer, {
   makeSequelizeTypeStore as makeEventsTypeStore,
 } from '@xlnt/gnarly-reducer-events'
 
-const CRYPTO_KITTIES = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
-const ETHER_GOO = '0x57b116da40f21f91aec57329ecb763d29c1b2355'
+const CRYPTO_KITTIES_ADDRESS = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
+const ETHER_GOO_ADDRESS = '0x57b116da40f21f91aec57329ecb763d29c1b2355'
 
 import etherGooAbi from './abis/EtherGoo'
 
 enum Keys {
   CryptoKitties = 'cryptoKitties',
   Blocks = 'blocks',
+  Events = 'events',
 }
 
 const main = async () => {
@@ -60,53 +55,42 @@ const main = async () => {
     },
   })
 
-  const erc721Reducer = makeERC721Reducer(
-    Keys.CryptoKitties,
-    CRYPTO_KITTIES,
-    'KITTY_TRANSFER',
+  const erc721Reducer = makeERC721Reducer(Keys.CryptoKitties, makeERC721TypeStore(
+    Sequelize,
+    sequelize,
+  ))(
+    CRYPTO_KITTIES_ADDRESS,
   )
 
-  const blockReducer = makeBlockReducer(Keys.Blocks)
+  const blockReducer = makeBlockReducer(Keys.Blocks, makeBlockTypeStore(
+    Sequelize,
+    sequelize,
+  ))(
+  )
 
-  const gooEventReducer = makeEventsReducer({
-    [ETHER_GOO]: etherGooAbi,
-    [CRYPTO_KITTIES]: etherGooAbi,
+  const eventsReducer = makeEventsReducer(Keys.Events, makeEventsTypeStore(
+    Sequelize,
+    sequelize,
+  ))({
+    [ETHER_GOO_ADDRESS]: etherGooAbi,
   })
 
   const reducers = [
     blockReducer,
     erc721Reducer,
-    gooEventReducer,
+    eventsReducer,
   ]
 
-  const stateReference = makeStateReference(reducers)
-
-  const typeStore = makeRootTypeStore({
-    [Keys.CryptoKitties]: makeERC721TypeStore(
-      Sequelize,
-      sequelize,
-      Keys.CryptoKitties,
-    ),
-    [Keys.Blocks]: makeBlockTypeStore(
-      Sequelize,
-      sequelize,
-    ),
-    events: makeEventsTypeStore(
-      Sequelize,
-      sequelize,
-    ),
-  })
-
-  const storeInterface = new SequelizePersistInterface(
+  const store = new SequelizePersistInterface(
     Sequelize,
     sequelize,
   )
 
+  const ingestApi = new Web3Api(nodeEndpoint)
+
   const gnarly = new Gnarly(
-    stateReference,
-    storeInterface,
-    nodeEndpoint,
-    typeStore,
+    ingestApi,
+    store,
     reducers,
   )
 

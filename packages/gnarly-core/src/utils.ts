@@ -7,12 +7,14 @@ import pMap = require('p-map')
 import uuid = require('uuid')
 import web3Utils = require('web3-utils')
 
+import { globalState } from './globalstate'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import {
   IOperation,
   IPatch,
   IPathThing,
-} from './Ourbit'
+} from './ourbit/types'
+import { BecauseFn, EmitOperationFn } from './reducer'
 
 const API_CACHE_MAX_AGE = 1000
 
@@ -24,13 +26,11 @@ export const cacheApiRequest = (fn) => memoize(fn, {
 export const parsePath = (path: string): IPathThing => {
   const [
     emptyString, // ignore this
-    scope,
     tableName,
     pk,
     indexOrKey,
   ] = path.split('/')
   return {
-    scope,
     tableName,
     pk,
     indexOrKey,
@@ -122,7 +122,6 @@ export const operationsOfPatches = (patches: IPatch[]): IOperation[] =>
 export const toOperation = (operation: IOperation): Operation => operation as Operation
 
 export const appendTo = (
-  key: string,
   domain: string,
   value: any,
 ): IOperation => {
@@ -137,7 +136,7 @@ export const appendTo = (
   // and we don't have the need for that right now
   return {
     op: 'add',
-    path: `/${key}/${domain}/${value.uuid}`,
+    path: `/${domain}/${value.uuid}`,
     value,
     volatile: true,
   }

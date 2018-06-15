@@ -1,19 +1,20 @@
 import {
   appendTo,
-  because,
   Block,
-  emit,
+  EmitOperationFn,
   IReducer,
-  operation,
+  ITypeStore,
   ReducerType,
 } from '@xlnt/gnarly-core'
 
 const makeReducer = (
   key: string = 'blocks',
+  typeStore: ITypeStore,
+) => (
 ): IReducer => {
-  const makeActions = (state: undefined) => ({
+  const makeActions = (state: object, emit: EmitOperationFn) => ({
     emitBlock: (block: Block) => {
-      emit(appendTo(key, 'blocks', {
+      emit(appendTo('blocks', {
         hash: block.hash,
         transactionId: block.hash,
         // ^ assumes that gnarly.transactionId === block.hash
@@ -36,15 +37,19 @@ const makeReducer = (
     },
   })
 
-  // return the reducer
   return {
     config: {
       type: ReducerType.Atomic,
       key,
+      typeStore,
     },
-    state: undefined,
-    reduce: async (state: undefined, block: Block): Promise<void> => {
-      const actions = makeActions(state)
+    state: {},
+    reduce: async (
+      state: object,
+      block: Block,
+      { because, emit },
+    ): Promise<void> => {
+      const actions = makeActions(state, emit)
       because('BLOCK_PRODUCED', {}, () => {
         actions.emitBlock(block)
       })

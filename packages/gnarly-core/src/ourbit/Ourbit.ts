@@ -8,89 +8,18 @@ import {
   observe,
   unobserve,
 } from '@xlnt/fast-json-patch'
-
-import _ = require('lodash')
 import uuid = require('uuid')
-import { globalState } from './globalstate'
-import { invertPatch, operationsOfPatches, toOperation } from './utils'
 
-/**
- * An Operation is a state transition.
- * It is invertable via oldValue.
- * If it is volatile, it is not persisted in memory and is handled differently.
- */
-export interface IOperation {
-  path: string,
-  op: 'add' | 'replace' | 'remove' | 'move' | 'copy' | 'test' | '_get',
-  // ^ we will only actually have add|replace|remove
-  // but fast-json-patch expects this type so whatever
-  value?: any,
-  oldValue?: any,
-  volatile: boolean
-}
-
-/**
- * a gnarly-specific path generated from patch.op.path
- */
-export interface IPathThing {
-  scope: string
-  tableName: string
-  pk: string
-  indexOrKey: string
-}
-
-/**
- * A Patch is a set of operations with a unique id and a reason for their existence.
- */
-export interface IPatch {
-  id: string
-  reason?: { key: string, meta?: any }
-  operations: IOperation[],
-}
-
-/**
- * A transaction is a set of patches.
- */
-export interface ITransaction {
-  id: string
-  blockHash: string,
-  patches: IPatch[]
-}
-
-export type TypeStorer = (txId: string, patch: IOperation) => Promise<void>
-export type SetupFn = () => Promise<any>
-export type SetdownFn = () => Promise<any>
-export interface ITypeStore {
-  [_: string]: { // reducer
-    [_: string]: TypeStorer | SetupFn | SetdownFn,
-  }
-}
-export type OpCollector = (op: IOperation) => void
-
-export interface IPersistInterface {
-  // transaction storage
-  // @TODO - how do you get typescript to stop complaining about AsyncIterator symbols?
-  getAllTransactionsTo (toTxId: null | string): Promise<any>
-  getLatestTransaction (): Promise<ITransaction>
-  deleteTransaction (tx: ITransaction): Promise<any>
-  saveTransaction (tx: ITransaction): Promise<any>
-  getTransaction (txId: string): Promise<ITransaction>
-
-  // event log CRUD actions
-
-  // setup
-  setup (): Promise<any>
-  setdown (): Promise<any>
-}
-
-interface ITxExtra {
-  blockHash: string
-}
-
-/**
- * This function accept patches and persists them to a store.
- */
-type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
+import { globalState } from '../globalstate'
+import { ReducerContext } from '../reducer'
+import { invertPatch, operationsOfPatches, toOperation } from '../utils'
+import {
+  IOperation,
+  IPatch,
+  ITransaction,
+  ITxExtra,
+  PersistPatchHandler,
+} from './types'
 
 /*
  * Ourbit
@@ -112,9 +41,10 @@ type PersistPatchHandler = (txId: string, patch: IPatch) => Promise<void>
  */
 class Ourbit {
   constructor (
-    public targetState: object,
-    public store: IPersistInterface,
+    private key: string,
+    private targetState: object,
     private persistPatch: PersistPatchHandler,
+    private context: ReducerContext,
   ) {
   }
 
@@ -138,21 +68,21 @@ class Ourbit {
           ...op,
           volatile: false,
         })),
-        reason: globalState.reason,
+        reason: this.context.getCurrentReason(),
       })
     })
 
     // allow reducer to force-collect patches for order-dependent operations
-    globalState.setPatchGenerator(() => {
+    this.context.setPatchGenerator(() => {
       generate(observer)
     })
 
     // collect any operations that are directly emitted
-    globalState.setOpCollector((op: IOperation) => {
+    this.context.setOpCollector((op: IOperation) => {
       patches.push({
         id: uuid.v4(),
         operations: [op],
-        reason: globalState.reason,
+        reason: this.context.getCurrentReason(),
       })
     })
 
@@ -176,7 +106,7 @@ class Ourbit {
    * @param txId transaction id
    */
   public rollbackTransaction = async (txId: string) => {
-    const tx = await this.store.getTransaction(txId)
+    const tx = await globalState.store.getTransaction(this.key, txId)
     await this.uncommitTransaction(tx)
   }
 
@@ -186,7 +116,7 @@ class Ourbit {
    */
   public async resumeFromTxId (txId: string) {
     debug('Resuming from txId %s', txId)
-    const allTxs = await this.store.getAllTransactionsTo(txId)
+    const allTxs = await globalState.store.getAllTransactionsTo(this.key, txId)
     let totalPatches = 0
     for await (const batch of allTxs) {
       const txBatch = batch as ITransaction[]
@@ -209,7 +139,7 @@ class Ourbit {
 
   private commitTransaction = async (tx: ITransaction) => {
     // save transaction
-    await this.store.saveTransaction(tx)
+    await globalState.store.saveTransaction(this.key, tx)
     // apply to store
     await this.notifyPatches(tx.id, tx.patches)
     // (no need to apply locally because they've been applied by the reducer)
@@ -229,7 +159,7 @@ class Ourbit {
     // apply to store (mutable and volatile)
     await this.notifyPatches(tx.id, inversePatches)
     // delete transaction
-    await this.store.deleteTransaction(tx)
+    await globalState.store.deleteTransaction(this.key, tx)
   }
 }
 

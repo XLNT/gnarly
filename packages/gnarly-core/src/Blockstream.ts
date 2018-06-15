@@ -7,15 +7,15 @@ const debugOnBlockInvalidated = makeDebug('gnarly-core:blockstream:onBlockInvali
 import {
   Block as BlockstreamBlock,
   BlockAndLogStreamer,
-  Log as BlockstreamLog,
 } from 'ethereumjs-blockstream'
 import 'isomorphic-fetch'
 import PQueue = require('p-queue')
+import uuid = require('uuid')
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
 
-import Ourbit from './Ourbit'
+import Ourbit from './ourbit'
 
 import {
   timeout,
@@ -137,7 +137,7 @@ class BlockStream {
       )
 
       return this.ourbit.processTransaction(
-        block.hash,
+        uuid.v4(),
         this.onBlock(block, this.syncing),
         {
           blockHash: block.hash,

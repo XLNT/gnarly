@@ -1,23 +1,23 @@
 import {
   addABI,
   appendTo,
-  because,
   Block,
-  emit,
+  EmitOperationFn,
   forEach,
   getLogs,
   IABIItemInput,
   ILog,
   IReducer,
+  ITypeStore,
   ReducerType,
   toHex,
 } from '@xlnt/gnarly-core'
 import flatten = require('arr-flatten')
 
-// all events are part of the same domain
-const key = 'events'
-
 const makeReducer = (
+  key: string = 'events',
+  typeStore: ITypeStore,
+) => (
   config: { [_: string]: IABIItemInput[] } = {},
 ): IReducer => {
   const addrs = Object.keys(config)
@@ -27,9 +27,9 @@ const makeReducer = (
     addABI(addr, config[addr])
   }
 
-  const makeActions = (state: undefined) => ({
+  const makeActions = (state: object, emit: EmitOperationFn) => ({
     emit: (log: ILog) => {
-      emit(appendTo(key, 'events', {
+      emit(appendTo('events', {
         address: log.address,
         event: log.event,
         eventName: log.eventName,
@@ -43,10 +43,15 @@ const makeReducer = (
     config: {
       type: ReducerType.Atomic,
       key,
+      typeStore,
     },
-    state: undefined,
-    reduce: async (state: undefined, block: Block): Promise<void> => {
-      const actions = makeActions(state)
+    state: {},
+    reduce: async (
+      state: object,
+      block: Block,
+      { because, emit },
+    ): Promise<void> => {
+      const actions = makeActions(state, emit)
       const logs = await forEach(addrs, async (addr) => getLogs({
         fromBlock: toHex(block.number),
         toBlock: toHex(block.number),

@@ -32,13 +32,12 @@ describe('utils', function () {
   })
   context('parsePath', function () {
     it('should parse path correctly', async function () {
-      const parts = utils.parsePath('/scope/tableName/pk/indexOrKey')
+      const parts = utils.parsePath('/tableName/pk/indexOrKey')
       Object.keys(parts).should.deep.equal(Object.values(parts))
     })
 
     it('should parse path without index correctly', async function () {
-      const parts = utils.parsePath('/scope/tableName/pk')
-      parts.scope.should.equal('scope')
+      const parts = utils.parsePath('/tableName/pk')
       parts.tableName.should.equal('tableName')
       parts.pk.should.equal('pk')
       should.not.exist(parts.indexOrKey)
@@ -151,9 +150,9 @@ describe('utils', function () {
 
   context('appendTo', function () {
     it('generates a valid op', async function () {
-      const op = utils.appendTo('key', 'domain', { test: true })
+      const op = utils.appendTo('domain', { test: true })
       op.op.should.eq('add')
-      op.path.should.eq('/key/domain/uuid')
+      op.path.should.eq('/domain/uuid')
       op.value.should.deep.eq({
         uuid: 'uuid',
         test: true,

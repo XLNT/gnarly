@@ -3,7 +3,7 @@ const debug = makeDebug('gnarly-core:store:sequelize')
 
 import isPlainObject = require('lodash.isplainobject')
 
-import { IOperation, IPatch } from '../Ourbit'
+import { IOperation, IPatch } from '../ourbit/types'
 import {
   parsePath,
 } from '../utils'
@@ -23,13 +23,13 @@ const getForeignKeys = (model) => Object.keys(model.rawAttributes).filter((k) =>
  *
  * This needs the Sequelize thing passed in cause literal doesn't work
  * without the dialect configuration or something, it's really dumb
- * https://github.com/sequelize/sequelize/issues/9121
+ * https://github.com/sequelize/sequelize/issue1s/9121
  */
 const buildTypeStore = (Sequelize, schema) => async (
   patchId: string,
   operation: IOperation,
 ) => {
-  const { Op, QueryTypes, literal } = Sequelize
+  const { Op, literal } = Sequelize
 
   const {
     op,
@@ -38,11 +38,14 @@ const buildTypeStore = (Sequelize, schema) => async (
   } = operation
 
   const {
-    scope,
     tableName,
     pk,
     indexOrKey,
   } = parsePath(path)
+
+  debug('path: %j', parsePath(path))
+  debug('op: %j', operation)
+  debug('schema: ', Object.keys(schema))
 
   const hasIndexOrKey = indexOrKey !== undefined
   // ^ do we have an index OR a key?
@@ -73,7 +76,6 @@ const buildTypeStore = (Sequelize, schema) => async (
 
   debug(
     `
-      scope: %s
       tableName: %s
       pk: %s
       indexOrKey: %s
@@ -81,7 +83,6 @@ const buildTypeStore = (Sequelize, schema) => async (
       value: %j
       selector: %s
     `,
-    scope,
     tableName,
     pk,
     indexOrKey,
@@ -117,7 +118,6 @@ const buildTypeStore = (Sequelize, schema) => async (
           throw new Error(`
             Received index or key "${indexOrKey}"
             and value ${JSON.stringify(value)}
-            when no values at scope ${JSON.stringify(scope)}
             should be arrays.
           `)
         }

@@ -1,7 +1,6 @@
 
 import {
   makeSequelizeModels as makeGnarlyModels,
-  SequelizeTypeStorer,
 } from '@xlnt/gnarly-core'
 
 const sequelizeModels = (
@@ -12,6 +11,7 @@ const sequelizeModels = (
   const { Patch } = makeGnarlyModels(Sequelize, sequelize)
 
   const Events = sequelize.define('events', {
+    // gnarly-required columns
     uuid: { type: DataTypes.STRING, primaryKey: true },
 
     address: { type: DataTypes.STRING },

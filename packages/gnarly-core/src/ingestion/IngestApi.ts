@@ -12,7 +12,7 @@ import { IJSONLog } from '../models/Log'
 
 import { IJSONInternalTransaction } from '../models/InternalTransaction'
 
-export default interface IngestApi {
+export default interface IIngestApi {
   /**
    * gets a block by number
    * @return IJSONBLock

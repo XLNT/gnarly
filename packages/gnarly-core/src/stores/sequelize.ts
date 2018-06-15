@@ -4,27 +4,29 @@ const plain = true
 
 import {
   IPatch,
-  IPersistInterface,
   ITransaction,
-} from '../Ourbit'
+} from '../ourbit/types'
+import { IPersistInterface } from '../stores'
 
-// @TODO(shrugs) depluralize all these models -_-
 export const makeSequelizeModels = (
   Sequelize: any,
   sequelize: any,
 ) => {
   const { DataTypes } = Sequelize
+
+  const Reducer = sequelize.define('reducer', {
+    id: { type: DataTypes.STRING, primaryKey: true },
+  })
+
   const Transaction = sequelize.define('transaction', {
     id: { type: DataTypes.STRING, primaryKey: true },
     blockHash: { type: DataTypes.STRING },
   }, {
-      indexes: [
-        { fields: ['blockHash'], unique: true },
-      ],
-    })
+    indexes: [
+      { fields: ['blockHash'] },
+    ],
+  })
 
-  // @TODO - this is actually an Operation and a Patch
-  //  is a set of Operations
   const Patch = sequelize.define('patch', {
     id: { type: DataTypes.STRING, primaryKey: true },
   })
@@ -46,6 +48,10 @@ export const makeSequelizeModels = (
     ],
   })
 
+  // a reducer has many transactions
+  Reducer.Transactions = Reducer.hasMany(Transaction)
+  // a transaction belongs to a reducer
+  Transaction.Reducer = Transaction.belongsTo(Reducer)
   // transaction has many patches
   Transaction.Patches = Transaction.hasMany(Patch)
   // patch belongs to transaction
@@ -60,6 +66,7 @@ export const makeSequelizeModels = (
   Patch.Reason = Patch.hasOne(Reason)
 
   return {
+    Reducer,
     Transaction,
     Patch,
     Reason,
@@ -95,6 +102,7 @@ async function* batch (
 }
 
 class SequelizePersistInterface implements IPersistInterface {
+  private Reducer
   private Transaction
   private Patch
   private Reason
@@ -107,6 +115,7 @@ class SequelizePersistInterface implements IPersistInterface {
     const { DataTypes } = Sequelize
 
     const {
+      Reducer,
       Transaction,
       Patch,
       Operation,
@@ -116,6 +125,7 @@ class SequelizePersistInterface implements IPersistInterface {
       sequelize,
     )
 
+    this.Reducer = Reducer
     this.Transaction = Transaction
     this.Patch = Patch
     this.Operation = Operation
@@ -123,6 +133,7 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public setup = async () => {
+    await this.Reducer.sync()
     await this.Transaction.sync()
     await this.Patch.sync()
     await this.Operation.sync()
@@ -134,26 +145,39 @@ class SequelizePersistInterface implements IPersistInterface {
     await this.Operation.drop({ cascade: true })
     await this.Patch.drop({ cascade: true })
     await this.Transaction.drop({ cascade: true })
+    await this.Reducer.drop({ cascade: true })
   }
 
-  public getLatestTransaction = async (): Promise<ITransaction> => {
+  public saveReducer = async (reducerKey: string): Promise<any> => {
+    await this.Reducer.upsert({ id: reducerKey })
+  }
+
+  public deleteReducer = async (reducerKey: string): Promise<any> => {
+    await this.Reducer.destroy({
+      where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
+    })
+  }
+
+  public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
         order: [['createdAt', 'DESC']],
         rejectOnEmpty: true,
+        include: [{
+          model: this.Reducer,
+          where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
+        }],
       })).get({ plain })
     } catch (error) {
       throw new Error(`Could not get latest transaction ${error.stack}`)
     }
   }
 
-  // fetch all transactions from txId to end until there are no more
-  // hmm, should probably use an auto-incrementing id to preserve insert order...
-  public getAllTransactionsTo = async function (toTxId: null | string):
+  public getAllTransactionsTo = async function (reducerKey: string, toTxId: null | string):
     Promise<any> {
     let initial
     try {
-      initial = await this.getPlainTransaction(toTxId)
+      initial = await this.getPlainTransaction(reducerKey, toTxId)
     } catch (error) {
       throw new Error(`Could not find txId ${toTxId} - ${error.stack}`)
     }
@@ -167,6 +191,9 @@ class SequelizePersistInterface implements IPersistInterface {
           model: this.Operation,
           where: { volatile: { [this.Sequelize.Op.eq]: false } },
         }],
+      }, {
+        model: this.Reducer,
+        where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
       }],
     }
 
@@ -175,14 +202,21 @@ class SequelizePersistInterface implements IPersistInterface {
     ))
   }
 
-  public deleteTransaction = async (tx: ITransaction) => {
+  public deleteTransaction = async (reducerKey: string, tx: ITransaction) => {
     return this.Transaction.destroy({
       where: { id: { [this.Sequelize.Op.eq]: tx.id } },
+      include: [{
+        model: this.Reducer,
+        where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
+      }],
     })
   }
 
-  public saveTransaction = async (tx: ITransaction) => {
-    return this.Transaction.create(tx, {
+  public saveTransaction = async (reducerKey: string, tx: ITransaction) => {
+    return this.Transaction.create({
+      ...tx,
+      reducerId: reducerKey,
+    }, {
       include: [{
         association: this.Transaction.Patches,
         include: [
@@ -193,7 +227,7 @@ class SequelizePersistInterface implements IPersistInterface {
     })
   }
 
-  public getTransaction = async (txId: string): Promise<ITransaction> => {
+  public getTransaction = async (reducerKey: string, txId: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
         where: { id: { [this.Sequelize.Op.eq]: txId } },
@@ -206,6 +240,9 @@ class SequelizePersistInterface implements IPersistInterface {
           }, {
             model: this.Reason,
             required: false,
+          }, {
+            model: this.Reducer,
+            where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
           }],
         }],
         rejectOnEmpty: true,
@@ -215,11 +252,15 @@ class SequelizePersistInterface implements IPersistInterface {
     }
   }
 
-  private getPlainTransaction = async (txId: string): Promise<ITransaction> => {
+  private getPlainTransaction = async (reducerKey: string, txId: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
         where: { id: { [this.Sequelize.Op.eq]: txId } },
         rejectOnEmpty: true,
+        include: [{
+          model: this.Reducer,
+          where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
+        }],
       })).get({ plain })
     } catch (error) {
       throw new Error(`Could not get transaction ${txId} ${error.stack}`)

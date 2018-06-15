@@ -1,4 +1,3 @@
-import { deepClone } from '@xlnt/fast-json-patch'
 import chai = require('chai')
 import spies = require('chai-spies')
 import 'mocha'
@@ -7,28 +6,26 @@ import { globalState } from '../src/globalstate'
 import * as utils from '../src/utils'
 
 import Ourbit, {
-  IPersistInterface,
   ITransaction,
-} from '../src/Ourbit'
-import {
-  SequelizePersistInterface,
-} from '../src/stores'
+} from '../src/ourbit'
+import { ReducerContext } from '../src/reducer'
 import MockPersistInterface from './helpers/MockPersistInterface'
 
 chai.use(spies)
 chai.should()
 const sandbox = chai.spy.sandbox()
 
+const TEST_KEY = 'test'
 const TEST_REASON = 'TEST_REASON'
 const TEST_META = {}
 
 describe('Ourbit', () => {
-  let store: IPersistInterface
   let ourbit: Ourbit = null
 
   let tx: ITransaction
   let targetState
   let persistPatch
+  let context
 
   const produceFirstPatch = async () => {
     await ourbit.processTransaction(tx.id, async () => {
@@ -60,14 +57,15 @@ describe('Ourbit', () => {
     }
 
     targetState = {}
-    store = new MockPersistInterface()
-
+    const store = new MockPersistInterface()
     sandbox.on(store, [
       'saveTransaction',
     ])
+    globalState.setStore(store)
+    context = new ReducerContext(TEST_KEY)
 
     persistPatch = chai.spy()
-    ourbit = new Ourbit(targetState, store, persistPatch)
+    ourbit = new Ourbit(TEST_KEY, targetState, persistPatch, context)
   })
 
   afterEach(() => {
@@ -77,19 +75,19 @@ describe('Ourbit', () => {
   it('should process a transaction', async () => {
     await produceFirstPatch()
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should include a reason if provided', async () => {
     tx.patches[0].reason = { key: TEST_REASON, meta: TEST_META }
 
     await ourbit.processTransaction(tx.id, async () => {
-      globalState.because(TEST_REASON, TEST_META, () => {
+      context.because(TEST_REASON, TEST_META, () => {
         targetState.key = 'value'
       })
     }, { blockHash: tx.blockHash })
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should allow manual collection', async () => {
@@ -106,40 +104,40 @@ describe('Ourbit', () => {
     })
 
     await ourbit.processTransaction(tx.id, async () => {
-      globalState.operation(() => {
+      context.operation(() => {
         targetState.key = 'value'
       })
-      globalState.operation(() => {
+      context.operation(() => {
         targetState.key = 'newValue'
       })
     }, { blockHash: tx.blockHash })
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should accept volatile operations', async () => {
-    targetState.store = { domain: { array: [] } }
+    targetState.domain = { array: [] }
     tx.patches.push({
       id: 'uuid',
       reason: undefined,
       operations: [{
         op: 'add',
-        path: '/store/domain/uuid',
+        path: '/domain/uuid',
         value: { uuid: 'uuid', value: 'value' },
         volatile: true,
       }],
     })
 
     await ourbit.processTransaction(tx.id, async () => {
-      globalState.operation(() => {
+      context.operation(() => {
         targetState.key = 'value'
       })
-      globalState.emit(utils.appendTo('store', 'domain', {
+      context.emit(utils.appendTo('domain', {
         value: 'value',
       }))
     }, { blockHash: tx.blockHash })
 
-    store.saveTransaction.should.have.been.called.with(tx)
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should revert transactions', async () => {
@@ -162,7 +160,7 @@ describe('Ourbit', () => {
 
     const newState = {}
     // new state, same store
-    const newOurbit = new Ourbit(newState, store, persistPatch)
+    const newOurbit = new Ourbit(TEST_KEY, newState, persistPatch)
 
     await newOurbit.resumeFromTxId('0x1')
     newState.should.deep.equal({ key: 'value' })
