@@ -7,13 +7,12 @@ import Ourbit, {
   IOperation,
   IPatch,
 } from './ourbit'
-import { IReducer, ReducerType } from './reducer'
+import { IReducer, ReducerContext, ReducerType } from './reducer'
 import {
   SetdownFn,
   SetupFn,
   TypeStorer,
 } from './typeStore'
-import { parsePath } from './utils'
 
 class ReducerRunner {
   public ourbit: Ourbit
@@ -21,16 +20,19 @@ class ReducerRunner {
   public shouldResume: boolean = true
 
   private debug
+  private context: ReducerContext
 
   constructor (
     private reducer: IReducer,
   ) {
-    this.debug = makeDebug(`gnarly-core:runner:${reducer.config.key}`)
+    this.debug = makeDebug(`gnarly-core:runner:${this.reducer.config.key}`)
+    this.context = new ReducerContext(this.reducer.config.key)
 
     this.ourbit = new Ourbit(
-      reducer.config.key,
+      this.reducer.config.key,
       this.reducer.state,
       this.persistPatchHandler,
+      this.context,
     )
 
     this.blockstreamer = new Blockstream(
@@ -99,7 +101,7 @@ class ReducerRunner {
 
   private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
     const block = await this.normalizeBlock(rawBlock)
-    await this.reducer.reduce(this.reducer.state, block)
+    await this.reducer.reduce(this.reducer.state, block, this.context.utils)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {

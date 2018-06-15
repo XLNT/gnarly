@@ -11,6 +11,7 @@ import {
 import uuid = require('uuid')
 
 import { globalState } from '../globalstate'
+import { ReducerContext } from '../reducer'
 import { invertPatch, operationsOfPatches, toOperation } from '../utils'
 import {
   IOperation,
@@ -43,6 +44,7 @@ class Ourbit {
     private key: string,
     private targetState: object,
     private persistPatch: PersistPatchHandler,
+    private context: ReducerContext,
   ) {
   }
 
@@ -66,21 +68,21 @@ class Ourbit {
           ...op,
           volatile: false,
         })),
-        reason: globalState.reason,
+        reason: this.context.getCurrentReason(),
       })
     })
 
     // allow reducer to force-collect patches for order-dependent operations
-    globalState.setPatchGenerator(() => {
+    this.context.setPatchGenerator(() => {
       generate(observer)
     })
 
     // collect any operations that are directly emitted
-    globalState.setOpCollector((op: IOperation) => {
+    this.context.setOpCollector((op: IOperation) => {
       patches.push({
         id: uuid.v4(),
         operations: [op],
-        reason: globalState.reason,
+        reason: this.context.getCurrentReason(),
       })
     })
 

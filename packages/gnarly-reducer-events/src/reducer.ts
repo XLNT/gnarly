@@ -1,9 +1,8 @@
 import {
   addABI,
   appendTo,
-  because,
   Block,
-  emit,
+  EmitOperationFn,
   forEach,
   getLogs,
   IABIItemInput,
@@ -28,7 +27,7 @@ const makeReducer = (
     addABI(addr, config[addr])
   }
 
-  const makeActions = (state: object) => ({
+  const makeActions = (state: object, emit: EmitOperationFn) => ({
     emit: (log: ILog) => {
       emit(appendTo('events', {
         address: log.address,
@@ -47,8 +46,12 @@ const makeReducer = (
       typeStore,
     },
     state: {},
-    reduce: async (state: object, block: Block): Promise<void> => {
-      const actions = makeActions(state)
+    reduce: async (
+      state: object,
+      block: Block,
+      { because, emit },
+    ): Promise<void> => {
+      const actions = makeActions(state, emit)
       const logs = await forEach(addrs, async (addr) => getLogs({
         fromBlock: toHex(block.number),
         toBlock: toHex(block.number),

@@ -1,4 +1,3 @@
-import { deepClone } from '@xlnt/fast-json-patch'
 import chai = require('chai')
 import spies = require('chai-spies')
 import 'mocha'
@@ -9,10 +8,7 @@ import * as utils from '../src/utils'
 import Ourbit, {
   ITransaction,
 } from '../src/ourbit'
-import {
-  IPersistInterface,
-  SequelizePersistInterface,
-} from '../src/stores'
+import { ReducerContext } from '../src/reducer'
 import MockPersistInterface from './helpers/MockPersistInterface'
 
 chai.use(spies)
@@ -29,6 +25,7 @@ describe('Ourbit', () => {
   let tx: ITransaction
   let targetState
   let persistPatch
+  let context
 
   const produceFirstPatch = async () => {
     await ourbit.processTransaction(tx.id, async () => {
@@ -61,15 +58,14 @@ describe('Ourbit', () => {
 
     targetState = {}
     const store = new MockPersistInterface()
-
     sandbox.on(store, [
       'saveTransaction',
     ])
-
     globalState.setStore(store)
+    context = new ReducerContext(TEST_KEY)
 
     persistPatch = chai.spy()
-    ourbit = new Ourbit(TEST_KEY, targetState, persistPatch)
+    ourbit = new Ourbit(TEST_KEY, targetState, persistPatch, context)
   })
 
   afterEach(() => {
@@ -86,7 +82,7 @@ describe('Ourbit', () => {
     tx.patches[0].reason = { key: TEST_REASON, meta: TEST_META }
 
     await ourbit.processTransaction(tx.id, async () => {
-      globalState.because(TEST_REASON, TEST_META, () => {
+      context.because(TEST_REASON, TEST_META, () => {
         targetState.key = 'value'
       })
     }, { blockHash: tx.blockHash })
@@ -108,10 +104,10 @@ describe('Ourbit', () => {
     })
 
     await ourbit.processTransaction(tx.id, async () => {
-      globalState.operation(() => {
+      context.operation(() => {
         targetState.key = 'value'
       })
-      globalState.operation(() => {
+      context.operation(() => {
         targetState.key = 'newValue'
       })
     }, { blockHash: tx.blockHash })
@@ -120,23 +116,23 @@ describe('Ourbit', () => {
   })
 
   it('should accept volatile operations', async () => {
-    targetState.store = { domain: { array: [] } }
+    targetState.domain = { array: [] }
     tx.patches.push({
       id: 'uuid',
       reason: undefined,
       operations: [{
         op: 'add',
-        path: '/store/domain/uuid',
+        path: '/domain/uuid',
         value: { uuid: 'uuid', value: 'value' },
         volatile: true,
       }],
     })
 
     await ourbit.processTransaction(tx.id, async () => {
-      globalState.operation(() => {
+      context.operation(() => {
         targetState.key = 'value'
       })
-      globalState.emit(utils.appendTo('domain', {
+      context.emit(utils.appendTo('domain', {
         value: 'value',
       }))
     }, { blockHash: tx.blockHash })

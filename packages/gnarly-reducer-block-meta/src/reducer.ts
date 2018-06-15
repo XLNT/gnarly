@@ -1,8 +1,7 @@
 import {
   appendTo,
-  because,
   Block,
-  emit,
+  EmitOperationFn,
   IReducer,
   ITypeStore,
   ReducerType,
@@ -13,7 +12,7 @@ const makeReducer = (
   typeStore: ITypeStore,
 ) => (
 ): IReducer => {
-  const makeActions = (state: object) => ({
+  const makeActions = (state: object, emit: EmitOperationFn) => ({
     emitBlock: (block: Block) => {
       emit(appendTo('blocks', {
         hash: block.hash,
@@ -45,8 +44,12 @@ const makeReducer = (
       typeStore,
     },
     state: {},
-    reduce: async (state: object, block: Block): Promise<void> => {
-      const actions = makeActions(state)
+    reduce: async (
+      state: object,
+      block: Block,
+      { because, emit },
+    ): Promise<void> => {
+      const actions = makeActions(state, emit)
       because('BLOCK_PRODUCED', {}, () => {
         actions.emitBlock(block)
       })

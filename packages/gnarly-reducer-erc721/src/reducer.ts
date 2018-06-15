@@ -4,13 +4,11 @@ const debug = makeDebug('gnarly-reducer:erc721')
 import {
   addABI,
   appendTo,
-  because,
   Block,
-  emit,
+  EmitOperationFn,
   getLogs,
   IReducer,
   ITypeStore,
-  operation,
   ReducerType,
   toHex,
 } from '@xlnt/gnarly-core'
@@ -58,7 +56,7 @@ const makeReducer = (
     }
   }
 
-  const makeActions = (state) => ({
+  const makeActions = (state: IERC721Tracker, { operation, emit }) => ({
     transfer: (tokenId: string, from: string, to: string) => {
       debug('transferring token %s to %s', tokenId, to)
 
@@ -91,8 +89,12 @@ const makeReducer = (
       typeStore,
     },
     state: { tokens: {} },
-    reduce: async (state: IERC721Tracker, block: Block): Promise<void> => {
-      const actions = makeActions(state)
+    reduce: async (
+      state: IERC721Tracker,
+      block: Block,
+      { because, operation, emit },
+    ): Promise<void> => {
+      const actions = makeActions(state, { operation, emit })
       const logs = await getLogs({
         fromBlock: toHex(block.number),
         toBlock: toHex(block.number),

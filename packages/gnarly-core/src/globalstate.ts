@@ -12,9 +12,6 @@ import { IOperation, OpCollector } from './ourbit/types'
 import { IPersistInterface } from './stores'
 import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 
-type voidFunc = () => void
-type PatchGenerator = voidFunc
-
 type ABIItemSet = IABIItem[]
 
 export class GnarlyGlobals {
@@ -22,11 +19,6 @@ export class GnarlyGlobals {
   public abis: { [s: string]: ABIItemSet } = {}
   public api: IIngestApi
   public store: IPersistInterface
-
-  public currentReason: string = null
-  public currentMeta: any = null
-  private opCollector: OpCollector
-  private forceGeneratePatches: PatchGenerator
 
   public getLogs = async (options) => {
     const logs = await this.api.getLogs(options)
@@ -57,47 +49,6 @@ export class GnarlyGlobals {
     // @TODO(shrugs) replace with O(1) precomputed lookup
     return (this.abis[address.toLowerCase()] || [])
       .find((ai) => ai.shortId === methodId)
-  }
-
-  public because = (reason: string, meta: any, fn: () => void) => {
-    this.currentReason = reason
-    this.currentMeta = meta
-
-    this.operation(fn)
-
-    this.currentReason = null
-    this.currentMeta = null
-  }
-
-  public get reason () {
-    return this.currentReason !== null
-      ? { key: this.currentReason, meta: this.currentMeta }
-      : undefined
-  }
-
-  /**
-   * Perform an explicit operation, which is most likely order-dependent
-   */
-  public operation = (fn: voidFunc) => {
-    fn()
-    this.forceGeneratePatches()
-  }
-
-  /**
-   * Emit a specific operation, which is not tracked in the local state
-   * This should be used for immutable information
-   * (namely, event logs)
-   */
-  public emit = (op: IOperation) => {
-    this.opCollector(op)
-  }
-
-  public setOpCollector = (fn: OpCollector) => {
-    this.opCollector = fn
-  }
-
-  public setPatchGenerator = (fn: PatchGenerator) => {
-    this.forceGeneratePatches = fn
   }
 }
 

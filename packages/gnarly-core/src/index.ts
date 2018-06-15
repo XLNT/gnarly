@@ -26,7 +26,4 @@ export * from './typeStore'
 export * from './ingestion'
 
 export const addABI = globalState.addABI.bind(globalState)
-export const because = globalState.because.bind(globalState)
 export const getLogs = globalState.getLogs.bind(globalState)
-export const operation = globalState.operation.bind(globalState)
-export const emit = globalState.emit.bind(globalState)

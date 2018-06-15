@@ -14,6 +14,14 @@ export interface IOperation {
 }
 
 /**
+ * A reason for a patch
+ */
+export interface IReason {
+  key: string
+  meta: any
+}
+
+/**
  * a gnarly-specific path generated from patch.op.path
  */
 export interface IPathThing {
