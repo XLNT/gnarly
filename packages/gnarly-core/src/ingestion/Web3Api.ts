@@ -14,14 +14,17 @@ import IIngestApi from './IngestApi'
 
 import {
   cacheApiRequest,
-  fetchWithRetry
 } from '../utils'
+
+const pRetry = require('p-retry')
 
 export default class Web3Api implements IIngestApi {
 
+  maxRetries = 5;
+
   private doFetch = cacheApiRequest(
-    async (method: string, params: any[] = []): Promise<any> => {
-      const data = await fetchWithRetry(this.nodeEndpoint, {
+    pRetry(async (method: string, params: any[] = []): Promise<any> => {
+      const res = await fetch(this.nodeEndpoint, {
         method: 'POST',
         headers: new Headers({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
@@ -31,8 +34,23 @@ export default class Web3Api implements IIngestApi {
           params,
         }),
       })
+      const data = await res.json()
+      if (data.result === undefined || data.result === null) {
+        throw new Error(`
+          Invalid JSON response: ${JSON.stringify(data, null, 2)}
+          for ${method} ${JSON.stringify(params, null, 2)}
+          Retrying...
+        `)
+      }
+
       return data.result
     },
+    { 
+      retries: this.maxRetries, minTimeout: 100
+    })
+    .catch((err: Error) => {
+      console.log(`Failed after ${this.maxRetries} retries: ${err.message}`)
+    })
   )
 
   public constructor (

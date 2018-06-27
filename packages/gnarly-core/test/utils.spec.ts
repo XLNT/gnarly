@@ -161,15 +161,6 @@ describe('utils', function () {
     })
   })
 
-  context('fetchWithRetry', () => {
-    it('retries the request', async () => {
-      const response = await utils.fetchWithRetry('notaURL', '{}')
-      .catch((err: Error) => {
-        err.message.includes('Retried').should.equal(true)
-      })
-    })
-  })
-
   context('cacheApiRequest', function () {
 
     beforeEach(async function () {

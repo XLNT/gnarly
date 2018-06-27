@@ -15,51 +15,6 @@ import {
   IPathThing,
 } from './ourbit/types'
 import { BecauseFn, EmitOperationFn } from './reducer'
-import 'isomorphic-fetch'
-const MAX_RETRIES = 3
-const RETRY_DELAY = 100
-
-export const fetchWithRetry = (
-  url: string, 
-  options: object
-): Promise<any> =>  {
-  return new Promise((resolve, reject) => {
-    const innerFetch = (n) => {
-      fetch(url, options)
-      .then((response) => {
-        return response.json()
-      })
-      .then((data) => {
-        if (data.result !== undefined && data.result !== null) {
-          resolve(data)
-        } else {
-          if (n > 0) {
-            retry(n)
-          } else {
-            reject(
-              new Error(`Recieved invalid response. Retried ${MAX_RETRIES} times.`)
-            )
-          }
-        }
-      })
-      .catch((err: Error) => {
-        if (n > 0) {
-          retry(n)
-        } else {
-          reject(
-            new Error(`${err.message}. Retried ${MAX_RETRIES} times.`)
-          )
-        }
-      })
-    }
-    const retry = (n) => {
-      setTimeout(() => {
-          innerFetch(--n);
-        }, RETRY_DELAY);
-    }
-    innerFetch(MAX_RETRIES);
-  })
-}
 
 const API_CACHE_MAX_AGE = 1000
 
