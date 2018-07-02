@@ -72,9 +72,8 @@ describe('Ourbit', () => {
     sandbox.restore()
   })
 
-  it('should process a transaction', async () => {
+  it.only('should process a transaction', async () => {
     await produceFirstPatch()
-
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 

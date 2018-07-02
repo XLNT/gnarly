@@ -20,5 +20,10 @@
     "ts-node": "^5.0.1",
     "tslint": "^5.9.1"
   },
-  "workspaces": ["packages/*"]
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "mongoose": "^5.1.7"
+  }
 }
