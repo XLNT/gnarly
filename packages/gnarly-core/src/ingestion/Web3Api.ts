@@ -47,8 +47,9 @@ export default class Web3Api implements IIngestApi {
         minTimeout: this.minTimeout,
       },
     )
-    .catch((err: Error) => {
-      console.log(`Failed after ${this.maxRetries} retries: ${err.message}`)
+    .catch((error: Error) => {
+      console.log(`Failed after ${this.maxRetries} retries: ${error.message}`)
+      throw error
     }),
   )
 
