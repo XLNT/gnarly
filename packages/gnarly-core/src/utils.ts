@@ -7,14 +7,12 @@ import pMap = require('p-map')
 import uuid = require('uuid')
 import web3Utils = require('web3-utils')
 
-import { globalState } from './globalstate'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import {
   IOperation,
   IPatch,
   IPathThing,
 } from './ourbit/types'
-import { BecauseFn, EmitOperationFn } from './reducer'
 
 const API_CACHE_MAX_AGE = 1000
 

@@ -8,7 +8,6 @@
 import IIngestApi from './ingestion/IngestApi'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
-import { IOperation, OpCollector } from './ourbit/types'
 import { IPersistInterface } from './stores'
 import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 

@@ -5,6 +5,7 @@ import BN = require('bn.js')
 import {
   FilterOptions,
 } from 'ethereumjs-blockstream'
+import pRetry = require('p-retry')
 
 import { IJSONBlock } from '../models/Block'
 import { IJSONExternalTransactionReceipt } from '../models/ExternalTransaction'
@@ -19,31 +20,43 @@ import {
 export default class Web3Api implements IIngestApi {
 
   private doFetch = cacheApiRequest(
-    async (method: string, params: any[] = []): Promise<any> => {
-      const res = await fetch(this.nodeEndpoint, {
-        method: 'POST',
-        headers: new Headers({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method,
-          params,
-        }),
-      })
-      const data = await res.json()
-      if (data.result === undefined || data.result === null) {
-        throw new Error(`
-          Invalid JSON response: ${JSON.stringify(data, null, 2)}
-          for ${method} ${JSON.stringify(params, null, 2)}
-        `)
-      }
+    (method: string, params: any[] = []) => pRetry(
+      async () => {
+        const res = await fetch(this.nodeEndpoint, {
+          method: 'POST',
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method,
+            params,
+          }),
+        })
+        const data = await res.json()
+        if (data.result === undefined || data.result === null) {
+          throw new Error(`
+            Invalid JSON response: ${JSON.stringify(data, null, 2)}
+            for ${method} ${JSON.stringify(params, null, 2)}
+            Retrying...
+          `)
+        }
 
-      return data.result
-    },
+        return data.result
+      }, {
+        retries: this.maxRetries,
+        minTimeout: this.minTimeout,
+      },
+    )
+    .catch((error: Error) => {
+      console.log(`Failed after ${this.maxRetries} retries: ${error.message}`)
+      throw error
+    }),
   )
 
   public constructor (
     private nodeEndpoint: string,
+    public maxRetries = 5,
+    public minTimeout = 100,
   ) {
   }
 
