@@ -3,7 +3,6 @@ import identity = require('lodash.identity')
 const plain = true
 
 import {
-  IPatch,
   ITransaction,
 } from '../ourbit/types'
 import { IPersistInterface } from '../stores'
@@ -240,10 +239,10 @@ class SequelizePersistInterface implements IPersistInterface {
           }, {
             model: this.Reason,
             required: false,
-          }, {
-            model: this.Reducer,
-            where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
           }],
+        }, {
+          model: this.Reducer,
+          where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
         }],
         rejectOnEmpty: true,
       })).get({ plain })

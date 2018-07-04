@@ -113,7 +113,7 @@ const main = async () => {
 }
 
 process.on('unhandledRejection', (error) => {
-  console.error(error, error.stack)
+  console.error('unhandledRejection:', error, error.stack)
   process.exit(1)
 })
 
