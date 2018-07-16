@@ -117,6 +117,27 @@ yarn run docker-push
 
 ## Developer Installation / Setup
 
+Here's what I do when I'm manually testing gnarly:
+
+```bash
+# create a packages/gnarly-bin/.env
+DEBUG=*
+NODE_ENDPOINT=http://localhost:8545
+DB_CONNECTION_STRING=postgresql://postgres@localhost:5432/default
+GNARLY_RESET=false
+LATEST_BLOCK_HASH=
+
+# in one terminal window from //
+yarn run watch-ts
+
+# in one terminal window from //packages/gnarly-bin
+yarn run ts-start
+```
+
+And then your gnarly-bin project will be running with local code changes.
+
+### Developer Scripts
+
 Want to watch all of the files and recompile the typescript?
 
 ```bash

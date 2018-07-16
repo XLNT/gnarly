@@ -7,7 +7,6 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run build-ts && npm run tslint",
-    "ts-start": "ts-node src/index.ts",
     "start": "node lib/index.js",
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
     "watch-test": "mocha --watch --watch-extensions ts -r ts-node/register test/**/*.spec.ts",

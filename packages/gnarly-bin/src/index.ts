@@ -39,7 +39,7 @@ enum Keys {
 
 const main = async () => {
   const nodeEndpoint = process.env.NODE_ENDPOINT
-  const connectionString = process.env.CONNECTION_STRING
+  const connectionString = process.env.DB_CONNECTION_STRING
 
   const sequelize = new Sequelize(connectionString, {
     logging: false,
