@@ -1,6 +1,6 @@
 {
   "name": "@xlnt/gnarly-reducer-block-meta",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A gnarly reducer for block metadata.",
   "main": "lib/index.js",
   "scripts": {
@@ -30,7 +30,7 @@
     "@xlnt/gnarly-core": ">=0.1.10-2"
   },
   "devDependencies": {
-    "@xlnt/gnarly-core": "^0.5.1",
+    "@xlnt/gnarly-core": "^0.5.2",
     "tslint": "^5.9.1",
     "typescript": "^2.8.3"
   },
