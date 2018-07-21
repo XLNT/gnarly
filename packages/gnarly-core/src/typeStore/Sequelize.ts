@@ -58,17 +58,23 @@ const buildTypeStore = (Sequelize, schema) => async (
   const model = schema[tableName]
   const {
     primaryKeyAttribute,
+    primaryKeyAttributes,
   } = model
   // const foreignKeys = getForeignKeys(model)
   // const hasForeignKey = foreignKeys.length > 0
 
+  if (primaryKeyAttributes.length > 1) {
+    throw new Error(`Gnarly#SequelizeTypeStore only supports single-primary keys at the moment.
+    Do not use a composite key. Instead concatenate keys to get a single unique "composite" key
+    and then just add a composite unique index for similar performance.`)
+  }
+
   const selector = primaryKeyAttribute
 
-  // if there's a foreign key, it's probably belongs_to
-  // so use that as the window
-  // otherwise we can use the primary key selector
-  const window = { [selector]: { [Op.eq]: pk } }
-  // ^ default window in the database
+  // restrict all references below to objects with the following window, scoped by primary key value
+  const window = {
+    [selector]: { [Op.eq]: pk },
+  }
 
   const addSingle = async (properties) => {
     await model.create(withMeta(properties))
@@ -81,14 +87,14 @@ const buildTypeStore = (Sequelize, schema) => async (
       indexOrKey: %s
       op: %s
       value: %j
-      selector: %s
+      window: %j
     `,
     tableName,
     pk,
     indexOrKey,
     op,
     (op as any).value,
-    selector,
+    window,
   )
   switch (op) {
     case 'add': {
