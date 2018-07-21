@@ -202,8 +202,7 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public deleteTransaction = async (reducerKey: string, tx: ITransaction) => {
-    // does this delete patches, etc as well? seems like not, by default
-    console.log(`deleting tx ${tx.id} in reducer "${reducerKey}"`)
+    // @TODO does this delete patches, etc as well? seems like not, by default
     return this.Transaction.destroy({
       where: { id: { [this.Sequelize.Op.eq]: tx.id } },
       include: [{

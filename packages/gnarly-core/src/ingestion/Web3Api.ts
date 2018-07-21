@@ -48,8 +48,7 @@ export default class Web3Api implements IIngestApi {
       },
     )
     .catch((error: Error) => {
-      console.log(`Failed after ${this.maxRetries} retries: ${error.message}`)
-      throw error
+      throw new Error(`Web3Api#fetch failed after ${this.maxRetries} retries: ${error.stack}`)
     }),
   )
 
