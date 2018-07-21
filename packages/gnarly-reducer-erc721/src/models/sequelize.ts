@@ -10,15 +10,19 @@ const sequelizeModels = (
   const { Patch } = makeGnarlyModels(Sequelize, sequelize)
   // ownerOf table
   const ERC721Tokens = sequelize.define('erc721_tokens', {
-    darAddress: { type: DataTypes.STRING, primaryKey: true },
-    tokenId: { type: DataTypes.STRING, primaryKey: true },
+    id: { type: DataTypes.STRING, primaryKey: true },
+    darAddress: { type: DataTypes.STRING },
+    tokenId: { type: DataTypes.STRING },
 
     // 1:1 properties of token
     owner: { type: DataTypes.STRING },
   }, {
       indexes: [
+        // composite unique constraint on darAddress x tokenId
+        { unique: true, fields: ['darAddress', 'tokenId'] },
+        // fast lookups of tokens by darAddress
         { fields: ['darAddress'] },
-        { fields: ['tokenId'] },
+        // fast lookups by owner across dars
         { fields: ['owner'] },
       ],
     })
@@ -38,14 +42,10 @@ const sequelizeModels = (
 
   // token has many owners
   ERC721Tokens.hasMany(ERC721TokenOwners, {
-    foreignKey: 'tokenId',
-    sourceKey: 'tokenId',
     as: 'Owners',
   })
 
   ERC721TokenOwners.belongsTo(ERC721Tokens, {
-    foreignKey: 'tokenId',
-    targetKey: 'tokenId',
     as: 'Token',
   })
 

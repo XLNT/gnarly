@@ -37,7 +37,7 @@ import {
  *    - ourbit = new Ourbit(targetState, store, persistPatch)
  *    - ourbit.resumeFromTxId(txId = null)
  *    - ourbit.processTransaction(txId, operation producer)
- *    - ourbit.rollbackTransaction(txId)
+ *    - ourbit.rollbackTransaction(blockHash)
  */
 class Ourbit {
   constructor (
@@ -105,8 +105,8 @@ class Ourbit {
    * @TODO(shrugs) - make this a "fix-forward" operation and include event log
    * @param txId transaction id
    */
-  public rollbackTransaction = async (txId: string) => {
-    const tx = await globalState.store.getTransaction(this.key, txId)
+  public rollbackTransaction = async (blockHash: string) => {
+    const tx = await globalState.store.getTransactionByBlockHash(this.key, blockHash)
     await this.uncommitTransaction(tx)
   }
 

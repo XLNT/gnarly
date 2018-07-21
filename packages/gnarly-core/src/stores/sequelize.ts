@@ -202,6 +202,8 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public deleteTransaction = async (reducerKey: string, tx: ITransaction) => {
+    // does this delete patches, etc as well? seems like not, by default
+    console.log(`deleting tx ${tx.id} in reducer "${reducerKey}"`)
     return this.Transaction.destroy({
       where: { id: { [this.Sequelize.Op.eq]: tx.id } },
       include: [{
@@ -227,9 +229,17 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public getTransaction = async (reducerKey: string, txId: string): Promise<ITransaction> => {
+    return this.getTransactionWithQuery(reducerKey, { id: { [this.Sequelize.Op.eq]: txId } })
+  }
+
+  public getTransactionByBlockHash = async (reducerKey: string, blockHash: string): Promise<ITransaction> => {
+    return this.getTransactionWithQuery(reducerKey, { blockHash: { [this.Sequelize.Op.eq]: blockHash } })
+  }
+
+  private getTransactionWithQuery = async (reducerKey, where: object): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
-        where: { id: { [this.Sequelize.Op.eq]: txId } },
+        where,
         include: [{
           model: this.Patch,
           required: false,
@@ -247,7 +257,8 @@ class SequelizePersistInterface implements IPersistInterface {
         rejectOnEmpty: true,
       })).get({ plain })
     } catch (error) {
-      throw new Error(`Could not find transaction ${txId} ${error.stack}`)
+      throw new Error(`Could not find transaction using query
+      ${JSON.stringify(where)} under reducer ${reducerKey} ${error.stack}`)
     }
   }
 

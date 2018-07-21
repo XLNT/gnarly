@@ -49,6 +49,7 @@ const makeReducer = (
   interface IERC721Tracker {
     tokens: { // 1:1
       [id: string]: {
+        id: string,
         tokenId: string,
         darAddress: string,
         owner: string,
@@ -60,7 +61,10 @@ const makeReducer = (
     transfer: (tokenId: string, from: string, to: string) => {
       debug('transferring token %s to %s', tokenId, to)
 
-      const existing = state.tokens[tokenId]
+      // hacky composite key for O(n) lookups required by JSON-Patch
+      const id = `${darAddress}-${tokenId}`
+
+      const existing = state.tokens[id]
       if (existing) {
         // push
         existing.owner = to
@@ -72,7 +76,7 @@ const makeReducer = (
         // init
         // order-dependent because of foreign key
         operation(() => {
-          state.tokens[tokenId] = { tokenId, darAddress, owner: to }
+          state.tokens[id] = { id, tokenId, darAddress, owner: to }
         })
         emit(appendTo('owners', {
           tokenId,

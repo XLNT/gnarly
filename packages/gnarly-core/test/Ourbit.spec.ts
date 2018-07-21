@@ -146,7 +146,7 @@ describe('Ourbit', () => {
 
     await ourbit.processTransaction('0x2', async () => {
       targetState.key = 'newValue'
-    }, { blockHash: tx.blockHash })
+    }, { blockHash: '0x2' })
 
     await ourbit.rollbackTransaction('0x2')
     targetState.should.deep.equal({ key: 'value' })
@@ -160,7 +160,7 @@ describe('Ourbit', () => {
 
     const newState = {}
     // new state, same store
-    const newOurbit = new Ourbit(TEST_KEY, newState, persistPatch)
+    const newOurbit = new Ourbit(TEST_KEY, newState, persistPatch, context)
 
     await newOurbit.resumeFromTxId('0x1')
     newState.should.deep.equal({ key: 'value' })

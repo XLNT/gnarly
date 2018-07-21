@@ -4,6 +4,7 @@
   "scripts": {
     "watch-ts": "lerna exec --parallel -- yarn run watch-ts",
     "build-ts": "lerna exec --parallel -- yarn run build-ts",
+    "test": "lerna exec --parallel --scope @xlnt/gnarly-core -- yarn run test",
     "pkg": "lerna run pkg --scope=@xlnt/gnarly-bin",
     "docker-build": "docker build -t shrugs/gnarly-test:demo .",
     "docker-push": "docker push shrugs/gnarly-test:demo",

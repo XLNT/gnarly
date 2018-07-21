@@ -64,6 +64,7 @@ class ReducerRunner {
             // let's re-hydrate local state by replaying transactions
             await this.ourbit.resumeFromTxId(latestBlockHash)
           } catch (error) {
+            latestBlockHash = null
             this.debug('No latest transaction, so we\'re definitely starting from scratch')
           }
         } else {
@@ -77,6 +78,7 @@ class ReducerRunner {
         throw new Error(`Unexpected ReducerType ${this.reducer.config.type}`)
     }
 
+    this.debug('Streaming blocks from %s', latestBlockHash || 'HEAD')
     // and now ingest blocks from latestBlockHash
     await this.blockstreamer.start(latestBlockHash)
 

@@ -11,6 +11,7 @@ export interface IPersistInterface {
   deleteTransaction (reducerKey: string, tx: ITransaction): Promise<any>
   saveTransaction (reducerKey: string, tx: ITransaction): Promise<any>
   getTransaction (reducerKey: string, txId: string): Promise<ITransaction>
+  getTransactionByBlockHash (reducerKey: string, blockHash: string): Promise<ITransaction>
 
   // event log CRUD actions
 

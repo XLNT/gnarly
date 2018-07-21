@@ -53,6 +53,10 @@ class MockPersistInterface implements IPersistInterface {
   public async getTransaction (reducerKey: string, txId: string): Promise<ITransaction> {
     return _.find(this.transactions, (t) => t.id === txId)
   }
+
+  public async getTransactionByBlockHash (reducerKey: string, blockHash: string): Promise<ITransaction> {
+    return _.find(this.transactions, (t) => t.blockHash === blockHash)
+  }
 }
 
 export default MockPersistInterface
