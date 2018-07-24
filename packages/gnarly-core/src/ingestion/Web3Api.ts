@@ -79,7 +79,7 @@ export default class Web3Api implements IIngestApi {
     return this.doFetch('eth_getBlockByNumber', ['latest', true])
   }
 
-  public getTransactionReciept = async (hash: string): Promise<IJSONExternalTransactionReceipt> => {
+  public getTransactionReceipt = async (hash: string): Promise<IJSONExternalTransactionReceipt> => {
     return this.doFetch('eth_getTransactionReceipt', [hash])
   }
 

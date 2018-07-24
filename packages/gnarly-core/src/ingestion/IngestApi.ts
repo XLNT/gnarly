@@ -46,7 +46,7 @@ export default interface IIngestApi {
    * @returns IJSONExternalTransactionReceipt
    * @throws
    */
-  getTransactionReciept: (hash: string) => Promise<IJSONExternalTransactionReceipt>
+  getTransactionReceipt: (hash: string) => Promise<IJSONExternalTransactionReceipt>
 
   /**
    * traces a transaction (parity format)
