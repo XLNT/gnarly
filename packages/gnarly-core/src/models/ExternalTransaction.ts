@@ -87,7 +87,7 @@ export default class ExternalTransaction extends Transaction {
   }
 
   private setReceipt = async () => {
-    const txReceipt = await globalState.api.getTransactionReciept(this.hash)
+    const txReceipt = await globalState.api.getTransactionReceipt(this.hash)
     this.setSelf(txReceipt)
   }
 
