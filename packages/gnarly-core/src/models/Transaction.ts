@@ -52,16 +52,12 @@ export default class Transaction {
     if (!paramAbiItem) { return }
     // ^ using incorrect abi
 
-    const parameterTypes = paramAbiItem.inputs.filter((item) => ({
-      type: item.type,
-      name: item.name,
-    }))
-
     const paramData = this.input.replace(paramAbiItem.shortId, '0x')
+    // ^ remove function shortId from input data
 
-    let args = {}
+    this.args = {}
     try {
-      args = abi.decodeParameters(parameterTypes, paramData)
+      this.args = abi.decodeParameters(paramAbiItem.inputs, paramData)
     } catch (error) {
       // decodeTransaction failed for some reason (null address?)
       debug(
@@ -72,7 +68,5 @@ export default class Transaction {
       )
       return
     }
-
-    this.args = args
   }
 }
