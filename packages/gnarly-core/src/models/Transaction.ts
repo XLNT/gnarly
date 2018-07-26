@@ -48,16 +48,15 @@ export default class Transaction {
     this.methodId = methodAbi.shortId
 
     // get abi item
-    const paramAbiItem = registeredAbi.find((item) => item.signature === this.signature)
-    if (!paramAbiItem) { return }
+    const abiItem = registeredAbi.find((item) => item.signature === this.signature)
+    if (!abiItem) { return }
     // ^ using incorrect abi
 
-    const paramData = this.input.replace(paramAbiItem.shortId, '0x')
+    const data = this.input.replace(abiItem.shortId, '0x')
     // ^ remove function shortId from input data
 
-    this.args = {}
     try {
-      this.args = abi.decodeParameters(paramAbiItem.inputs, paramData)
+      this.args = abi.decodeParameters(abiItem.inputs, data)
     } catch (error) {
       // decodeTransaction failed for some reason (null address?)
       debug(
