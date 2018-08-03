@@ -14,6 +14,10 @@ import Gnarly, {
   Web3Api,
 } from '@xlnt/gnarly-core'
 
+import makeERC20Reducer, {
+  makeSequelizeTypeStore as makeERC20TypeStore,
+} from '@xlnt/gnarly-reducer-erc20'
+
 import makeERC721Reducer, {
   makeSequelizeTypeStore as makeERC721TypeStore,
 } from '@xlnt/gnarly-reducer-erc721'
@@ -26,12 +30,14 @@ import makeEventsReducer, {
   makeSequelizeTypeStore as makeEventsTypeStore,
 } from '@xlnt/gnarly-reducer-events'
 
+const ZRX_ADDRESS = '0xe41d2489571d322189246dafa5ebde1f4699f498'
 const CRYPTO_KITTIES_ADDRESS = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
 const ETHER_GOO_ADDRESS = '0x57b116da40f21f91aec57329ecb763d29c1b2355'
 
 import etherGooAbi from './abis/EtherGoo'
 
 enum Keys {
+  ZRX = 'ZRX',
   CryptoKitties = 'cryptoKitties',
   Blocks = 'blocks',
   Events = 'events',
@@ -55,6 +61,14 @@ const main = async () => {
     },
   })
 
+  const erc20Reducer = makeERC20Reducer(Keys.ZRX, makeERC20TypeStore(
+    Sequelize,
+    sequelize,
+  ))(
+    ZRX_ADDRESS,
+  )
+  // ^ using ZRX simply because it has most transfers per block right now
+
   const erc721Reducer = makeERC721Reducer(Keys.CryptoKitties, makeERC721TypeStore(
     Sequelize,
     sequelize,
@@ -76,8 +90,9 @@ const main = async () => {
   })
 
   const reducers = [
-    blockReducer,
+    erc20Reducer,
     erc721Reducer,
+    blockReducer,
     eventsReducer,
   ]
 

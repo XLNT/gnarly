@@ -8,17 +8,19 @@ const sequelizeModels = (Sequelize: any, sequelize: any) => {
     'erc20_balances',
     {
       id: { type: DataTypes.STRING, primaryKey: true },
-      darAddress: { type: DataTypes.STRING },
+      tokenAddress: { type: DataTypes.STRING },
       owner: { type: DataTypes.STRING },
-      balance: { type: DataTypes.STRING },
+      balance: { type: DataTypes.DECIMAL(76, 0) },
+      balanceStr: { type: DataTypes.STRING },
+      // ^ keep a copy of the balance in string
     },
     {
       indexes: [
-        // composite unique constraint on darAddress x owner
-        { unique: true, fields: ['darAddress', 'owner'] },
-        // fast lookups of balances by darAddress
-        { fields: ['darAddress'] },
-        // fast lookups by owner across dars
+        // composite unique constraint on tokenAddress x owner
+        { unique: true, fields: ['tokenAddress', 'owner'] },
+        // fast lookups of balances by tokenAddress
+        { fields: ['tokenAddress'] },
+        // fast lookups by owner across tokens
         { fields: ['owner'] },
       ],
     },
