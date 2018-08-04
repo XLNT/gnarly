@@ -1,6 +1,4 @@
 import makeDebug = require('debug')
-const debug = makeDebug('gnarly-core:ourbit')
-const debugNotifyPatches = makeDebug('gnarly-core:ourbit:notifyPatches')
 
 import {
   applyPatch,
@@ -40,12 +38,18 @@ import {
  *    - ourbit.rollbackTransaction(blockHash)
  */
 class Ourbit {
+
+  private debug
+  private debugNotifyPatches
+
   constructor (
     private key: string,
     private targetState: object,
     private persistPatch: PersistPatchHandler,
     private context: ReducerContext,
   ) {
+    this.debug = makeDebug(`gnarly-core:ourbit:${key}`)
+    this.debugNotifyPatches = makeDebug(`gnarly-core:ourbit:${key}:notifyPatches`)
   }
 
   /**
@@ -115,23 +119,26 @@ class Ourbit {
    * @param txId transaction id
    */
   public async resumeFromTxId (txId: string) {
-    debug('Resuming from txId %s', txId)
+    this.debug('Resuming from txId %s', txId)
     const allTxs = await globalState.store.getAllTransactionsTo(this.key, txId)
     let totalPatches = 0
     for await (const batch of allTxs) {
       const txBatch = batch as ITransaction[]
       txBatch.forEach((tx) => {
         totalPatches += tx.patches.length
-        debug('[applyPatch] %s %d', tx.id, tx.patches.length)
+        this.debug('[applyPatch] %s %d', tx.id, tx.patches.length)
         const allOperations = operationsOfPatches(tx.patches)
+        this.debug('batch: %j', txBatch)
+        this.debug('patches:', JSON.stringify(tx.patches))
+        this.debug('operations:', JSON.stringify(allOperations))
         applyPatch(this.targetState, allOperations.map(toOperation))
       })
     }
-    debug('finished applying %d patches', totalPatches)
+    this.debug('finished applying %d patches', totalPatches)
   }
 
   private notifyPatches = async (txId: string, patches: IPatch[]) => {
-    debugNotifyPatches('notifyPatches: %s, %j', txId, patches)
+    this.debugNotifyPatches('txId: %s, patches: %j', txId, patches)
     for (const patch of patches) {
       await this.persistPatch(txId, patch)
     }
