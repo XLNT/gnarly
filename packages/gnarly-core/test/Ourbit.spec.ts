@@ -74,7 +74,6 @@ describe('Ourbit', () => {
 
   it('should process a transaction', async () => {
     await produceFirstPatch()
-
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
