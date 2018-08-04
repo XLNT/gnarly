@@ -128,9 +128,6 @@ class Ourbit {
         totalPatches += tx.patches.length
         this.debug('[applyPatch] %s %d', tx.id, tx.patches.length)
         const allOperations = operationsOfPatches(tx.patches)
-        this.debug('batch: %j', txBatch)
-        this.debug('patches:', JSON.stringify(tx.patches))
-        this.debug('operations:', JSON.stringify(allOperations))
         applyPatch(this.targetState, allOperations.map(toOperation))
       })
     }

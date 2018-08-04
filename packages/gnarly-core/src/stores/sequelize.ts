@@ -199,7 +199,7 @@ class SequelizePersistInterface implements IPersistInterface {
       order: [
         ['mid', 'ASC'],
         [{ model: this.Patch }, 'mid', 'ASC'],
-        [{ model: this.Patch }, 'mid', 'ASC'],
+        [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
       ],
     }
 
@@ -262,7 +262,7 @@ class SequelizePersistInterface implements IPersistInterface {
         }],
         order: [
           [{ model: this.Patch }, 'mid', 'ASC'],
-          [{ model: this.Operation }, 'mid', 'ASC'],
+          [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
         ],
         rejectOnEmpty: true,
       })).get({ plain })
