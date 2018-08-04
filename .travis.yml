@@ -11,7 +11,7 @@ matrix:
   fast_finish: true
 before_script:
 - lerna bootstrap
-- yarn run build-ts && yarn run build-ts
+- travis_retry yarn run build-ts
 script:
 - yarn run test
 notifications:
