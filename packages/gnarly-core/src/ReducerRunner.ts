@@ -73,7 +73,6 @@ class ReducerRunner {
               process.exit(1)
             }
           } catch (error) {
-            this.debug(error)
             latestBlockHash = null
             this.debug('No latest transaction, so we\'re definitely starting from scratch.')
           }
