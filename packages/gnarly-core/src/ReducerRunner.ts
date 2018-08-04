@@ -57,15 +57,24 @@ class ReducerRunner {
           // we're resuming, so replay from store if possible
           try {
             const latestTransaction = await globalState.store.getLatestTransaction(this.reducer.config.key)
-            latestBlockHash = latestTransaction ? latestTransaction.blockHash : null
+            if (!latestTransaction) {
+              throw new Error('No latest transaction available.')
+            }
 
-            this.debug('Attempting to reload state from %s', latestBlockHash || 'HEAD')
+            latestBlockHash = latestTransaction.blockHash
 
-            // let's re-hydrate local state by replaying transactions
-            await this.ourbit.resumeFromTxId(latestBlockHash)
+            try {
+              // let's re-hydrate local state by replaying transactions
+              this.debug('Attempting to reload state from %s', latestTransaction.id || 'HEAD')
+              await this.ourbit.resumeFromTxId(latestTransaction.id)
+            } catch (error) {
+              // we weren't able to replace state, which means something is totally broken
+              this.debug(error)
+              process.exit(1)
+            }
           } catch (error) {
             latestBlockHash = null
-            this.debug('No latest transaction, so we\'re definitely starting from scratch')
+            this.debug('No latest transaction, so we\'re definitely starting from scratch.')
           }
         } else {
           // we reset, so let's start from HEAD

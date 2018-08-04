@@ -19,6 +19,7 @@ export const makeSequelizeModels = (
 
   const Transaction = sequelize.define('transaction', {
     id: { type: DataTypes.STRING, primaryKey: true },
+    mid: { type: DataTypes.INTEGER, autoIncrement: true },
     blockHash: { type: DataTypes.STRING },
   }, {
     indexes: [
@@ -28,9 +29,11 @@ export const makeSequelizeModels = (
 
   const Patch = sequelize.define('patch', {
     id: { type: DataTypes.STRING, primaryKey: true },
+    mid: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   })
 
   const Operation = sequelize.define('operation', {
+    mid: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     path: { type: DataTypes.STRING },
     op: { type: DataTypes.JSONB },
     value: { type: DataTypes.JSONB },
@@ -160,7 +163,7 @@ class SequelizePersistInterface implements IPersistInterface {
   public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
-        order: [['createdAt', 'DESC']],
+        order: [['mid', 'DESC']],
         rejectOnEmpty: true,
         include: [{
           model: this.Reducer,
@@ -178,12 +181,11 @@ class SequelizePersistInterface implements IPersistInterface {
     try {
       initial = await this.getPlainTransaction(reducerKey, toTxId)
     } catch (error) {
-      throw new Error(`Could not find txId ${toTxId} - ${error.stack}`)
+      throw new Error(`Could not find txId ${toTxId} in ${reducerKey} - ${error.stack}`)
     }
 
     const query = {
-      where: { createdAt: { [this.Sequelize.Op.lte]: initial.createdAt } },
-      order: [['createdAt', 'ASC']],
+      where: { mid: { [this.Sequelize.Op.lte]: initial.mid } },
       include: [{
         model: this.Patch,
         include: [{
@@ -194,6 +196,11 @@ class SequelizePersistInterface implements IPersistInterface {
         model: this.Reducer,
         where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
       }],
+      order: [
+        ['mid', 'ASC'],
+        [{ model: this.Patch }, 'mid', 'ASC'],
+        [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
+      ],
     }
 
     return batch(this.Transaction, query, 1000, (txs) => txs.map(
@@ -253,6 +260,10 @@ class SequelizePersistInterface implements IPersistInterface {
           model: this.Reducer,
           where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
         }],
+        order: [
+          [{ model: this.Patch }, 'mid', 'ASC'],
+          [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
+        ],
         rejectOnEmpty: true,
       })).get({ plain })
     } catch (error) {
