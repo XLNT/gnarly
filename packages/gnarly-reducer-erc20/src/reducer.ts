@@ -44,7 +44,7 @@ const makeReducer = (key: string, typeStore: ITypeStore) => (
       // turn rawTokenValue into BN tokenValue
       const tokenValue = new BN(rawTokenValue)
 
-      // hacky composite key for O(n) lookups required by JSON-Patch
+      // hacky composite key for O(1) lookups required by JSON-Patch
       const fromId = `${tokenAddress}-${from}`
       const toId = `${tokenAddress}-${to}`
 

@@ -61,7 +61,7 @@ const makeReducer = (
     transfer: (tokenId: string, from: string, to: string) => {
       debug('transferring token %s to %s', tokenId, to)
 
-      // hacky composite key for O(n) lookups required by JSON-Patch
+      // hacky composite key for O(1) lookups required by JSON-Patch
       const id = `${darAddress}-${tokenId}`
 
       const existing = state.tokens[id]
