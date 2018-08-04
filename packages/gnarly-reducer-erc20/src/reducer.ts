@@ -39,7 +39,7 @@ const makeReducer = (key: string, typeStore: ITypeStore) => (
 
   const makeActions = (state: IERC20Tracker, { operation, emit }) => ({
     transfer: (from: string, to: string, rawTokenValue: string) => {
-      debug('transferring %d tokens from %s to %s', rawTokenValue, from, to)
+      debug('transferring %d %s tokens from %s to %s', rawTokenValue, key, from, to)
 
       // turn rawTokenValue into BN tokenValue
       const tokenValue = new BN(rawTokenValue)
@@ -78,18 +78,16 @@ const makeReducer = (key: string, typeStore: ITypeStore) => (
         })
       }
 
-      operation(() => {
-        const fromBalance = new BN(state.balances[fromId].balance).sub(tokenValue).toString()
-        // ^ subtract from sender
-        const toBalance = new BN(state.balances[toId].balance).add(tokenValue).toString()
-        // ^ add to receiver
+      const fromBalance = new BN(state.balances[fromId].balance).sub(tokenValue).toString()
+      // ^ subtract from sender
+      const toBalance = new BN(state.balances[toId].balance).add(tokenValue).toString()
+      // ^ add to receiver
 
-        state.balances[fromId].balance = fromBalance
-        state.balances[fromId].balanceStr = fromBalance
+      state.balances[fromId].balance = fromBalance
+      state.balances[fromId].balanceStr = fromBalance
 
-        state.balances[toId].balance = toBalance
-        state.balances[toId].balanceStr = toBalance
-      })
+      state.balances[toId].balance = toBalance
+      state.balances[toId].balanceStr = toBalance
     },
   })
 
