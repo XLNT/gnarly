@@ -1,0 +1,43 @@
+{
+  "name": "@xlnt/gnarly-reducer-erc20",
+  "version": "0.5.2",
+  "description": "A gnarly reducer for ERC20 Token information.",
+  "main": "lib/index.js",
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "npm run build-ts && npm run tslint",
+    "ts-start": "ts-node src/index.ts",
+    "start": "node lib/index.js",
+    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "test": "mocha -r ts-node/register test/**/*.spec.ts",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint --project ."
+  },
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "gnarly"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:XLNT/gnarly.git"
+  },
+  "author": "Steven Nonis <nionis>",
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "@xlnt/gnarly-core": ">=0.1.10-2"
+  },
+  "devDependencies": {
+    "@xlnt/gnarly-core": "^0.5.2",
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "debug": "^3.1.0"
+  }
+}
