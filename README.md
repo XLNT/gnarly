@@ -4,7 +4,7 @@
 
 # 🤙 Gnarly
 
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme) [![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=1)](https://github.com/ellerbrock/open-source-badges/)
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme) [![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=1)](https://github.com/ellerbrock/open-source-badges/) [![Build Status](https://travis-ci.com/XLNT/gnarly.svg?branch=master)](https://travis-ci.com/XLNT/gnarly)
 
 
 > Gnarly’s reduces blockchain events into a steady state with confidence.
