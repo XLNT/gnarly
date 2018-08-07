@@ -5,7 +5,7 @@ const plain = true
 import {
   ITransaction,
 } from '../ourbit/types'
-import { IPersistInterface } from '../stores'
+import { IHistoricalBlock, IPersistInterface } from '../stores'
 
 export const makeSequelizeModels = (
   Sequelize: any,
@@ -50,6 +50,20 @@ export const makeSequelizeModels = (
     ],
   })
 
+  const HistoricalBlock = sequelize.define('historicalblock', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    blockHash: { type: DataTypes.STRING },
+  }, {
+    indexes: [
+      { fields: ['blockHash'] },
+    ],
+  })
+
+  // each reducer has many historical blocks
+  Reducer.HistoricalBlock = Reducer.hasMany(HistoricalBlock)
+  // each historical block belongs to a reducer
+  HistoricalBlock.Reducer = HistoricalBlock.belongsTo(Reducer)
+
   // a reducer has many transactions
   Reducer.Transactions = Reducer.hasMany(Transaction)
   // a transaction belongs to a reducer
@@ -69,6 +83,7 @@ export const makeSequelizeModels = (
 
   return {
     Reducer,
+    HistoricalBlock,
     Transaction,
     Patch,
     Reason,
@@ -105,6 +120,7 @@ async function* batch (
 
 class SequelizePersistInterface implements IPersistInterface {
   private Reducer
+  private HistoricalBlock
   private Transaction
   private Patch
   private Reason
@@ -112,12 +128,11 @@ class SequelizePersistInterface implements IPersistInterface {
 
   constructor (
     private Sequelize: any,
-    private sequelize: any,
+    sequelize: any,
   ) {
-    const { DataTypes } = Sequelize
-
     const {
       Reducer,
+      HistoricalBlock,
       Transaction,
       Patch,
       Operation,
@@ -128,6 +143,7 @@ class SequelizePersistInterface implements IPersistInterface {
     )
 
     this.Reducer = Reducer
+    this.HistoricalBlock = HistoricalBlock
     this.Transaction = Transaction
     this.Patch = Patch
     this.Operation = Operation
@@ -158,6 +174,28 @@ class SequelizePersistInterface implements IPersistInterface {
     await this.Reducer.destroy({
       where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
     })
+  }
+
+  public saveHistoricalBlock = async (reducerKey: string, block: IHistoricalBlock): Promise<any> => {
+    try {
+      await this.HistoricalBlock.create({
+        reducerId: reducerKey,
+        blockHash: block.blockHash,
+      })
+    } catch (error) {
+      throw new Error(`Was not able to save historical block ${block} in reducer ${reducerKey}. ${error.stack}`)
+    }
+  }
+
+  public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
+    try {
+      await this.HistoricalBlock.destroy({
+        reducerId: reducerKey,
+        blockHash,
+      })
+    } catch (error) {
+      throw new Error(`Was not able to delete historical block ${blockHash} in reducer ${reducerKey}. ${error.stack}`)
+    }
   }
 
   public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
