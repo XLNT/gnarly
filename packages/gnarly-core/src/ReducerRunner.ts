@@ -14,6 +14,9 @@ import {
   TypeStorer,
 } from './typeStore'
 
+// TODO: should be moved to bin
+const BLOCK_RETENTION = 100
+
 export class ReducerRunner {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
@@ -37,18 +40,22 @@ export class ReducerRunner {
 
     this.blockstreamer = new Blockstream(
       this.ourbit,
+      BLOCK_RETENTION,
       this.handleNewBlock,
+      this.handleInvalidBlock,
     )
   }
 
-  public run = async (fromBlockHash: string) => {
+  public run = async (fromBlockHash: string = null) => {
     await globalState.store.saveReducer(this.reducer.config.key)
-    let latestBlockHash = null
+    let latestBlockHash = fromBlockHash
+    let historicalBlocks = []
 
     switch (this.reducer.config.type) {
       // idempotent reducers are only called from HEAD
       case ReducerType.Idempotent:
         latestBlockHash = null
+        historicalBlocks = []
         break
       // TimeVarying and Atomic Reducers start from a provided block hash, the latest in the DB, or HEAD
       case ReducerType.TimeVarying:
@@ -61,7 +68,13 @@ export class ReducerRunner {
               throw new Error('No latest transaction available.')
             }
 
-            latestBlockHash = latestTransaction.blockHash
+            // we're resuming, so reload blockstreamer chain
+            historicalBlocks = await globalState.store.getHistoricalBlocks(this.reducer.config.key)
+
+            // if no history is available, resume from blockHash
+            if (!historicalBlocks.length) {
+              latestBlockHash = latestTransaction.blockHash
+            }
 
             try {
               // let's re-hydrate local state by replaying transactions
@@ -74,11 +87,11 @@ export class ReducerRunner {
             }
           } catch (error) {
             latestBlockHash = null
+            historicalBlocks = []
             this.debug('No latest transaction, so we\'re definitely starting from scratch.')
           }
         } else {
           // we reset, so let's start from HEAD
-          latestBlockHash = fromBlockHash || null
           this.debug('Explicitely starting from %s', latestBlockHash || 'HEAD')
         }
         break
@@ -88,8 +101,14 @@ export class ReducerRunner {
     }
 
     this.debug('Streaming blocks from %s', latestBlockHash || 'HEAD')
+
+    // if we are not resuming, reset blockstreamer chain
+    if (!historicalBlocks.length) {
+      await globalState.store.deleteHistoricalBlocks(this.reducer.config.key)
+    }
+
     // and now ingest blocks from latestBlockHash
-    await this.blockstreamer.start(latestBlockHash)
+    await this.blockstreamer.start(latestBlockHash, historicalBlocks)
 
     return this.stop.bind(this)
   }
@@ -112,7 +131,20 @@ export class ReducerRunner {
 
   private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
     const block = await this.normalizeBlock(rawBlock)
+
+    await globalState.store.saveHistoricalBlock(this.reducer.config.key, BLOCK_RETENTION, {
+      hash: block.hash,
+      number: rawBlock.number,
+      parentHash: block.parentHash,
+    })
+
     await this.reducer.reduce(this.reducer.state, block, this.context.utils)
+  }
+
+  private handleInvalidBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
+    const block = await this.normalizeBlock(rawBlock)
+
+    await globalState.store.deleteHistoricalBlock(this.reducer.config.key, block.hash)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {

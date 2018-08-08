@@ -1,8 +1,5 @@
+import { Block as IHistoricalBlock } from 'ethereumjs-blockstream'
 import { ITransaction } from '../ourbit/types'
-
-export interface IHistoricalBlock {
-  blockHash: string
-}
 
 export interface IPersistInterface {
   // @TODO - how do you get typescript to stop complaining about AsyncIterator symbols?
@@ -12,8 +9,10 @@ export interface IPersistInterface {
   deleteReducer (reducerKey: string): Promise<any>
 
   // blockstream CRUD
-  saveHistoricalBlock (reducerKey: string, block: IHistoricalBlock): Promise<any>
+  getHistoricalBlocks (reducerKey: string): Promise<IHistoricalBlock[]>
+  saveHistoricalBlock (reducerKey: string, blockRetention: number, block: IHistoricalBlock): Promise<any>
   deleteHistoricalBlock (reducerKey: string, blockHash: string): Promise<any>
+  deleteHistoricalBlocks (reducerKey: string): Promise<any>
 
   // transaction CRUD
   getAllTransactionsTo (reducerKey: string, toTxId: null | string): Promise<any>
@@ -34,3 +33,7 @@ export {
   default as SequelizePersistInterface,
   makeSequelizeModels,
 } from './sequelize'
+
+export {
+  IHistoricalBlock,
+}

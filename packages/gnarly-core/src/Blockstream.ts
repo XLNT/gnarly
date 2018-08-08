@@ -27,7 +27,7 @@ import { globalState } from './globalstate'
 const MAX_QUEUE_LENGTH = 100
 
 class BlockStream {
-  private streamer: BlockAndLogStreamer<IJSONBlock, IJSONLog>
+  private streamer: BlockAndLogStreamer<BlockstreamBlock, IJSONLog>
 
   private onBlockAddedSubscriptionToken
   private onBlockRemovedSubscriptionToken
@@ -43,33 +43,50 @@ class BlockStream {
 
   constructor (
     private ourbit: Ourbit,
-    private onBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
+    private blockRetention: number,
+    private onNewBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
+    private onInvalidBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
     private interval: number = 5000,
   ) {
 
   }
 
-  public start = async (fromBlockHash: string = null) => {
+  public start = async (fromBlockHash: string = null, historicalBlocks: BlockstreamBlock[] = []) => {
     this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
-      blockRetention: 100,
+      blockRetention: this.blockRetention,
     })
+
+    let latestBlock: BlockstreamBlock | null = null
+
+    if (fromBlockHash !== null) {
+      // ^ if fromBlockHash is provided, it takes priority
+      debug('Continuing from blockHash %s', fromBlockHash)
+
+      latestBlock = await globalState.api.getBlockByHash(fromBlockHash)
+    } else if (historicalBlocks.length) {
+      // ^ if historicalBlocks provided, reconsile blocks
+      debug(
+        'Continuing from last historical block %s',
+        toBN(historicalBlocks[historicalBlocks.length - 1].number).toString(),
+      )
+
+      while (historicalBlocks.length > 0) {
+        const block = historicalBlocks.shift()
+
+        latestBlock = block
+        await this.streamer.reconcileNewBlock(block)
+      }
+    } else {
+      // we are starting from head
+      debug('Starting from head')
+
+      latestBlock = await globalState.api.getLatestBlock()
+    }
 
     this.onBlockAddedSubscriptionToken = this.streamer.subscribeToOnBlockAdded(this.onBlockAdd)
     this.onBlockRemovedSubscriptionToken = this.streamer.subscribeToOnBlockRemoved(this.onBlockInvalidated)
 
-    let startBlockNumber
-    if (fromBlockHash === null) {
-      // if no hash provided, we're starting from HEAD
-      startBlockNumber = toBN(
-        (await globalState.api.getLatestBlock()).number,
-      )
-    } else {
-      // otherwise get the expected block's number
-      const startFromBlock = await globalState.api.getBlockByHash(fromBlockHash)
-      startBlockNumber = toBN(startFromBlock.number).add(toBN(1))
-      // ^ +1 because we already know about this block and we want the next
-    }
-
+    const startBlockNumber = toBN(latestBlock.number).add(toBN(1))
     debug('Beginning from block %d', startBlockNumber)
 
     // get the latest block
@@ -101,7 +118,7 @@ class BlockStream {
         const block = await globalState.api.getBlockByNumber(i)
         debugFastForward(
           'block %s (%s)',
-          block.number,
+          toBN(block.number).toString(),
           block.hash,
         )
         i = i.add(toBN(1))
@@ -128,7 +145,7 @@ class BlockStream {
     debug('Done! Exiting...')
   }
 
-  private onBlockAdd = async (block: BlockstreamBlock) => {
+  private onBlockAdd = async (block: IJSONBlock) => {
     const pendingTransaction = async () => {
       debugOnBlockAdd(
         'block %s (%s)',
@@ -138,7 +155,7 @@ class BlockStream {
 
       return this.ourbit.processTransaction(
         uuid.v4(),
-        this.onBlock(block, this.syncing),
+        this.onNewBlock(block, this.syncing),
         {
           blockHash: block.hash,
         },
@@ -148,13 +165,19 @@ class BlockStream {
     this.pendingTransactions.add(pendingTransaction)
   }
 
-  private onBlockInvalidated = (block: BlockstreamBlock) => {
+  private onBlockInvalidated = (block: IJSONBlock) => {
     const pendingTransaction = async () => {
       debugOnBlockInvalidated(
         'block %s (%s)',
         block.number,
         block.hash,
       )
+
+      /*
+        TODO: @nioni this must be put inside rollbackTransaction or processTransaction (reverse)
+        incase we need to observe mutations (like onBlockAdd)
+      */
+      await this.onInvalidBlock(block, this.syncing)()
 
       return this.ourbit.rollbackTransaction(block.hash)
     }
