@@ -36,3 +36,4 @@ lerna-debug.log
 lib
 .vscode
 .env
+.nyc_output
