@@ -8,9 +8,9 @@
     "prepare": "npm run build",
     "build": "npm run build-ts && npm run tslint",
     "start": "node lib/index.js",
-    "test": "nyc --reporter=html --reporter=text mocha -r ts-node/register -r source-map-support/register --full-trace test/**/*.spec.ts",
+    "test": "nyc --reporter=text mocha -r ts-node/register -r source-map-support/register --full-trace test/**/*.spec.ts",
     "watch-test": " mocha --watch --watch-extensions ts -r ts-node/register test/**/*.spec.ts",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "coverage": "nyc report --reporter=text-lcov > ./lcov.info",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "tslint": "tslint --project ."
@@ -57,7 +57,6 @@
     "chai": "^4.1.2",
     "chai-spies": "^1.0.0",
     "concurrently": "^3.5.1",
-    "coveralls": "^3.0.2",
     "mocha": "^5.0.4",
     "nyc": "^12.0.2",
     "source-map-support": "^0.5.6",
@@ -79,9 +78,6 @@
       "test",
       "coverage",
       "polyfills"
-    ],
-    "reporter": [
-      "html"
     ],
     "all": true,
     "sourceMap": true,
