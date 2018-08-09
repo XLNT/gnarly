@@ -5,7 +5,7 @@ import uuid = require('uuid')
 
 import { IABIItemInput } from '../src'
 
-import { IOperation } from '../src/Ourbit'
+import { IOperation } from '../src/ourbit'
 import * as utils from '../src/utils'
 
 chai.use(spies)
