@@ -32,7 +32,11 @@
   "author": "Matt Condon <matt@XLNT.co>",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/chai-spies": "^1.0.0",
+    "@types/node": "^10.5.7",
     "@xlnt/gnarly-reducer-events": "^0.6.0",
+    "@xlnt/typescript-typings": "^0.6.0",
     "chai": "^4.1.2",
     "chai-spies": "^1.0.0",
     "coveralls": "^3.0.2",

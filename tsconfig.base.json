@@ -23,5 +23,6 @@
             "es2017",
             "esnext.asynciterable"
         ]
-    }
+    },
+    "typeRoots": ["node_modules/@xlnt/typescript-typings/types", "node_modules/@types"]
 }

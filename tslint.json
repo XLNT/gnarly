@@ -8,6 +8,7 @@
         "quotemark": [true, "single", "avoid-template", "avoid-escape"],
         "object-literal-sort-keys": [false],
         "no-console": [false],
-        "trailing-comma": [true, {"multiline": "always", "singleline": "never"}]
+        "trailing-comma": [true, {"multiline": "always", "singleline": "never"}],
+        "no-var-requires": false
     }
 }

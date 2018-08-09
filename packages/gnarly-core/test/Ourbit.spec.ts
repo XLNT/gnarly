@@ -1,6 +1,6 @@
-import chai = require('chai')
-import spies = require('chai-spies')
+import * as chai from 'chai'
 import 'mocha'
+
 import uuid = require('uuid')
 import { globalState } from '../src/globalstate'
 import * as utils from '../src/utils'
@@ -11,8 +11,9 @@ import Ourbit, {
 import { ReducerContext } from '../src/reducer'
 import MockPersistInterface from './helpers/MockPersistInterface'
 
-chai.use(spies)
-chai.should()
+chai
+  .use(require('chai-spies'))
+  .should()
 const sandbox = chai.spy.sandbox()
 
 const TEST_KEY = 'test'
