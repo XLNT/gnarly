@@ -74,7 +74,11 @@
       ".tsx"
     ],
     "exclude": [
-      "**/*.d.ts"
+      "**/*.d.ts",
+      "lib",
+      "test",
+      "coverage",
+      "polyfills"
     ],
     "reporter": [
       "html"

@@ -1,5 +1,3 @@
-import '../../src/asynciterator-polyfill'
-
 import _ = require('lodash')
 import {
   ITransaction,
