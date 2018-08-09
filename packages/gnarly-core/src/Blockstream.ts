@@ -15,8 +15,6 @@ import uuid = require('uuid')
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
 
-import Ourbit from './ourbit'
-
 import {
   timeout,
   toBN,
@@ -42,10 +40,11 @@ class BlockStream {
   })
 
   constructor (
-    private ourbit: Ourbit,
+    private reducerKey: string,
+    private processTransaction: (txId: string, fn: () => Promise<void>, extra: object) => Promise<void> ,
+    private rollbackTransaction: (blockHash: string) => Promise<void>,
     private blockRetention: number,
-    private onNewBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
-    private onInvalidBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
+    private onNewBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise < any > ,
     private interval: number = 5000,
   ) {
     this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
@@ -150,13 +149,19 @@ class BlockStream {
         block.hash,
       )
 
-      return this.ourbit.processTransaction(
+      await this.processTransaction(
         uuid.v4(),
         this.onNewBlock(block, this.syncing),
         {
           blockHash: block.hash,
         },
       )
+
+      await globalState.store.saveHistoricalBlock(this.reducerKey, this.blockRetention, {
+        hash: block.hash,
+        number: block.number,
+        parentHash: block.parentHash,
+      })
     }
 
     this.pendingTransactions.add(pendingTransaction)
@@ -170,13 +175,10 @@ class BlockStream {
         block.hash,
       )
 
-      /*
-        TODO: @nioni this must be put inside rollbackTransaction or processTransaction (reverse)
-        incase we need to observe mutations (like onBlockAdd)
-      */
-      await this.onInvalidBlock(block, this.syncing)()
-
-      return this.ourbit.rollbackTransaction(block.hash)
+      // when a block is invalidated, rollback the transaction
+      await this.rollbackTransaction(block.hash)
+      // and then delete the historical block
+      await globalState.store.deleteHistoricalBlock(this.reducerKey, block.hash)
     }
 
     this.pendingTransactions.add(pendingTransaction)

@@ -40,10 +40,11 @@ export class ReducerRunner {
     )
 
     this.blockstreamer = new Blockstream(
-      this.ourbit,
+      this.reducer.config.key,
+      this.ourbit.processTransaction,
+      this.ourbit.rollbackTransaction,
       BLOCK_RETENTION,
       this.handleNewBlock,
-      this.handleInvalidBlock,
     )
   }
 
@@ -143,19 +144,7 @@ export class ReducerRunner {
   private handleNewBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
     const block = await this.normalizeBlock(rawBlock)
 
-    await globalState.store.saveHistoricalBlock(this.reducer.config.key, BLOCK_RETENTION, {
-      hash: block.hash,
-      number: rawBlock.number,
-      parentHash: block.parentHash,
-    })
-
     await this.reducer.reduce(this.reducer.state, block, this.context.utils)
-  }
-
-  private handleInvalidBlock = (rawBlock: IJSONBlock, syncing: boolean) => async () => {
-    const block = await this.normalizeBlock(rawBlock)
-
-    await globalState.store.deleteHistoricalBlock(this.reducer.config.key, block.hash)
   }
 
   private normalizeBlock = async (block: IJSONBlock): Promise<Block> => {
