@@ -1,4 +1,4 @@
-interface IInputOutput {
+export interface IInputOutput {
   name: string
   type: string
   indexed: boolean

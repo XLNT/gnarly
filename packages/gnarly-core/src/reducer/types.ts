@@ -58,7 +58,7 @@ export interface IReducerConfig {
   typeStore: ITypeStore
 }
 
-type voidFunc = () => void
+export type voidFunc = () => void
 
 /**
  * Function in charge of generating queued patches

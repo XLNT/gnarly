@@ -28,9 +28,6 @@
   },
   "author": "Steven Nonis <nionis>",
   "license": "Apache-2.0",
-  "peerDependencies": {
-    "@xlnt/gnarly-core": ">=0.1.10-2"
-  },
   "devDependencies": {
     "@types/chai": "^4.1.4",
     "@types/chai-spies": "^1.0.0",

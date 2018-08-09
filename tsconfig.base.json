@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "declaration": true,
         "module": "commonjs",
         "target": "es6",
         "moduleResolution": "node",
@@ -24,5 +25,6 @@
             "esnext.asynciterable"
         ]
     },
-    "typeRoots": ["node_modules/@xlnt/typescript-typings/types", "node_modules/@types"]
+    "typeRoots": ["node_modules/@xlnt/typescript-typings/types", "node_modules/@types"],
+    "composite": true,
 }
