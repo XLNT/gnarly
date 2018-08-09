@@ -48,14 +48,12 @@ class BlockStream {
     private onInvalidBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
     private interval: number = 5000,
   ) {
-
-  }
-
-  public start = async (fromBlockHash: string = null, historicalBlocks: BlockstreamBlock[] = []) => {
     this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
       blockRetention: this.blockRetention,
     })
+  }
 
+  public start = async (fromBlockHash: string = null) => {
     let latestBlock: BlockstreamBlock | null = null
 
     if (fromBlockHash !== null) {
@@ -63,19 +61,6 @@ class BlockStream {
       debug('Continuing from blockHash %s', fromBlockHash)
 
       latestBlock = await globalState.api.getBlockByHash(fromBlockHash)
-    } else if (historicalBlocks.length) {
-      // ^ if historicalBlocks provided, reconsile blocks
-      debug(
-        'Continuing from last historical block %s',
-        toBN(historicalBlocks[historicalBlocks.length - 1].number).toString(),
-      )
-
-      while (historicalBlocks.length > 0) {
-        const block = historicalBlocks.shift()
-
-        latestBlock = block
-        await this.streamer.reconcileNewBlock(block)
-      }
     } else {
       // we are starting from head
       debug('Starting from head')
@@ -143,6 +128,18 @@ class BlockStream {
     debug('Pending Transactions: %d', this.pendingTransactions.size)
     await this.pendingTransactions.onIdle()
     debug('Done! Exiting...')
+  }
+
+  public initWithHistoricalBlocks = async (historicalBlocks: BlockstreamBlock[] = []): Promise<any> => {
+    // ^ if historicalBlocks provided, reconcile blocks
+    debug(
+      'Initializing history with last historical block %s',
+      toBN(historicalBlocks[historicalBlocks.length - 1].number).toString(),
+    )
+
+    for (const block of historicalBlocks) {
+      await this.streamer.reconcileNewBlock(block)
+    }
   }
 
   private onBlockAdd = async (block: IJSONBlock) => {

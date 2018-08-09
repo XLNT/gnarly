@@ -1,5 +1,6 @@
 import makeDebug = require('debug')
 
+import * as assert from 'assert'
 import Blockstream from './Blockstream'
 import { globalState } from './globalstate'
 import Block, { IJSONBlock } from './models/Block'
@@ -46,16 +47,14 @@ export class ReducerRunner {
     )
   }
 
-  public run = async (fromBlockHash: string = null) => {
+  public run = async (fromBlockHash: string | null) => {
     await globalState.store.saveReducer(this.reducer.config.key)
     let latestBlockHash = fromBlockHash
-    let historicalBlocks = []
 
     switch (this.reducer.config.type) {
       // idempotent reducers are only called from HEAD
       case ReducerType.Idempotent:
         latestBlockHash = null
-        historicalBlocks = []
         break
       // TimeVarying and Atomic Reducers start from a provided block hash, the latest in the DB, or HEAD
       case ReducerType.TimeVarying:
@@ -64,34 +63,46 @@ export class ReducerRunner {
           // we're resuming, so replay from store if possible
           try {
             const latestTransaction = await globalState.store.getLatestTransaction(this.reducer.config.key)
-            if (!latestTransaction) {
-              throw new Error('No latest transaction available.')
-            }
 
-            // we're resuming, so reload blockstreamer chain
-            historicalBlocks = await globalState.store.getHistoricalBlocks(this.reducer.config.key)
+            // load historical chain
+            const historicalBlocks = await globalState.store.getHistoricalBlocks(this.reducer.config.key)
 
-            // if no history is available, resume from blockHash
-            if (!historicalBlocks.length) {
-              latestBlockHash = latestTransaction.blockHash
+            if (!latestTransaction || !historicalBlocks || historicalBlocks.length === 0) {
+              throw new Error('No latest transaction or historical blocks available, skipping resumption.')
             }
 
             try {
+              const mostRecentHistoricalBlock = historicalBlocks[historicalBlocks.length - 1]
+
+              assert.equal(
+                mostRecentHistoricalBlock.hash,
+                latestTransaction.blockHash,
+                `We have a latestTransaction ${latestTransaction.id} with blockHash ${latestTransaction.blockHash}
+                but it doesn't match the most recent historical block ${mostRecentHistoricalBlock.hash}!`,
+              )
+
               // let's re-hydrate local state by replaying transactions
-              this.debug('Attempting to reload state from %s', latestTransaction.id || 'HEAD')
+              this.debug('Attempting to reload ourbit state from %s', latestTransaction.id || 'HEAD')
               await this.ourbit.resumeFromTxId(latestTransaction.id)
+              this.debug('Done reloading ourbit state.')
+
+              this.debug('Attempting to reload blockstream state from %s', latestTransaction.blockHash)
+              // let's reset the blockstreamer's internal state
+              await this.blockstreamer.initWithHistoricalBlocks(historicalBlocks)
+              this.debug('Done reloading blockstream state.')
+
+              latestBlockHash = latestTransaction.blockHash
             } catch (error) {
               // we weren't able to replace state, which means something is totally broken
               this.debug(error)
               process.exit(1)
             }
           } catch (error) {
-            latestBlockHash = null
-            historicalBlocks = []
-            this.debug('No latest transaction, so we\'re definitely starting from scratch.')
+            // there's nothing to replay, so let's start from fromBlockHash HEAD
+            this.debug(error.message)
           }
         } else {
-          // we reset, so let's start from HEAD
+          // we specifically reset, so let's start from HEAD
           this.debug('Explicitely starting from %s', latestBlockHash || 'HEAD')
         }
         break
@@ -103,12 +114,12 @@ export class ReducerRunner {
     this.debug('Streaming blocks from %s', latestBlockHash || 'HEAD')
 
     // if we are not resuming, reset blockstreamer chain
-    if (!historicalBlocks.length) {
+    if (!this.shouldResume) {
       await globalState.store.deleteHistoricalBlocks(this.reducer.config.key)
     }
 
     // and now ingest blocks from latestBlockHash
-    await this.blockstreamer.start(latestBlockHash, historicalBlocks)
+    await this.blockstreamer.start(latestBlockHash)
 
     return this.stop.bind(this)
   }

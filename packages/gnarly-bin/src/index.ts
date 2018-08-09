@@ -123,10 +123,11 @@ const main = async () => {
   process.on('SIGINT', gracefulExit)
   process.on('SIGTERM', gracefulExit)
 
-  const { GNARLY_RESET = 'true', LATEST_BLOCK_HASH = '' } = process.env
+  const GNARLY_RESET = (process.env.GNARLY_RESET || 'false') === 'true'
+  const LATEST_BLOCK_HASH = process.env.LATEST_BLOCK_HASH || null
 
-  await gnarly.reset(GNARLY_RESET === 'true')
-  await gnarly.shaka(LATEST_BLOCK_HASH.length ? LATEST_BLOCK_HASH : null)
+  await gnarly.reset(GNARLY_RESET)
+  await gnarly.shaka(LATEST_BLOCK_HASH)
 }
 
 process.on('unhandledRejection', (error) => {

@@ -58,16 +58,17 @@ export const makeSequelizeModels = (
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     hash: { type: DataTypes.STRING },
     number: { type: DataTypes.STRING },
+    numberDecimal: { type: DataTypes.DECIMAL(76, 0) },
     parentHash: { type: DataTypes.STRING },
   }, {
     indexes: [
       { fields: ['hash'] },
-      { fields: ['number'] },
+      { fields: ['numberDecimal'] },
     ],
   })
 
   // each reducer has many historical blocks
-  Reducer.HistoricalBlock = Reducer.hasMany(HistoricalBlock)
+  Reducer.HistoricalBlocks = Reducer.hasMany(HistoricalBlock)
   // each historical block belongs to a reducer
   HistoricalBlock.Reducer = HistoricalBlock.belongsTo(Reducer)
 
@@ -186,16 +187,15 @@ class SequelizePersistInterface implements IPersistInterface {
   }
 
   public getHistoricalBlocks = async (reducerKey: string): Promise<IHistoricalBlock[]> => {
-    return this.HistoricalBlock.findAll({
-      where: {
-        reducerId: reducerKey,
-      },
-      order: [['number', 'ASC']],
-    }).then((result) => result.map((item) => ({
-      hash: item.dataValues.hash,
-      number: item.dataValues.number,
-      parentHash: item.dataValues.parentHash,
-    })))
+    const blocks = await this.HistoricalBlock.findAll({
+      include: [{
+        model: this.Reducer,
+        where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
+      }],
+      order: [['numberDecimal', 'ASC']],
+    })
+
+    return blocks.map((b) => b.get({ plain }))
   }
 
   public saveHistoricalBlock = async (
@@ -204,29 +204,38 @@ class SequelizePersistInterface implements IPersistInterface {
     block: IHistoricalBlock,
   ): Promise<any> => {
     try {
+      const blockNum = toBN(block.number)
+
       // TODO: needed optimization to reduce calls to DB
       await this.HistoricalBlock.create({
         reducerId: reducerKey,
         hash: block.hash,
         number: block.number,
+        numberDecimal: blockNum.toString(),
         parentHash: block.parentHash,
       })
 
-      // remove 100th block
+      // remove blocks that are further away than the block retention limit
       await this.HistoricalBlock.destroy({
-        where: [{ reducerId: reducerKey }, { number: toBN(block.number).sub(toBN(blockRetention)).toJSON() }],
+        where: {
+          reducerId: { [this.Sequelize.Op.eq]: reducerKey },
+          numberDecimal: { [this.Sequelize.Op.lte]: blockNum.sub(toBN(blockRetention)).toString() },
+        },
       })
 
     } catch (error) {
-      throw new Error(`Was not able to save historical block ${block} in reducer ${reducerKey}. ${error.stack}`)
+      throw new Error(`Was not able to save historical block
+      ${JSON.stringify(block)} in reducer ${reducerKey}. ${error.stack}`)
     }
   }
 
   public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
     try {
       await this.HistoricalBlock.destroy({
-        reducerId: reducerKey,
-        hash: blockHash,
+        where: {
+          reducerId: { [this.Sequelize.Op.eq]: reducerKey },
+          hash: { [this.Sequelize.Op.eq]: blockHash },
+        },
       })
     } catch (error) {
       throw new Error(`Was not able to delete historical block ${blockHash} in reducer ${reducerKey}. ${error.stack}`)
@@ -236,7 +245,9 @@ class SequelizePersistInterface implements IPersistInterface {
   public deleteHistoricalBlocks = async (reducerKey: string): Promise<any> => {
     try {
       await this.HistoricalBlock.destroy({
-        reducerId: reducerKey,
+        where: {
+          reducerId: { [this.Sequelize.Op.eq]: reducerKey },
+        },
       })
     } catch (error) {
       throw new Error(`Was not able to delete historical blocks in reducer ${reducerKey}. ${error.stack}`)
