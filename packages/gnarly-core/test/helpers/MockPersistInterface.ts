@@ -1,7 +1,7 @@
 import _ = require('lodash')
 import {
   ITransaction,
-} from '../../src/Ourbit'
+} from '../../src/ourbit'
 import { IPersistInterface } from '../../src/stores'
 
 async function* iter (
