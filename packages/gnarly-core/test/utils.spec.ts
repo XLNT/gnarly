@@ -30,6 +30,7 @@ describe('utils', function () {
   after(function () {
     chai.spy.restore()
   })
+
   context('parsePath', function () {
     it('should parse path correctly', async function () {
       const parts = utils.parsePath('/tableName/pk/indexOrKey')

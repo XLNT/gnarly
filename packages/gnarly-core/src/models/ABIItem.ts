@@ -1,7 +1,7 @@
 export interface IInputOutput {
   name: string
   type: string
-  indexed: boolean
+  indexed?: boolean
 }
 
 export interface IABIItemInput {

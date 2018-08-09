@@ -9,7 +9,7 @@ import Ourbit, {
   ITransaction,
 } from '../src/ourbit'
 import { ReducerContext } from '../src/reducer'
-import MockPersistInterface from './helpers/MockPersistInterface'
+import MockPersistInterface from './mocks/MockPersistInterface'
 
 chai
   .use(require('chai-spies'))
@@ -77,6 +77,17 @@ describe('Ourbit', () => {
     await produceFirstPatch()
 
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
+  })
+
+  it('should process a transaction with default values', async () => {
+    await ourbit.processTransaction(tx.id, async () => {
+      targetState.key = 'value'
+    })
+
+    const txWithoutBlockHash = tx
+    tx.blockHash = ''
+
+    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, txWithoutBlockHash)
   })
 
   it('should include a reason if provided', async () => {
