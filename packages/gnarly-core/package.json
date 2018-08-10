@@ -43,7 +43,6 @@
     "pg": "^7.4.1",
     "sequelize": "^4.35.2",
     "uuid": "^3.2.1",
-    "web3": "^1.0.0-beta.29",
     "web3-eth-abi": "^1.0.0-beta.34",
     "web3-utils": "^1.0.0-beta.34"
   },

@@ -19,6 +19,8 @@ import {
 
 export default class Web3Api implements IIngestApi {
 
+  private longpollBlocksInterval
+
   private doFetch = cacheApiRequest(
     (method: string, params: any[] = []) => pRetry(
       async () => {
@@ -69,14 +71,14 @@ export default class Web3Api implements IIngestApi {
     return this.doFetch('eth_getBlockByHash', [hash, true])
   }
 
-  public getLogs = async (filterOptions: FilterOptions): Promise<IJSONLog[]> => {
-    debug('[getLogs] %j', filterOptions)
-    return this.doFetch('eth_getLogs', [filterOptions])
-  }
-
   public getLatestBlock = async (): Promise<IJSONBlock> => {
     debug('[getLatestBlock]')
     return this.doFetch('eth_getBlockByNumber', ['latest', true])
+  }
+
+  public getLogs = async (filterOptions: FilterOptions): Promise<IJSONLog[]> => {
+    debug('[getLogs] %j', filterOptions)
+    return this.doFetch('eth_getLogs', [filterOptions])
   }
 
   public getTransactionReceipt = async (hash: string): Promise<IJSONExternalTransactionReceipt> => {
@@ -85,5 +87,15 @@ export default class Web3Api implements IIngestApi {
 
   public traceTransaction = async (hash: string): Promise<IJSONInternalTransaction[]> => {
     return (await this.doFetch('trace_replayTransaction', [hash, ['trace']])).trace
+  }
+
+  public subscribeToNewBlocks = (cb) => {
+    // @TODO - https://github.com/XLNT/gnarly/issues/30
+    // but web3 subscriptions have a lot of issues with them as well
+    // longpoll timer
+    this.longpollBlocksInterval = setInterval(cb, 5000)
+    return () => {
+      clearInterval(this.longpollBlocksInterval)
+    }
   }
 }

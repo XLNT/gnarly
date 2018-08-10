@@ -31,7 +31,7 @@ class BlockStream {
 
   private onBlockAddedSubscriptionToken
   private onBlockRemovedSubscriptionToken
-  private reconciling
+  private unsubscribeFromNewBlocks
   /**
    * Whether or not the blockstreamer is syncing blocks from the past or not
    */
@@ -118,7 +118,7 @@ class BlockStream {
   }
 
   public stop = async () => {
-    clearInterval(this.reconciling)
+    this.unsubscribeFromNewBlocks()
     if (this.streamer) {
       this.streamer.unsubscribeFromOnBlockAdded(this.onBlockAddedSubscriptionToken)
       this.streamer.unsubscribeFromOnBlockRemoved(this.onBlockRemovedSubscriptionToken)
@@ -163,10 +163,9 @@ class BlockStream {
   }
 
   private beginTracking = () => {
-    // @TODO - replace this with a filter
-    this.reconciling = setInterval(async () => {
+    this.unsubscribeFromNewBlocks = globalState.api.subscribeToNewBlocks(async () => {
       await this.streamer.reconcileNewBlock(await globalState.api.getLatestBlock())
-    }, this.interval)
+    })
   }
 }
 
