@@ -1,6 +1,3 @@
-import makeDebug = require('debug')
-const debug = makeDebug('gnarly-core:api')
-
 import BN = require('bn.js')
 import {
   FilterOptions,

@@ -11,7 +11,7 @@ import Log from './models/Log'
 import { IPersistInterface } from './stores'
 import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 
-type ABIItemSet = IABIItem[]
+export type ABIItemSet = IABIItem[]
 
 export class GnarlyGlobals {
   // @TODO(shrugs) - do we need to move this to a contract artifact?

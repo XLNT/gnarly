@@ -1,0 +1,42 @@
+{
+  "name": "@xlnt/typescript-typings",
+  "version": "0.6.0",
+  "description": "Typescript Types",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "npm run build-ts && npm run tslint",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint --project .",
+    "test": "nyc --reporter=text mocha -r ts-node/register -r source-map-support/register --full-trace test/**/*.spec.ts",
+    "watch-test": " mocha --watch --watch-extensions ts -r ts-node/register test/**/*.spec.ts",
+    "coverage": "nyc report --reporter=text-lcov > ./lcov.info"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": "https://github.com/XLNT/gnarly/tree/master/packages/typescript-typings",
+  "keywords": [
+    "ethereum"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/XLNT/gnarly/issues"
+  },
+  "homepage": "https://github.com/XLNT/gnarly#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/chai-spies": "^1.0.0",
+    "@types/node": "^10.5.7",
+    "rosie": "^2.0.1",
+    "truffle-contract": "^3.0.6",
+    "ts-node": "^6.0.3",
+    "tslint": "^5.9.1",
+    "typescript": "2.6.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

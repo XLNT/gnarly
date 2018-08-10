@@ -5,5 +5,11 @@
     },
     "include": [
         "src/**/*"
+    ],
+    "references": [
+        { "path": "../../gnarly-core" },
+        { "path": "../../gnarly-reducer-block-meta" },
+        { "path": "../../gnarly-reducer-erc721" },
+        { "path": "../../gnarly-reducer-events" }
     ]
 }

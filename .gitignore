@@ -1,3 +1,4 @@
+
 #####=== Node ===#####
 
 # Logs
@@ -36,3 +37,6 @@ lerna-debug.log
 lib
 .vscode
 .env
+.nyc_output
+lcov.info
+.coveralls.yml

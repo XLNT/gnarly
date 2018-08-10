@@ -4,22 +4,28 @@
   "scripts": {
     "watch-ts": "lerna exec --parallel -- yarn run watch-ts",
     "build-ts": "lerna exec --parallel -- yarn run build-ts",
-    "test": "lerna exec --parallel --scope @xlnt/gnarly-core -- yarn run test",
+    "test": "lerna exec --parallel --stream --sort --scope @xlnt/gnarly-core -- yarn run test",
+    "coverage": "yarn run coverage:generate && yarn run coverage:submit",
+    "coverage:generate": "lerna exec --parallel --scope @xlnt/gnarly-core -- yarn run coverage",
+    "coverage:submit": "lcov-result-merger 'packages/**/lcov.info' | coveralls",
     "pkg": "lerna run pkg --scope=@xlnt/gnarly-bin",
     "docker-build": "docker build -t shrugs/gnarly-test:demo .",
     "docker-push": "docker push shrugs/gnarly-test:demo",
     "deploy": "yarn run build-ts && yarn run pkg && yarn run docker-build && yarn run docker-push"
   },
   "devDependencies": {
-    "@types/chai": "^4.1.2",
     "@types/chai-spies": "^0.0.1",
     "@types/mocha": "^2.2.48",
     "@types/node": "^9.4.0",
     "@types/uuid": "^3.4.3",
+    "coveralls": "^3.0.2",
+    "lcov-result-merger": "^3.1.0",
     "lerna": "^2.11.0",
     "nodemon": "^1.14.12",
     "ts-node": "^5.0.1",
     "tslint": "^5.9.1"
   },
-  "workspaces": ["packages/*"]
+  "workspaces": [
+    "packages/*"
+  ]
 }

@@ -5,7 +5,7 @@ import uuid = require('uuid')
 
 import { IABIItemInput } from '../src'
 
-import { IOperation } from '../src/Ourbit'
+import { IOperation } from '../src/ourbit'
 import * as utils from '../src/utils'
 
 chai.use(spies)
@@ -30,6 +30,7 @@ describe('utils', function () {
   after(function () {
     chai.spy.restore()
   })
+
   context('parsePath', function () {
     it('should parse path correctly', async function () {
       const parts = utils.parsePath('/tableName/pk/indexOrKey')

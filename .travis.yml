@@ -10,10 +10,12 @@ cache:
 matrix:
   fast_finish: true
 before_script:
-- lerna bootstrap
-- travis_retry yarn run build-ts
+  - lerna bootstrap
+  - travis_retry yarn run build-ts
+after_success:
+  - yarn run coverage
 script:
-- yarn run test
+  - yarn run test
 notifications:
   slack:
     secure: kh0lg6Tkh6ZS44BKqO9S7Kac7o1joIkFY8gZDv/PINc7gscfThbvVExpighnG2ooddqnqQ4cLj8O7hhAwdGBLYCl68OZHQyC3/VQm+S/Uc0oLGkKARb+NQZ6/g1ExlPQ2vnMsOCwcDlpwrBrDw6qGDxQX6WmVKUy8Gp7s25kwYvry6AcXHtb2DQifR1ZTYOC7RBj1ETjmL+9KSyEIIdHg+9jb6mp5Wr367xUwx5hl4KeZulxEQWrqBLEcATvqzrNGXRmQkxmW4LDYoG8ODWdm3GelKVQrxdPGcHoH6bXVuHN+JXbF8zaj/zDqxb0y6Dm9rph6ZlLE9rq1HO9cQZBXOJxBcuC8S/hZ+/dwddgHzg24Fdgaat4G376qa97Ij6jqRNspJPlDjeq0Txk6bhHmAFSnUf/XKg+ym24acorO6VT/jrrq9pH7/uJYupnnhB2jBiHtsWny6nA4WrVv0RfXYaowW9Sx26Z+NKyT8SjSha5WvXxPuPX9IO9JfX9a6D5fU1OVMYGb4cvErnvG5ST08syNUhzaYkQHNWWPeBsoVqODP+pb4hIPTt9ZB0BLlMNR4UBDP/3K39cyNjEnDOxpMSrD/HGLQ1SxR8HDhshhIsBtiZmKzhXn+98dDRTvxx17gQD2u8OjKj4clDuIjNnrzYZUgVpEmxnZJvhnehNidQ=

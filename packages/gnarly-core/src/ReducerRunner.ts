@@ -14,7 +14,7 @@ import {
   TypeStorer,
 } from './typeStore'
 
-class ReducerRunner {
+export class ReducerRunner {
   public ourbit: Ourbit
   public blockstreamer: Blockstream
   public shouldResume: boolean = true

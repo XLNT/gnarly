@@ -1,5 +1,5 @@
 
-import './asynciterator-polyfill'
+import './polyfills/asynciterator-polyfill'
 
 import { globalState } from './globalstate'
 

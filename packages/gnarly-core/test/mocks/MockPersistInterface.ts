@@ -1,9 +1,7 @@
-import '../../src/asynciterator-polyfill'
-
 import _ = require('lodash')
 import {
   ITransaction,
-} from '../../src/Ourbit'
+} from '../../src/ourbit'
 import { IPersistInterface } from '../../src/stores'
 
 async function* iter (
@@ -16,6 +14,7 @@ async function* iter (
 
 class MockPersistInterface implements IPersistInterface {
 
+  private reducers: any[] = []
   private transactions: ITransaction[] = []
 
   public setup = async (reset: boolean = false) => {
@@ -25,6 +24,16 @@ class MockPersistInterface implements IPersistInterface {
 
   public setdown = async () => {
     //
+  }
+
+  public saveReducer = (reducerKey: string): Promise<any> => {
+    this.reducers.push(reducerKey)
+    return
+  }
+
+  public deleteReducer = (reducerKey: string): Promise<any> => {
+    this.reducers = this.reducers.filter((r) => r !== reducerKey)
+    return
   }
 
   public async getAllTransactionsTo (reducerKey: string, toTxId: null | string): Promise<any> {
