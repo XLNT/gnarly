@@ -18,6 +18,7 @@ export default class MockIngestApi implements IIngestApi {
 
   constructor (
     private numLogs = 4,
+    private numInternalTxs = 4,
   ) {
 
   }
@@ -39,10 +40,10 @@ export default class MockIngestApi implements IIngestApi {
   }
 
   public getTransactionReceipt = (hash: string): Promise<IJSONExternalTransactionReceipt> => {
-    return IJSONExternalTransactionReceiptFactory.build({ hash })
+    return IJSONExternalTransactionReceiptFactory.build({ hash, logs: IJSONLogFactory.buildList(this.numLogs) })
   }
 
   public traceTransaction = (hash: string): Promise<IJSONInternalTransaction[]> => {
-    return IJSONInternalTransactionFactory.build({ hash })
+    return IJSONInternalTransactionFactory.buildList(this.numInternalTxs, { hash })
   }
 }

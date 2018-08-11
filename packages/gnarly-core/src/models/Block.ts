@@ -1,5 +1,5 @@
 import BN = require('bn.js')
-import pMap from 'p-map'
+import pMap = require('p-map')
 
 import ExternalTransaction, {
   IJSONExternalTransaction,
