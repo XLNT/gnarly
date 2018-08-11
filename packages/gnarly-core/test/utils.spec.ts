@@ -1,5 +1,4 @@
 import chai = require('chai')
-import spies = require('chai-spies')
 import 'mocha'
 import uuid = require('uuid')
 
@@ -8,8 +7,9 @@ import { IABIItemInput } from '../src'
 import { IOperation } from '../src/ourbit'
 import * as utils from '../src/utils'
 
-chai.use(spies)
-const should = chai.should()
+const should = chai
+  .use(require('chai-spies'))
+  .should()
 
 const TRANSFER_ABI: IABIItemInput = {
   anonymous: false,
@@ -47,14 +47,14 @@ describe('utils', function () {
 
   context('addressesEqual', function () {
     it('should work on mixed case addresses', async function () {
-      utils.addressesEqual('0x1', '0x1').should.eq(true)
-      utils.addressesEqual('0xA', '0xA').should.eq(true)
-      utils.addressesEqual('0xA', '0xa').should.eq(true)
-      utils.addressesEqual('0xa', '0xA').should.eq(true)
+      utils.addressesEqual('0x1', '0x1').should.equal(true)
+      utils.addressesEqual('0xA', '0xA').should.equal(true)
+      utils.addressesEqual('0xA', '0xa').should.equal(true)
+      utils.addressesEqual('0xa', '0xA').should.equal(true)
     })
 
     it('should detect non equal addresses', async function () {
-      utils.addressesEqual('0x1', '0x2').should.eq(false)
+      utils.addressesEqual('0x1', '0x2').should.equal(false)
     })
   })
 
@@ -67,7 +67,7 @@ describe('utils', function () {
       const now = +(new Date())
       await utils.forEach(opts, mapper, { concurrency: opts.length })
       const diff = (+(new Date()) - now)
-      diff.should.be.gte(longest).and.lte(longest * 1.1)
+      diff.should.be.at.least(longest).and.at.most(longest * 1.2)
     })
 
     it('should iterate promises with concurrency 1', async function () {
@@ -76,7 +76,7 @@ describe('utils', function () {
       const now = +(new Date())
       await utils.forEach(opts, mapper, { concurrency: 1 })
       const diff = (+(new Date()) - now)
-      diff.should.be.gte(total).and.lte(total * 1.1)
+      diff.should.be.at.least(total).and.at.most(total * 1.2)
     })
   })
 
@@ -86,16 +86,16 @@ describe('utils', function () {
       const now = +(new Date())
       await utils.timeout(TIMEOUT)
       const diff = (+(new Date()) - now)
-      diff.should.be.gte(TIMEOUT).and.lte(TIMEOUT * 1.1) // 10% error bounds
+      diff.should.be.at.least(TIMEOUT).and.at.most(TIMEOUT * 1.2)
     })
   })
 
   context('enhanceAbiItem', function () {
     it('should produce name, sig, shortId', async function () {
       const enhanced = utils.enhanceAbiItem(TRANSFER_ABI)
-      enhanced.fullName.should.eq('Transfer(address,address,uint256)')
-      enhanced.signature.should.eq('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')
-      enhanced.shortId.should.eq('0xddf252ad')
+      enhanced.fullName.should.equal('Transfer(address,address,uint256)')
+      enhanced.signature.should.equal('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')
+      enhanced.shortId.should.equal('0xddf252ad')
       // ^^ https://www.4byte.directory/signatures/?bytes4_signature=0xddf252ad
     })
   })
@@ -104,7 +104,7 @@ describe('utils', function () {
     it('works', async function () {
       utils.getMethodId(
         '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-      ).should.eq('0xddf252ad')
+      ).should.equal('0xddf252ad')
     })
   })
 
@@ -118,10 +118,10 @@ describe('utils', function () {
       }
       const inverted = utils.invertOperation(add)
       // the invert of an add is a removal at the same path
-      inverted.path.should.eq(add.path)
-      inverted.op.should.eq('remove')
+      inverted.path.should.equal(add.path)
+      inverted.op.should.equal('remove')
       should.not.exist(inverted.value)
-      inverted.oldValue.should.eq(add.value)
+      inverted.oldValue.should.equal(add.value)
     })
 
     it('inverts a remove operation', async function () {
@@ -133,9 +133,9 @@ describe('utils', function () {
       }
       const inverted = utils.invertOperation(remove)
       // the invert of a remove is an add of the old value at that path
-      inverted.path.should.eq(remove.path)
-      inverted.op.should.eq('add')
-      inverted.value.should.eq(remove.oldValue)
+      inverted.path.should.equal(remove.path)
+      inverted.op.should.equal('add')
+      inverted.value.should.equal(remove.oldValue)
       should.not.exist(inverted.oldValue)
     })
 
@@ -149,10 +149,10 @@ describe('utils', function () {
       }
       const inverted = utils.invertOperation(replace)
       // the invert of a replace just swaps value/oldValue
-      inverted.path.should.eq(replace.path)
-      inverted.op.should.eq('replace')
-      inverted.value.should.eq(replace.oldValue)
-      inverted.oldValue.should.eq(replace.value)
+      inverted.path.should.equal(replace.path)
+      inverted.op.should.equal('replace')
+      inverted.value.should.equal(replace.oldValue)
+      inverted.oldValue.should.equal(replace.value)
     })
 
     it('should throw on invalid operation', async function () {
@@ -184,13 +184,13 @@ describe('utils', function () {
   context('appendTo', function () {
     it('generates a valid op', async function () {
       const op = utils.appendTo('domain', { test: true })
-      op.op.should.eq('add')
-      op.path.should.eq('/domain/uuid')
-      op.value.should.deep.eq({
+      op.op.should.equal('add')
+      op.path.should.equal('/domain/uuid')
+      op.value.should.deep.equal({
         uuid: 'uuid',
         test: true,
       })
-      op.volatile.should.eq(true)
+      op.volatile.should.equal(true)
     })
   })
 

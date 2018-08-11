@@ -6,10 +6,7 @@ import {
   ITransaction,
 } from '../ourbit/types'
 import { IHistoricalBlock, IPersistInterface } from '../stores'
-
-import {
-  toBN,
-} from '../utils'
+import { toBN } from '../utils'
 
 export const makeSequelizeModels = (
   Sequelize: any,

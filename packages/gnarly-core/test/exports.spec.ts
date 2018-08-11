@@ -24,6 +24,6 @@ describe('gnarly-core exports', function () {
 
   it('getLogs works', async function () {
     const logs = await getLogs({})
-    logs.length.should.eq(NUM_LOGS)
+    logs.length.should.equal(NUM_LOGS)
   })
 })

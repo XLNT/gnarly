@@ -1,6 +1,6 @@
 import makeDebug = require('debug')
 
-import * as assert from 'assert'
+import assert = require('assert')
 import Blockstream from './Blockstream'
 import { globalState } from './globalstate'
 import Block, { IJSONBlock } from './models/Block'
