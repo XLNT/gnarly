@@ -58,6 +58,38 @@ describe('utils', function () {
     })
   })
 
+  context('forEach', function () {
+    const opts = [1, 1]
+
+    it('should iterate promises with concurrency', async function () {
+      const longest = opts[opts.length - 1] * 40
+      const mapper = async (i) => await utils.timeout(i * 40)
+      const now = +(new Date())
+      await utils.forEach(opts, mapper, { concurrency: opts.length })
+      const diff = (+(new Date()) - now)
+      diff.should.be.gte(longest).and.lte(longest * 1.1)
+    })
+
+    it('should iterate promises with concurrency 1', async function () {
+      const total = opts.reduce((memo, i) => memo + (i * 60), 0)
+      const mapper = async (i) => await utils.timeout(i * 60)
+      const now = +(new Date())
+      await utils.forEach(opts, mapper, { concurrency: 1 })
+      const diff = (+(new Date()) - now)
+      diff.should.be.gte(total).and.lte(total * 1.1)
+    })
+  })
+
+  context('timeout', function () {
+    const TIMEOUT = 100
+    it('should work', async function () {
+      const now = +(new Date())
+      await utils.timeout(TIMEOUT)
+      const diff = (+(new Date()) - now)
+      diff.should.be.gte(TIMEOUT).and.lte(TIMEOUT * 1.1) // 10% error bounds
+    })
+  })
+
   context('enhanceAbiItem', function () {
     it('should produce name, sig, shortId', async function () {
       const enhanced = utils.enhanceAbiItem(TRANSFER_ABI)

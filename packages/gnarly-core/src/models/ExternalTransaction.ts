@@ -79,14 +79,14 @@ export default class ExternalTransaction extends Transaction {
   }
 
   public getReceipt = async () => {
-    await this.setReceipt()
+    await this.getAndSetReceipt()
   }
 
   public getInternalTransactions = async () => {
     await this.setInternalTransactions()
   }
 
-  private setReceipt = async () => {
+  private getAndSetReceipt = async () => {
     const txReceipt = await globalState.api.getTransactionReceipt(this.hash)
     this.setSelf(txReceipt)
   }
@@ -97,6 +97,7 @@ export default class ExternalTransaction extends Transaction {
       traces = await globalState.api.traceTransaction(this.hash)
       this.internalTransactions = traces.map((itx) => new InternalTransaction(this, itx))
     } catch (error) {
+      // @TODO(shrugs) - should this throw?
       debug('trace_replayTransaction not working, ignoring %s - %s', error.stack, traces)
     }
   }

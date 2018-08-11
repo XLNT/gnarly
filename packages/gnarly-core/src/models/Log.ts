@@ -5,7 +5,6 @@ import BN = require('bn.js')
 import abi = require('web3-eth-abi')
 
 import { globalState } from '../globalstate'
-
 import { toBN } from '../utils'
 import ExternalTransaction from './ExternalTransaction'
 
