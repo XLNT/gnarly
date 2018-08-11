@@ -97,8 +97,7 @@ export default class ExternalTransaction extends Transaction {
       traces = await globalState.api.traceTransaction(this.hash)
       this.internalTransactions = traces.map((itx) => new InternalTransaction(this, itx))
     } catch (error) {
-      // @TODO(shrugs) - should this throw?
-      debug('trace_replayTransaction not working, ignoring %s - %s', error.stack, traces)
+      throw new Error(`IngestAPI#traceTransaction not working: ${error.stack}`)
     }
   }
 

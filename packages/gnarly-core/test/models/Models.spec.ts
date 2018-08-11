@@ -136,10 +136,21 @@ describe('Models', function () {
     })
 
     context('without tracing', function () {
+      beforeEach(async function () {
+        chai.spy.on(globalState.api, 'traceTransaction', () => {
+          console.log('FUCK')
+          throw new Error('nope')
+         })
+      })
+
+      afterEach(async function () {
+        chai.spy.reset()
+      })
+
       it('swallows error', async function () {
         const etxData = IJSONExternalTransactionFactory.build()
         const etx = new ExternalTransaction(this.block, etxData)
-        await etx.getInternalTransactions()
+        await expectThrow(etx.getInternalTransactions())
       })
     })
   })
