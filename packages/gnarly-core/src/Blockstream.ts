@@ -44,7 +44,6 @@ class BlockStream {
     private rollbackTransaction: (blockHash: string) => Promise<void>,
     private onNewBlock: (block: IJSONBlock, syncing: boolean) => () => Promise < any > ,
     private blockRetention: number = 100,
-    private interval: number = 5000,
   ) {
     this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
       blockRetention: this.blockRetention,
