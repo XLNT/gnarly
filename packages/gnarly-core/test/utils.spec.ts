@@ -80,8 +80,8 @@ describe('utils', function () {
       diff.should.be.at.least(total).and.at.most(total * 1.2)
     })
 
-    it('should throw if iterable is undefined', async function () {
-      await expectThrow(async () => utils.forEach(undefined, undefined, undefined))
+    it('should throw if arguments are invalid', async function () {
+      await expectThrow(utils.forEach(undefined, undefined, undefined))
     })
   })
 

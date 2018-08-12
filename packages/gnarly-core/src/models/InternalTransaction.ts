@@ -85,7 +85,7 @@ export default class InternalTransaction extends Transaction {
     this.traceAddress = itx.traceAddress
     this.transactionHash = tx.hash
 
-    // this.transactionPosition = tx.trans
+    // this.transactionPosition = tx.transactionPosition
     this.type = itx.type
 
     if (itx.error !== undefined) {

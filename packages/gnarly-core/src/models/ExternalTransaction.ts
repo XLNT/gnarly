@@ -25,10 +25,6 @@ export interface IJSONExternalTransaction {
   input: string
 }
 
-function isJSONExternalTransaction (obj: any): obj is IJSONExternalTransaction {
-  return 'nonce' in obj
-}
-
 export interface IJSONExternalTransactionReceipt {
   blockHash: string
   blockNumber: string
@@ -44,13 +40,19 @@ export interface IJSONExternalTransactionReceipt {
   transactionIndex: string
 }
 
-function isJSONExternalTransactionReceipt (obj: any): obj is IJSONExternalTransactionReceipt {
-  return 'status' in obj
-}
-
 export type IJSONExternalTransactionInfo = IJSONExternalTransaction | IJSONExternalTransactionReceipt
 
-export const isExternalTransaction = (obj: any): obj is ExternalTransaction => 'external' in obj
+// is JSONExternalTransaction if it has a nonce
+const isJSONExternalTransaction = (obj: any): obj is IJSONExternalTransaction =>
+  'nonce' in obj
+
+  // is a Transaction Receipt if it has a status
+const isJSONExternalTransactionReceipt = (obj: any): obj is IJSONExternalTransactionReceipt =>
+  'status' in obj
+
+// is an external transaction (vs internal transaction) if it has external property that is truthy
+export const isExternalTransaction = (obj: any): obj is ExternalTransaction =>
+  'external' in obj && obj.external
 
 export default class ExternalTransaction extends Transaction {
   public external: boolean = true
@@ -121,7 +123,7 @@ export default class ExternalTransaction extends Transaction {
       this.logs = tx.logs.map((l) => new Log(this, l))
       this.status = toBN(tx.status)
     } else {
-      throw new Error(`Unexpected type ${tx} in Transaction#setSelf()`)
+      throw new Error(`Unexpected type in Transaction#setSelf(): ${JSON.stringify(tx)}`)
     }
   }
 }
