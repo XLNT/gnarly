@@ -1,12 +1,14 @@
 {
     "compilerOptions": {
+        "composite": true,
         "declaration": true,
+        "declarationMap": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
         "module": "commonjs",
         "target": "es6",
         "moduleResolution": "node",
         "sourceMap": true,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
         "lib": [
             "es5",
             "es6",
@@ -25,6 +27,4 @@
             "esnext.asynciterable"
         ]
     },
-    "typeRoots": ["node_modules/@xlnt/typescript-typings/types", "node_modules/@types"],
-    "composite": true,
 }

@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "gnarly-bin" },
+    { "path": "gnarly-core" },
+    { "path": "gnarly-reducer-block-meta" },
+    { "path": "gnarly-reducer-erc20" },
+    { "path": "gnarly-reducer-erc721" },
+    { "path": "gnarly-reducer-events" }
+  ]
+}
