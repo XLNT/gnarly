@@ -99,12 +99,14 @@ export class ReducerRunner {
               process.exit(1)
             }
           } catch (error) {
-            // there's nothing to replay, so let's start from fromBlockHash HEAD
+            // there's nothing to replay, so let's mention that and return to default behavior
             this.debug(error.message)
           }
         } else {
-          // we specifically reset, so let's start from HEAD
+          // we specifically reset, so let's mention that
           this.debug('Explicitely starting from %s', latestBlockHash || 'HEAD')
+          // and then reset blockstreamer chain
+          await globalState.store.deleteHistoricalBlocks(this.reducer.config.key)
         }
         break
       }
@@ -112,12 +114,8 @@ export class ReducerRunner {
         throw new Error(`Unexpected ReducerType ${this.reducer.config.type}`)
     }
 
+    // default behavior is to start from HEAD
     this.debug('Streaming blocks from %s', latestBlockHash || 'HEAD')
-
-    // if we are not resuming, reset blockstreamer chain
-    if (!this.shouldResume) {
-      await globalState.store.deleteHistoricalBlocks(this.reducer.config.key)
-    }
 
     // and now ingest blocks from latestBlockHash
     await this.blockstreamer.start(latestBlockHash)

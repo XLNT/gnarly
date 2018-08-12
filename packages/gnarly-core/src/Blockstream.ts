@@ -53,42 +53,56 @@ class BlockStream {
   }
 
   public start = async (fromBlockHash: string = null) => {
-    let latestBlock: IJSONBlock | null = null
+    let localLatestBlock: IJSONBlock | null = null
+
+    // the primary purpose of this function to to extend the historical block reduction
+    //   beyond the blockRetention limit provided to ethereumjs-blockstream
+    //   because we might have stopped tracking blocks for longer than ~100 blocks and need to catch up
+
+    const remoteLatestBlock = await globalState.api.getLatestBlock()
 
     if (fromBlockHash !== null) {
       // ^ if fromBlockHash is provided, it takes priority
       debug('Continuing from blockHash %s', fromBlockHash)
 
-      latestBlock = await globalState.api.getBlockByHash(fromBlockHash)
+      // so look up the latest block we know about
+      localLatestBlock = await globalState.api.getBlockByHash(fromBlockHash)
+
+      // need to load that block into the local chain so handlers trigger correctly
+      //  when we defer to the ethereumjs-blockstream reconciliation algorithm where it fetches
+      //  its own historical blocks
+      this.streamer.reconcileNewBlock(localLatestBlock)
     } else {
       // we are starting from head
-      debug('Starting from head')
+      debug('Starting from HEAD')
 
-      latestBlock = await globalState.api.getLatestBlock()
+      // ask the remote for the latest "local" block
+      localLatestBlock = await globalState.api.getLatestBlock()
     }
 
+    const remoteLatestBlockNumber = toBN(remoteLatestBlock.number)
+    const localLatestBlockNumber = toBN(localLatestBlock.number)
+
+    // subscribe to changes in chain
     this.onBlockAddedSubscriptionToken = this.streamer.subscribeToOnBlockAdded(this.onBlockAdd)
     this.onBlockRemovedSubscriptionToken = this.streamer.subscribeToOnBlockRemoved(this.onBlockInvalidated)
 
-    const startBlockNumber = toBN(latestBlock.number).add(toBN(1))
-    debug('Beginning from block %d', startBlockNumber)
+    debug('Local block number: %d. Remote block number: %d', localLatestBlockNumber, remoteLatestBlockNumber)
 
-    // get the latest block
-    let latestBlockNumber = toBN(
-      (await globalState.api.getLatestBlock()).number,
-    )
-
-    // if we're not at that block number, start pulling the blocks
-    // from before until we catch up, then track latest
-    if (latestBlockNumber.gt(startBlockNumber)) {
+    let syncUpToNumber = await this.latestRemoteNumberWithRetentionBuffer()
+    // if we're not at that block number, start pulling the blocks from history
+    //   until we enter the block retention limit
+    //   once we've gotten to the block retention limit, we need to defer to blockstream's chain
+    //   reconciliation algorithm
+    if (localLatestBlockNumber.lt(syncUpToNumber)) {
       debugFastForward(
         'Starting from %d and continuing to %d',
-        startBlockNumber.toNumber(),
-        latestBlockNumber.toNumber(),
+        localLatestBlockNumber.toNumber(),
+        remoteLatestBlockNumber.toNumber(),
       )
       this.syncing = true
-      let i = startBlockNumber.clone()
-      while (i.lt(latestBlockNumber)) {
+      let i = localLatestBlockNumber.clone()
+      while (i.lt(syncUpToNumber)) {
         // if we're at the top of the queue
         // wait a bit and then add the thing
         while (this.pendingTransactions.size >= MAX_QUEUE_LENGTH) {
@@ -105,11 +119,12 @@ class BlockStream {
           toBN(block.number).toString(),
           block.hash,
         )
-        i = i.add(toBN(1))
         await this.streamer.reconcileNewBlock(block)
+
+        i = toBN(block.number).add(toBN(1))
         // TODO: easy optimization, only check latest block on the last
         // iteration
-        latestBlockNumber = toBN((await globalState.api.getLatestBlock()).number)
+        syncUpToNumber = await this.latestRemoteNumberWithRetentionBuffer()
       }
 
       this.syncing = false
@@ -184,6 +199,14 @@ class BlockStream {
     this.unsubscribeFromNewBlocks = globalState.api.subscribeToNewBlocks(async () => {
       await this.streamer.reconcileNewBlock(await globalState.api.getLatestBlock())
     })
+  }
+
+  private latestRemoteNumberWithRetentionBuffer = async () => {
+    return toBN(
+      (await globalState.api.getLatestBlock()).number,
+    ).sub(toBN(this.blockRetention - 10))
+    // ^ manually import historical blocks until we're within 90 blocks of HEAD
+    // and then we can use blockstream's reconciliation algorithm
   }
 }
 
