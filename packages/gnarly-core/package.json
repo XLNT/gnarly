@@ -9,7 +9,7 @@
     "build": "npm run build-ts && npm run tslint",
     "start": "node lib/index.js",
     "test": "TS_NODE_PROJECT=./tsconfig.test.json nyc --reporter=text mocha -r ts-node/register -r source-map-support/register --full-trace 'test/**/*.spec.ts'",
-    "watch-test": " mocha --watch --watch-extensions ts -r ts-node/register -r source-map-support/register --full-trace 'test/**/*.spec.ts'",
+    "watch-test": " TS_NODE_PROJECT=./tsconfig.test.json mocha --watch --watch-extensions ts -r ts-node/register -r source-map-support/register --full-trace 'test/**/*.spec.ts'",
     "coverage": "nyc report --reporter=text-lcov > ./lcov.info",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
