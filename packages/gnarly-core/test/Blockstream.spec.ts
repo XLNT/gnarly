@@ -4,10 +4,12 @@ import 'mocha'
 import Blockstream from '../src/Blockstream'
 import { globalState } from '../src/globalstate'
 import { IJSONBlock } from '../src/models/Block'
-import { toBN, toHex } from '../src/utils'
+import { forEach, timeout, toBN, toHex } from '../src/utils'
 
+import BlockStream from '../src/Blockstream'
 import IJSONBlockFactory from './factories/IJSONBlockFactory'
 import MockIngestApi from './mocks/MockIngestApi'
+import MockPersistInterface from './mocks/MockPersistInterface'
 
 const blockAfter = (block: IJSONBlock, fork: number = 1) => IJSONBlockFactory.build({
   hash: toHex(toBN(block.hash).add(toBN(1 + 10 * fork))),
@@ -16,11 +18,16 @@ const blockAfter = (block: IJSONBlock, fork: number = 1) => IJSONBlockFactory.bu
   nonce: toHex(toBN(block.hash).add(toBN(1 + 10 * fork))),
 })
 
-const genesis = () => [IJSONBlockFactory.build()]
+const genesis = () => [IJSONBlockFactory.build({
+  hash: '0x1',
+  number: '0x1',
+  parentHash: '0x0',
+  nonce: '0x1',
+})]
 
 const buildChain = (from: IJSONBlock[], len: number = 10, fork: number = 1) => {
   const chain = [...from]
-  for (let i = 0; i < len - 1; i++) {
+  for (let i = 0; i < len; i++) {
     chain.push(blockAfter(chain[chain.length - 1], fork))
   }
   return chain
@@ -31,6 +38,11 @@ const MOCK_REDUCER_KEY = 'test'
 const should = chai
   .use(require('chai-spies'))
   .should()
+
+const bootstrapHistoricalBlocks = async (reducerKey: string, blocks, store: MockPersistInterface, bs: BlockStream) => {
+  await forEach(blocks, async (block) => store.saveHistoricalBlock(reducerKey, 100, block), { concurrency: 1 })
+  await bs.initWithHistoricalBlocks(blocks)
+}
 
 let realChain = [] as IJSONBlock[]
 describe.only('Blockstream', function () {
@@ -50,11 +62,15 @@ describe.only('Blockstream', function () {
       }
     })
 
-    globalState.setApi(new MockIngestApi())
-    chai.spy.on(globalState.api, 'getLatestBlock', function () {
+    this.api = new MockIngestApi()
+    this.store = new MockPersistInterface()
+    globalState.setApi(this.api)
+    globalState.setStore(this.store)
+
+    chai.spy.on(this.api, 'getLatestBlock', function () {
       return realChain[realChain.length - 1]
     })
-    chai.spy.on(globalState.api, 'getBlockByHash', function (hash) {
+    chai.spy.on(this.api, 'getBlockByHash', function (hash) {
       return realChain.find((b) => b.hash === hash)
     })
   })
@@ -99,7 +115,7 @@ describe.only('Blockstream', function () {
 
       const onBlockAdd = chai.spy.on(bs, 'onBlockAdd')
       const onBlockInvalidated = chai.spy.on(bs, 'onBlockInvalidated')
-      await bs.initWithHistoricalBlocks(realChain)
+      await bootstrapHistoricalBlocks(MOCK_REDUCER_KEY, realChain, this.store, bs)
 
       onBlockAdd.should.not.have.been.called()
       onBlockInvalidated.should.not.have.been.called()
@@ -118,9 +134,12 @@ describe.only('Blockstream', function () {
 
     context('when presentend with a short lived fork', function () {
       it('calls rollbackTransaction with the offending blocks', async function () {
-        const accurateChain = buildChain(genesis(), 8)
-        const shortLivedFork = buildChain(accurateChain, 2, 1)
-        const invalidBlocks = [shortLivedFork[shortLivedFork.length - 2], shortLivedFork[shortLivedFork.length - 1]]
+        const accurateChain = buildChain(genesis(), 7) // 8 blocks long
+        const shortLivedFork = buildChain(accurateChain, 2, 1) // 10 blocks long
+        const invalidBlocks = [
+          shortLivedFork[shortLivedFork.length - 2],
+          shortLivedFork[shortLivedFork.length - 1],
+        ]
         realChain = shortLivedFork
         const bs = new Blockstream(
           MOCK_REDUCER_KEY,
@@ -130,23 +149,29 @@ describe.only('Blockstream', function () {
         )
         const onBlockAdd = chai.spy.on(bs, 'onBlockAdd')
         const onBlockInvalidated = chai.spy.on(bs, 'onBlockInvalidated')
-        await bs.initWithHistoricalBlocks(realChain)
-
-        const newChain = buildChain(accurateChain, 2, 2)
-        const validBlocks = [[newChain[newChain.length - 2], newChain[newChain.length - 1]]]
-        realChain = newChain
+        await bootstrapHistoricalBlocks(MOCK_REDUCER_KEY, realChain, this.store, bs)
 
         // tell blockstreamer that the last two blocks it saw were actually invalid by giving it a new longer chain
-        await bs.start() // HEAD
+        await bs.start()
+        const newChain = buildChain(accurateChain, 3, 2) // 11 blocks long
+        const validBlocks = [
+          newChain[newChain.length - 3],
+          newChain[newChain.length - 2],
+          newChain[newChain.length - 1],
+        ]
+        realChain = newChain
+        await this.api.forceSendBlock()
+        await timeout(100) // give it time to call the handlers
+        await bs.stop()
 
         onBlockInvalidated.should.have.been.called()
-        console.log('ok')
 
-        onBlockInvalidated.should.have.been.called.with(invalidBlocks[0])
-        onBlockInvalidated.should.have.been.called.with(invalidBlocks[1])
-
-        onBlockAdd.should.have.been.called.with(validBlocks[0])
-        onBlockAdd.should.have.been.called.with(validBlocks[1])
+        invalidBlocks.forEach((block) =>
+          onBlockInvalidated.should.have.been.called.with(block),
+        )
+        validBlocks.forEach((block) =>
+          onBlockAdd.should.have.been.called.with(block),
+        )
       })
     })
   })

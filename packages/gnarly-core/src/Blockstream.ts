@@ -5,7 +5,6 @@ const debugOnBlockAdd = makeDebug('gnarly-core:blockstream:onBlockAdd')
 const debugOnBlockInvalidated = makeDebug('gnarly-core:blockstream:onBlockInvalidated')
 
 import {
-  Block as BlockstreamBlock,
   BlockAndLogStreamer,
 } from 'ethereumjs-blockstream'
 import 'isomorphic-fetch'
@@ -148,7 +147,7 @@ class BlockStream {
     // ^ if historicalBlocks provided, reconcile blocks
     debug(
       'Initializing history with last historical block %s',
-      toBN(historicalBlocks[historicalBlocks.length - 1].number).toString(),
+      toBN(historicalBlocks[historicalBlocks.length - 1].number),
     )
 
     for (const block of historicalBlocks) {

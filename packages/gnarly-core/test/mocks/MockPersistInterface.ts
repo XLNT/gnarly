@@ -1,8 +1,9 @@
 import _ = require('lodash')
+import { IJSONBlock } from '../../src/models/Block'
 import {
   ITransaction,
 } from '../../src/ourbit'
-import { IHistoricalBlock, IPersistInterface } from '../../src/stores'
+import { IPersistInterface } from '../../src/stores'
 
 async function* iter (
   res: any[] = [],
@@ -12,11 +13,11 @@ async function* iter (
   }
 }
 
-class MockPersistInterface implements IPersistInterface {
+export default class MockPersistInterface implements IPersistInterface {
 
   private reducers: any[] = []
   private transactions: ITransaction[] = []
-  private historicalBlocks: { [_: string]: IHistoricalBlock[] } = {}
+  private historicalBlocks: { [_: string]: IJSONBlock[] } = {}
 
   public setup = async (reset: boolean = false) => {
     // nothing to be done
@@ -37,14 +38,14 @@ class MockPersistInterface implements IPersistInterface {
     return
   }
 
-  public getHistoricalBlocks = async (reducerKey: string): Promise<IHistoricalBlock[]> => {
+  public getHistoricalBlocks = async (reducerKey: string): Promise<IJSONBlock[]> => {
     return (this.historicalBlocks[reducerKey] || [])
   }
 
   public saveHistoricalBlock = async (
     reducerKey: string,
     blockRetention: number,
-    block: IHistoricalBlock,
+    block: IJSONBlock,
   ): Promise<any> => {
     if (!this.historicalBlocks[reducerKey]) {
       this.historicalBlocks[reducerKey] = []
@@ -94,5 +95,3 @@ class MockPersistInterface implements IPersistInterface {
     return _.find(this.transactions, (t) => t.blockHash === blockHash)
   }
 }
-
-export default MockPersistInterface
