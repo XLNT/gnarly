@@ -4,6 +4,5 @@ export {
 } from './sequelize'
 
 export {
-  IHistoricalBlock,
   IPersistInterface,
 } from './IPersistInterface'

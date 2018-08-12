@@ -25,7 +25,7 @@ import { globalState } from './globalstate'
 const MAX_QUEUE_LENGTH = 100
 
 class BlockStream {
-  private streamer: BlockAndLogStreamer<BlockstreamBlock, IJSONLog>
+  private streamer: BlockAndLogStreamer<IJSONBlock, IJSONLog>
 
   private onBlockAddedSubscriptionToken
   private onBlockRemovedSubscriptionToken
@@ -43,8 +43,8 @@ class BlockStream {
     private reducerKey: string,
     private processTransaction: (txId: string, fn: () => Promise<void>, extra: object) => Promise<void> ,
     private rollbackTransaction: (blockHash: string) => Promise<void>,
-    private blockRetention: number,
-    private onNewBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise < any > ,
+    private onNewBlock: (block: IJSONBlock, syncing: boolean) => () => Promise < any > ,
+    private blockRetention: number = 100,
     private interval: number = 5000,
   ) {
     this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
@@ -53,7 +53,7 @@ class BlockStream {
   }
 
   public start = async (fromBlockHash: string = null) => {
-    let latestBlock: BlockstreamBlock | null = null
+    let latestBlock: IJSONBlock | null = null
 
     if (fromBlockHash !== null) {
       // ^ if fromBlockHash is provided, it takes priority
@@ -129,7 +129,7 @@ class BlockStream {
     debug('Done! Exiting...')
   }
 
-  public initWithHistoricalBlocks = async (historicalBlocks: BlockstreamBlock[] = []): Promise<any> => {
+  public initWithHistoricalBlocks = async (historicalBlocks: IJSONBlock[] = []): Promise<any> => {
     // ^ if historicalBlocks provided, reconcile blocks
     debug(
       'Initializing history with last historical block %s',
@@ -157,11 +157,7 @@ class BlockStream {
         },
       )
 
-      await globalState.store.saveHistoricalBlock(this.reducerKey, this.blockRetention, {
-        hash: block.hash,
-        number: block.number,
-        parentHash: block.parentHash,
-      })
+      await globalState.store.saveHistoricalBlock(this.reducerKey, this.blockRetention, block)
     }
 
     this.pendingTransactions.add(pendingTransaction)

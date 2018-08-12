@@ -43,8 +43,8 @@ export class ReducerRunner {
       this.reducer.config.key,
       this.ourbit.processTransaction,
       this.ourbit.rollbackTransaction,
-      BLOCK_RETENTION,
       this.handleNewBlock,
+      BLOCK_RETENTION,
     )
   }
 

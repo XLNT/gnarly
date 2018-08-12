@@ -1,4 +1,4 @@
-import { Block as IHistoricalBlock } from 'ethereumjs-blockstream'
+import { IJSONBlock } from '../models/Block'
 import { ITransaction } from '../ourbit/types'
 
 export interface IPersistInterface {
@@ -9,8 +9,8 @@ export interface IPersistInterface {
   deleteReducer (reducerKey: string): Promise<any>
 
   // blockstream CRUD
-  getHistoricalBlocks (reducerKey: string): Promise<IHistoricalBlock[]>
-  saveHistoricalBlock (reducerKey: string, blockRetention: number, block: IHistoricalBlock): Promise<any>
+  getHistoricalBlocks (reducerKey: string): Promise<IJSONBlock[]>
+  saveHistoricalBlock (reducerKey: string, blockRetention: number, block: IJSONBlock): Promise<any>
   deleteHistoricalBlock (reducerKey: string, blockHash: string): Promise<any>
   deleteHistoricalBlocks (reducerKey: string): Promise<any>
 
@@ -27,8 +27,4 @@ export interface IPersistInterface {
   // setup
   setup (): Promise<any>
   setdown (): Promise<any>
-}
-
-export {
-  IHistoricalBlock,
 }

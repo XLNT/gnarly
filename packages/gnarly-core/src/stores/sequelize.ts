@@ -2,10 +2,11 @@ import identity = require('lodash.identity')
 
 const plain = true
 
+import { IJSONBlock } from '../models/Block'
 import {
   ITransaction,
 } from '../ourbit/types'
-import { IHistoricalBlock, IPersistInterface } from '../stores'
+import { IPersistInterface } from '../stores'
 import { toBN } from '../utils'
 
 export const makeSequelizeModels = (
@@ -51,6 +52,8 @@ export const makeSequelizeModels = (
     ],
   })
 
+  // we explicitely don't save all of the fields of block, even though typescript assumes we do
+  // if there's every a property that ethereumjs-blockstream expects that we don't store, stuff will break
   const HistoricalBlock = sequelize.define('historicalblock', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     hash: { type: DataTypes.STRING },
@@ -183,7 +186,7 @@ class SequelizePersistInterface implements IPersistInterface {
     })
   }
 
-  public getHistoricalBlocks = async (reducerKey: string): Promise<IHistoricalBlock[]> => {
+  public getHistoricalBlocks = async (reducerKey: string): Promise<IJSONBlock[]> => {
     const blocks = await this.HistoricalBlock.findAll({
       include: [{
         model: this.Reducer,
@@ -198,7 +201,7 @@ class SequelizePersistInterface implements IPersistInterface {
   public saveHistoricalBlock = async (
     reducerKey: string,
     blockRetention: number,
-    block: IHistoricalBlock,
+    block: IJSONBlock,
   ): Promise<any> => {
     try {
       const blockNum = toBN(block.number)
