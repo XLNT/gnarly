@@ -9,6 +9,8 @@ import { IJSONLog } from '../models/Log'
 
 import { IJSONInternalTransaction } from '../models/InternalTransaction'
 
+export type DecomposeFn = () => void
+
 export default interface IIngestApi {
   /**
    * gets a block by number
@@ -25,18 +27,18 @@ export default interface IIngestApi {
   getBlockByHash: (hash: string) => Promise<IJSONBlock>
 
   /**
-   * gets logs from filter options
-   * @returns IJSONLog[]
-   * @throws
-   */
-  getLogs: (filterOptions: FilterOptions) => Promise<IJSONLog[]>
-
-  /**
    * get the latest block
    * @returns IJSONBlock
    * @throws
    */
   getLatestBlock: () => Promise<IJSONBlock>
+
+  /**
+   * gets logs from filter options
+   * @returns IJSONLog[]
+   * @throws
+   */
+  getLogs: (filterOptions: FilterOptions) => Promise<IJSONLog[]>
 
   /**
    * gets tx receipt
@@ -51,4 +53,10 @@ export default interface IIngestApi {
    * @throws
    */
   traceTransaction: (hash: string) => Promise<IJSONInternalTransaction[]>
+
+  /**
+   * subscribes to new atomic events (blocks, when using a blockchain)
+   * @returns decomposer fn
+   */
+  subscribeToNewBlocks: (cb) => DecomposeFn
 }

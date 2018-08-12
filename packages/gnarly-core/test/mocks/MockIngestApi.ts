@@ -3,7 +3,7 @@ import {
   FilterOptions,
 } from 'ethereumjs-blockstream'
 
-import IIngestApi from '../../src/ingestion/IngestApi'
+import IIngestApi, { DecomposeFn } from '../../src/ingestion/IngestApi'
 import { IJSONBlock } from '../../src/models/Block'
 import { IJSONExternalTransactionReceipt } from '../../src/models/ExternalTransaction'
 import { IJSONInternalTransaction } from '../../src/models/InternalTransaction'
@@ -15,6 +15,8 @@ import IJSONInternalTransactionFactory from '../factories/IJSONInternalTransacti
 import IJSONLogFactory from '../factories/IJSONLogFactory'
 
 export default class MockIngestApi implements IIngestApi {
+
+  private cb
 
   constructor (
     private numLogs = 4,
@@ -45,5 +47,14 @@ export default class MockIngestApi implements IIngestApi {
 
   public traceTransaction = (hash: string): Promise<IJSONInternalTransaction[]> => {
     return IJSONInternalTransactionFactory.buildList(this.numInternalTxs, { hash })
+  }
+
+  public subscribeToNewBlocks = (cb): DecomposeFn => {
+    this.cb = cb
+    return this.decompose
+  }
+
+  public decompose = () => {
+    //
   }
 }
