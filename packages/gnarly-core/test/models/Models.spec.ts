@@ -144,12 +144,13 @@ describe('Models', function () {
       })
 
       afterEach(async function () {
-        chai.spy.reset()
+        chai.spy.restore()
       })
 
       it('swallows error', async function () {
         const etxData = IJSONExternalTransactionFactory.build()
         const etx = new ExternalTransaction(this.block, etxData)
+
         await expectThrow(etx.getInternalTransactions())
       })
     })

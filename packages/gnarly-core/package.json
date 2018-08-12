@@ -13,7 +13,7 @@
     "coverage": "nyc report --reporter=text-lcov > ./lcov.info",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "tslint": "tslint --project ."
+    "lint": "tslint --project ."
   },
   "files": [
     "lib"

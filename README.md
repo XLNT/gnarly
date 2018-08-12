@@ -74,11 +74,14 @@ cd gnarly
 # install yarn if you haven't already
 # $ npm i -g yarn
 
-# install lerna
-yarn global add lerna
+# install workspace dependencies, which includes lerna
+yarn install
 
 # boostrap the packages within this project (install deps, linking, etc)
 lerna bootstrap
+
+# now this command should pass:
+yarn run build-ts
 ```
 
 Now you should be able to run the tests with

@@ -27,4 +27,5 @@
             "esnext.asynciterable"
         ]
     },
+    "typeRoots": ["node_modules/@types"]
 }

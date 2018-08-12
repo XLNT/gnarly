@@ -15,7 +15,7 @@
     "coverage": "nyc report --reporter=text-lcov > ./lcov.info",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "tslint": "tslint --project .",
+    "lint": "tslint --project .",
     "pkg": "pkg --targets node9-linux-x64,node9-macos-x64 --out-path ./pkg ."
   },
   "pkg": {
@@ -35,10 +35,8 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/chai": "^4.1.4",
-    "@types/chai-spies": "^1.0.0",
     "@types/node": "^10.5.7",
     "chai": "^4.1.2",
-    "chai-spies": "^1.0.0",
     "mocha": "^5.2.0",
     "nyc": "^12.0.2",
     "pkg": "^4.3.1",
