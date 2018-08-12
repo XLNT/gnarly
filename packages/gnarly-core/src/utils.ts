@@ -70,7 +70,7 @@ export const getMethodId = (input: string) => input.substr(0, 10)
 
 export const toHex = (num: BN) => `0x${num.toString(16)}`
 
-export const timeout = async (ms: number = 1000) =>
+export const timeout = async (ms: number = 0) =>
   new Promise((resolve) =>
     setTimeout(resolve, ms))
 

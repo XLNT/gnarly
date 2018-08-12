@@ -6,6 +6,7 @@ import { IABIItemInput } from '../src'
 
 import { IOperation } from '../src/ourbit'
 import * as utils from '../src/utils'
+import { expectThrow } from './utils'
 
 const should = chai
   .use(require('chai-spies'))
@@ -65,7 +66,7 @@ describe('utils', function () {
       const longest = opts[opts.length - 1] * 40
       const mapper = async (i) => await utils.timeout(i * 40)
       const now = +(new Date())
-      await utils.forEach(opts, mapper, { concurrency: opts.length })
+      await utils.forEach(opts, mapper)
       const diff = (+(new Date()) - now)
       diff.should.be.at.least(longest).and.at.most(longest * 1.2)
     })
@@ -78,10 +79,19 @@ describe('utils', function () {
       const diff = (+(new Date()) - now)
       diff.should.be.at.least(total).and.at.most(total * 1.2)
     })
+
+    it('should throw if iterable is undefined', async function () {
+      await expectThrow(async () => utils.forEach(undefined, undefined, undefined))
+    })
   })
 
   context('timeout', function () {
     const TIMEOUT = 100
+
+    it('should have default, of 0', async function () {
+      await utils.timeout()
+    })
+
     it('should work', async function () {
       const now = +(new Date())
       await utils.timeout(TIMEOUT)
