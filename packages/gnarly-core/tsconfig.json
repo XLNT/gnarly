@@ -1,12 +1,9 @@
 {
-    "extends": "../../tsconfig.json",
+    "extends": "../tsconfig.build.json",
     "compilerOptions": {
+        "rootDir": "src",
         "outDir": "lib"
     },
-    "include": [
-        "src/**/*"
-    ],
-    "references": [
-        { "path": "../../typescript-typings" }
-    ]
+    "include": ["src"],
+    "typeRoots": ["../../node_modules/@types"]
 }

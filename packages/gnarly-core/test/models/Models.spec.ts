@@ -4,13 +4,18 @@ import 'mocha'
 
 import { globalState } from '../../src/globalstate'
 import Block from '../../src/models/Block'
-import ExternalTransaction from '../../src/models/ExternalTransaction'
+import ExternalTransaction, {
+  IJSONExternalTransaction,
+  isExternalTransaction,
+} from '../../src/models/ExternalTransaction'
+import InternalTransaction from '../../src/models/InternalTransaction'
 import Log from '../../src/models/Log'
 import { toBN } from '../../src/utils'
 
 import erc20Abi from '../data/erc20Abi'
 import IJSONBlockFactory from '../factories/IJSONBlockFactory'
 import IJSONExternalTransactionFactory from '../factories/IJSONExternalTransactionFactory'
+import IJSONInternalTransactionFactory from '../factories/IJSONInternalTransactionFactory'
 import IJSONLogFactory from '../factories/IJSONLogFactory'
 import MockIngestApi from '../mocks/MockIngestApi'
 import { expectThrow } from '../utils'
@@ -135,12 +140,70 @@ describe('Models', function () {
       etx.internalTransactions.length.should.equal(NUM_INTERNAL_TX)
     })
 
+    it('throws for improperly formatted info', async function () {
+      const badData: IJSONExternalTransaction = {} as IJSONExternalTransaction
+      const fn = () => new ExternalTransaction(this.block, badData)
+      fn.should.throw()
+    })
+
     context('without tracing', function () {
+      beforeEach(async function () {
+        chai.spy.on(globalState.api, 'traceTransaction', () => {
+          throw new Error()
+         })
+      })
+
+      afterEach(async function () {
+        chai.spy.restore()
+      })
+
       it('swallows error', async function () {
         const etxData = IJSONExternalTransactionFactory.build()
         const etx = new ExternalTransaction(this.block, etxData)
-        await etx.getInternalTransactions()
+
+        await expectThrow(etx.getInternalTransactions())
       })
+    })
+
+    context('isExternalTransaction()', function () {
+      it('can identify an internal and external transaction', async function () {
+        const etxData = IJSONExternalTransactionFactory.build()
+        const etx = new ExternalTransaction(this.block, etxData)
+
+        const itxData = IJSONInternalTransactionFactory.build()
+        const itx = new InternalTransaction(etx, itxData)
+
+        isExternalTransaction(etx).should.equal(true)
+        isExternalTransaction(itx).should.equal(false)
+      })
+    })
+  })
+
+  describe('InternalTransaction', function () {
+    const TEST_ERROR = '0x1'
+    const TEST_OUTPUT = '0x1'
+    const TEST_GAS_USED = '0x1'
+
+    beforeEach(async function () {
+      this.etxData = IJSONExternalTransactionFactory.build()
+      this.etx = new ExternalTransaction(this.block, this.etxData)
+    })
+    // mostly tested as a side effect of the other tests
+    it('should set result if error not available', async function () {
+      const itxData = IJSONInternalTransactionFactory.build({ error: undefined, result: {
+        output: TEST_OUTPUT,
+        gasUsed: '0x1',
+      } })
+      const itx = new InternalTransaction(this.etx, itxData)
+      itx.result.output.should.equal(TEST_OUTPUT)
+      itx.result.gasUsed.should.eq.BN(toBN(TEST_GAS_USED))
+    })
+
+    it('should set error if available', async function () {
+      const itxData = IJSONInternalTransactionFactory.build({ error: TEST_ERROR })
+      const itx = new InternalTransaction(this.etx, itxData)
+      should.not.exist(itx.result)
+      itx.error.should.equal(TEST_ERROR)
     })
   })
 
@@ -184,6 +247,21 @@ describe('Models', function () {
       it('handles not-found abi item', async function () {
         globalState.addABI(MOCK_ADDRESS, [])
         const logData = IJSONLogFactory.build({ address: MOCK_ADDRESS, topics: ['', ''] })
+        const log = new Log(this.etx, logData)
+        log.parse().should.equal(false)
+      })
+
+      it('handles invalid log', async function () {
+        globalState.addABI(MOCK_ADDRESS, erc20Abi)
+        const logData = IJSONLogFactory.build({
+          address: MOCK_ADDRESS,
+          topics: [
+            TRANSFER_EVENT_SIGNATURE,
+            '0xno',
+            '0xno',
+          ],
+          data: '0x0',
+        })
         const log = new Log(this.etx, logData)
         log.parse().should.equal(false)
       })

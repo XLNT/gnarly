@@ -5,7 +5,6 @@ const debugOnBlockAdd = makeDebug('gnarly-core:blockstream:onBlockAdd')
 const debugOnBlockInvalidated = makeDebug('gnarly-core:blockstream:onBlockInvalidated')
 
 import {
-  Block as BlockstreamBlock,
   BlockAndLogStreamer,
 } from 'ethereumjs-blockstream'
 import 'isomorphic-fetch'
@@ -14,8 +13,6 @@ import uuid = require('uuid')
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
-
-import Ourbit from './ourbit'
 
 import {
   timeout,
@@ -42,52 +39,68 @@ class BlockStream {
   })
 
   constructor (
-    private ourbit: Ourbit,
-    private onBlock: (block: BlockstreamBlock, syncing: boolean) => () => Promise<any>,
-    private interval: number = 5000,
+    private reducerKey: string,
+    private processTransaction: (txId: string, fn: () => Promise<void>, extra: object) => Promise<void> ,
+    private rollbackTransaction: (blockHash: string) => Promise<void>,
+    private onNewBlock: (block: IJSONBlock, syncing: boolean) => () => Promise < any > ,
+    private blockRetention: number = 100,
   ) {
-
+    this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
+      blockRetention: this.blockRetention,
+    })
   }
 
   public start = async (fromBlockHash: string = null) => {
-    this.streamer = new BlockAndLogStreamer(globalState.api.getBlockByHash, globalState.api.getLogs, {
-      blockRetention: 100,
-    })
+    let localLatestBlock: IJSONBlock | null = null
 
+    // the primary purpose of this function to to extend the historical block reduction
+    //   beyond the blockRetention limit provided to ethereumjs-blockstream
+    //   because we might have stopped tracking blocks for longer than ~100 blocks and need to catch up
+
+    const remoteLatestBlock = await globalState.api.getLatestBlock()
+
+    if (fromBlockHash !== null) {
+      // ^ if fromBlockHash is provided, it takes priority
+      debug('Continuing from blockHash %s', fromBlockHash)
+
+      // so look up the latest block we know about
+      localLatestBlock = await globalState.api.getBlockByHash(fromBlockHash)
+
+      // need to load that block into the local chain so handlers trigger correctly
+      //  when we defer to the ethereumjs-blockstream reconciliation algorithm where it fetches
+      //  its own historical blocks
+      this.streamer.reconcileNewBlock(localLatestBlock)
+    } else {
+      // we are starting from head
+      debug('Starting from HEAD')
+
+      // ask the remote for the latest "local" block
+      localLatestBlock = await globalState.api.getLatestBlock()
+    }
+
+    const remoteLatestBlockNumber = toBN(remoteLatestBlock.number)
+    const localLatestBlockNumber = toBN(localLatestBlock.number)
+
+    // subscribe to changes in chain
     this.onBlockAddedSubscriptionToken = this.streamer.subscribeToOnBlockAdded(this.onBlockAdd)
     this.onBlockRemovedSubscriptionToken = this.streamer.subscribeToOnBlockRemoved(this.onBlockInvalidated)
 
-    let startBlockNumber
-    if (fromBlockHash === null) {
-      // if no hash provided, we're starting from HEAD
-      startBlockNumber = toBN(
-        (await globalState.api.getLatestBlock()).number,
-      )
-    } else {
-      // otherwise get the expected block's number
-      const startFromBlock = await globalState.api.getBlockByHash(fromBlockHash)
-      startBlockNumber = toBN(startFromBlock.number).add(toBN(1))
-      // ^ +1 because we already know about this block and we want the next
-    }
+    debug('Local block number: %d. Remote block number: %d', localLatestBlockNumber, remoteLatestBlockNumber)
 
-    debug('Beginning from block %d', startBlockNumber)
-
-    // get the latest block
-    let latestBlockNumber = toBN(
-      (await globalState.api.getLatestBlock()).number,
-    )
-
-    // if we're not at that block number, start pulling the blocks
-    // from before until we catch up, then track latest
-    if (latestBlockNumber.gt(startBlockNumber)) {
+    let syncUpToNumber = await this.latestRemoteNumberWithRetentionBuffer()
+    // if we're not at that block number, start pulling the blocks from history
+    //   until we enter the block retention limit
+    //   once we've gotten to the block retention limit, we need to defer to blockstream's chain
+    //   reconciliation algorithm
+    if (localLatestBlockNumber.lt(syncUpToNumber)) {
       debugFastForward(
         'Starting from %d and continuing to %d',
-        startBlockNumber.toNumber(),
-        latestBlockNumber.toNumber(),
+        localLatestBlockNumber.toNumber(),
+        remoteLatestBlockNumber.toNumber(),
       )
       this.syncing = true
-      let i = startBlockNumber.clone()
-      while (i.lt(latestBlockNumber)) {
+      let i = localLatestBlockNumber.clone()
+      while (i.lt(syncUpToNumber)) {
         // if we're at the top of the queue
         // wait a bit and then add the thing
         while (this.pendingTransactions.size >= MAX_QUEUE_LENGTH) {
@@ -101,14 +114,15 @@ class BlockStream {
         const block = await globalState.api.getBlockByNumber(i)
         debugFastForward(
           'block %s (%s)',
-          block.number,
+          toBN(block.number).toString(),
           block.hash,
         )
-        i = i.add(toBN(1))
         await this.streamer.reconcileNewBlock(block)
+
+        i = toBN(block.number).add(toBN(1))
         // TODO: easy optimization, only check latest block on the last
         // iteration
-        latestBlockNumber = toBN((await globalState.api.getLatestBlock()).number)
+        syncUpToNumber = await this.latestRemoteNumberWithRetentionBuffer()
       }
 
       this.syncing = false
@@ -128,7 +142,19 @@ class BlockStream {
     debug('Done! Exiting...')
   }
 
-  private onBlockAdd = async (block: BlockstreamBlock) => {
+  public initWithHistoricalBlocks = async (historicalBlocks: IJSONBlock[] = []): Promise<any> => {
+    // ^ if historicalBlocks provided, reconcile blocks
+    debug(
+      'Initializing history with last historical block %s',
+      toBN(historicalBlocks[historicalBlocks.length - 1].number),
+    )
+
+    for (const block of historicalBlocks) {
+      await this.streamer.reconcileNewBlock(block)
+    }
+  }
+
+  private onBlockAdd = async (block: IJSONBlock) => {
     const pendingTransaction = async () => {
       debugOnBlockAdd(
         'block %s (%s)',
@@ -136,19 +162,21 @@ class BlockStream {
         block.hash,
       )
 
-      return this.ourbit.processTransaction(
+      await this.processTransaction(
         uuid.v4(),
-        this.onBlock(block, this.syncing),
+        this.onNewBlock(block, this.syncing),
         {
           blockHash: block.hash,
         },
       )
+
+      await globalState.store.saveHistoricalBlock(this.reducerKey, this.blockRetention, block)
     }
 
     this.pendingTransactions.add(pendingTransaction)
   }
 
-  private onBlockInvalidated = (block: BlockstreamBlock) => {
+  private onBlockInvalidated = (block: IJSONBlock) => {
     const pendingTransaction = async () => {
       debugOnBlockInvalidated(
         'block %s (%s)',
@@ -156,7 +184,10 @@ class BlockStream {
         block.hash,
       )
 
-      return this.ourbit.rollbackTransaction(block.hash)
+      // when a block is invalidated, rollback the transaction
+      await this.rollbackTransaction(block.hash)
+      // and then delete the historical block
+      await globalState.store.deleteHistoricalBlock(this.reducerKey, block.hash)
     }
 
     this.pendingTransactions.add(pendingTransaction)
@@ -166,6 +197,14 @@ class BlockStream {
     this.unsubscribeFromNewBlocks = globalState.api.subscribeToNewBlocks(async () => {
       await this.streamer.reconcileNewBlock(await globalState.api.getLatestBlock())
     })
+  }
+
+  private latestRemoteNumberWithRetentionBuffer = async () => {
+    return toBN(
+      (await globalState.api.getLatestBlock()).number,
+    ).sub(toBN(this.blockRetention - 10))
+    // ^ manually import historical blocks until we're within 90 blocks of HEAD
+    // and then we can use blockstream's reconciliation algorithm
   }
 }
 

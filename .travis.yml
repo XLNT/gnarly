@@ -15,6 +15,7 @@ before_script:
 after_success:
   - yarn run coverage
 script:
+  - yarn run lint
   - yarn run test
 notifications:
   slack:

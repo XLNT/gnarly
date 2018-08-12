@@ -37,9 +37,8 @@ export const parsePath = (path: string): IPathThing => {
 
 export const toBN = (v: string | number | BN): BN => numberToBN(v)
 
-export const forEach = async (iterable, mapper, opts = { concurrency: 10 }) => {
-  return pMap(iterable, mapper, opts)
-}
+export const forEach = async (iterable, mapper, opts = { concurrency: 10 }) =>
+  pMap(iterable, mapper, opts)
 
 export const addressesEqual = (left: string, right: string): boolean => {
   return left && right && left.toLowerCase() === right.toLowerCase()
@@ -71,7 +70,7 @@ export const getMethodId = (input: string) => input.substr(0, 10)
 
 export const toHex = (num: BN) => `0x${num.toString(16)}`
 
-export const timeout = async (ms: number = 1000) =>
+export const timeout = async (ms: number = 0) =>
   new Promise((resolve) =>
     setTimeout(resolve, ms))
 

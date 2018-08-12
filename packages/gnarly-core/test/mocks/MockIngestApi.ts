@@ -54,6 +54,10 @@ export default class MockIngestApi implements IIngestApi {
     return this.decompose
   }
 
+  public forceSendBlock = (block: IJSONBlock) => {
+    this.cb()
+  }
+
   public decompose = () => {
     //
   }

@@ -30,7 +30,7 @@ describe('globalstate', function () {
 
     it('can set/get api', async function () {
       this.globals.setApi(this.api)
-      this.globals.api.should.eq(this.api)
+      this.globals.api.should.equal(this.api)
     })
   })
 
@@ -41,7 +41,7 @@ describe('globalstate', function () {
 
     it('can set/get store', async function () {
       this.globals.setStore(this.store)
-      this.globals.store.should.eq(this.store)
+      this.globals.store.should.equal(this.store)
     })
   })
 
@@ -50,7 +50,7 @@ describe('globalstate', function () {
       it('can add an abi', async function () {
         this.globals.addABI(MOCK_ADDRESS, erc20Abi)
 
-        this.globals.abis[MOCK_ADDRESS].length.should.eq(erc20Abi.length)
+        this.globals.abis[MOCK_ADDRESS].length.should.equal(erc20Abi.length)
       })
     })
 
@@ -71,7 +71,7 @@ describe('globalstate', function () {
 
       it('can getABI()', async function () {
         const abiSet = this.globals.getABI(MOCK_ADDRESS)
-        abiSet.length.should.eq(erc20Abi.length)
+        abiSet.length.should.equal(erc20Abi.length)
       })
 
       it('should have enhanced the abi', async function () {
@@ -82,7 +82,7 @@ describe('globalstate', function () {
 
       it('can getMethod()', async function () {
         const method = this.globals.getMethod(MOCK_ADDRESS, TRANSFER_METHOD_ID)
-        method.shortId.should.eq(TRANSFER_METHOD_ID)
+        method.shortId.should.equal(TRANSFER_METHOD_ID)
       })
     })
   })
@@ -97,7 +97,7 @@ describe('globalstate', function () {
       it('returns empty array', async function () {
         const logs = await this.globals.getLogs({})
 
-        logs.length.should.eq(0)
+        logs.length.should.equal(0)
       })
     })
 
@@ -110,7 +110,7 @@ describe('globalstate', function () {
       it('can getLogs()', async function () {
         const logs = await this.globals.getLogs({})
 
-        logs.length.should.eq(NUM_LOGS)
+        logs.length.should.equal(NUM_LOGS)
         logs.map((l) => l.should.be.instanceof(Log))
       })
     })

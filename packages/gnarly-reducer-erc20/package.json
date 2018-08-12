@@ -9,12 +9,12 @@
     "ts-start": "ts-node src/index.ts",
     "start": "node lib/index.js",
     "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
-    "test": "nyc --reporter=text mocha -r ts-node/register -r source-map-support/register --full-trace test/**/*.spec.ts",
-    "watch-test": " mocha --watch --watch-extensions ts -r ts-node/register test/**/*.spec.ts",
+    "test": "nyc --reporter=text mocha -r ts-node/register -r source-map-support/register --full-trace 'test/**/*.spec.ts'",
+    "watch-test": " mocha --watch --watch-extensions ts -r ts-node/register 'test/**/*.spec.ts'",
     "coverage": "nyc report --reporter=text-lcov > ./lcov.info",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "tslint": "tslint --project ."
+    "lint": "tslint --project ."
   },
   "files": [
     "lib"
@@ -30,18 +30,15 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/chai": "^4.1.4",
-    "@types/chai-spies": "^1.0.0",
     "@types/node": "^10.5.7",
     "@xlnt/gnarly-core": "^0.6.0",
-    "@xlnt/typescript-typings": "^0.6.0",
     "chai": "^4.1.2",
-    "chai-spies": "^1.0.0",
     "mocha": "^5.2.0",
     "nyc": "^12.0.2",
     "rosie": "^2.0.1",
     "source-map-support": "^0.5.6",
-    "tslint": "^5.9.1",
-    "typescript": "^2.8.3"
+    "tslint": "^5.11.0",
+    "typescript": "^3.0.1"
   },
   "publishConfig": {
     "access": "public"

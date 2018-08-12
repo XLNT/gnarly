@@ -1,4 +1,5 @@
 import _ = require('lodash')
+import { IJSONBlock } from '../../src/models/Block'
 import {
   ITransaction,
 } from '../../src/ourbit'
@@ -12,10 +13,11 @@ async function* iter (
   }
 }
 
-class MockPersistInterface implements IPersistInterface {
+export default class MockPersistInterface implements IPersistInterface {
 
   private reducers: any[] = []
   private transactions: ITransaction[] = []
+  private historicalBlocks: { [_: string]: IJSONBlock[] } = {}
 
   public setup = async (reset: boolean = false) => {
     // nothing to be done
@@ -34,6 +36,32 @@ class MockPersistInterface implements IPersistInterface {
   public deleteReducer = (reducerKey: string): Promise<any> => {
     this.reducers = this.reducers.filter((r) => r !== reducerKey)
     return
+  }
+
+  public getHistoricalBlocks = async (reducerKey: string): Promise<IJSONBlock[]> => {
+    return (this.historicalBlocks[reducerKey] || [])
+  }
+
+  public saveHistoricalBlock = async (
+    reducerKey: string,
+    blockRetention: number,
+    block: IJSONBlock,
+  ): Promise<any> => {
+    if (!this.historicalBlocks[reducerKey]) {
+      this.historicalBlocks[reducerKey] = []
+    }
+
+    this.historicalBlocks[reducerKey].push(block)
+  }
+
+  public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
+    this.historicalBlocks[reducerKey] = this.historicalBlocks[reducerKey].filter((b) =>
+      b.hash !== blockHash,
+    )
+  }
+
+  public deleteHistoricalBlocks = async (reducerKey: string): Promise<any> => {
+    this.historicalBlocks[reducerKey] = []
   }
 
   public async getAllTransactionsTo (reducerKey: string, toTxId: null | string): Promise<any> {
@@ -67,5 +95,3 @@ class MockPersistInterface implements IPersistInterface {
     return _.find(this.transactions, (t) => t.blockHash === blockHash)
   }
 }
-
-export default MockPersistInterface

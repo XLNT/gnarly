@@ -17,5 +17,5 @@ export default new Factory()
     subtraces: () => 0,
     traceAddress: () => [],
     type: 'CALL',
-    error: null,
+    error: undefined,
   })
