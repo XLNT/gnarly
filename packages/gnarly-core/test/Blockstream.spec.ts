@@ -139,14 +139,14 @@ describe.only('Blockstream', function () {
         // tell blockstreamer that the last two blocks it saw were actually invalid by giving it a new longer chain
         await bs.start() // HEAD
 
-        // onBlockInvalidated.should.have.been.called()
-        // console.log('ok')
+        onBlockInvalidated.should.have.been.called()
+        console.log('ok')
 
-        // onBlockInvalidated.should.have.been.called.with(invalidBlocks[0])
-        // onBlockInvalidated.should.have.been.called.with(invalidBlocks[1])
+        onBlockInvalidated.should.have.been.called.with(invalidBlocks[0])
+        onBlockInvalidated.should.have.been.called.with(invalidBlocks[1])
 
-        // onBlockAdd.should.have.been.called.with(validBlocks[0])
-        // onBlockAdd.should.have.been.called.with(validBlocks[1])
+        onBlockAdd.should.have.been.called.with(validBlocks[0])
+        onBlockAdd.should.have.been.called.with(validBlocks[1])
       })
     })
   })
