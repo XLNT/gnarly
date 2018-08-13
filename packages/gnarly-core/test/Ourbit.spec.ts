@@ -36,7 +36,7 @@ describe('Ourbit', () => {
   }
 
   beforeEach(() => {
-    sandbox.on(utils, TEST_UUID, () => TEST_UUID)
+    sandbox.on(utils, 'uuid', () => TEST_UUID)
     sandbox.on(globalState, [
       'setPatchGenerator',
       'setOpCollector',
@@ -135,7 +135,7 @@ describe('Ourbit', () => {
       reason: undefined,
       operations: [{
         op: 'add',
-        path: '/domain/uuid',
+        path: `/domain/${TEST_UUID}`,
         value: { uuid: TEST_UUID, value: 'value' },
         volatile: true,
       }],

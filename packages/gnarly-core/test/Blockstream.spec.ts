@@ -275,5 +275,9 @@ describe('Blockstream', function () {
         )
       })
     })
+
+    context('when presented with hella blocks', function () {
+      it('should throttle to queue limit')
+    })
   })
 })
