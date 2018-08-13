@@ -9,7 +9,6 @@ import {
 } from 'ethereumjs-blockstream'
 import 'isomorphic-fetch'
 import PQueue = require('p-queue')
-import uuid = require('uuid')
 
 import { IJSONBlock } from './models/Block'
 import { IJSONLog } from './models/Log'
@@ -17,6 +16,7 @@ import { IJSONLog } from './models/Log'
 import {
   timeout,
   toBN,
+  uuid,
 } from './utils'
 
 import { globalState } from './globalstate'
@@ -163,7 +163,7 @@ class BlockStream {
       )
 
       await this.processTransaction(
-        uuid.v4(),
+        uuid(),
         this.onNewBlock(block, this.syncing),
         {
           blockHash: block.hash,

@@ -1,7 +1,6 @@
 import chai = require('chai')
 import 'mocha'
 
-import uuid = require('uuid')
 import { globalState } from '../src/globalstate'
 import * as utils from '../src/utils'
 
@@ -20,6 +19,8 @@ const TEST_KEY = 'test'
 const TEST_REASON = 'TEST_REASON'
 const TEST_META = {}
 
+const TEST_UUID = utils.uuid()
+
 describe('Ourbit', () => {
   let ourbit: Ourbit = null
 
@@ -35,7 +36,7 @@ describe('Ourbit', () => {
   }
 
   beforeEach(() => {
-    sandbox.on(uuid, 'v4', () => 'uuid')
+    sandbox.on(utils, TEST_UUID, () => TEST_UUID)
     sandbox.on(globalState, [
       'setPatchGenerator',
       'setOpCollector',
@@ -46,7 +47,7 @@ describe('Ourbit', () => {
       id: '0x1',
       blockHash: '0x1',
       patches: [{
-        id: 'uuid',
+        id: TEST_UUID,
         reason: undefined,
         operations: [{
           op: 'add',
@@ -104,7 +105,7 @@ describe('Ourbit', () => {
 
   it('should allow manual collection', async () => {
     tx.patches.push({
-      id: 'uuid',
+      id: TEST_UUID,
       reason: undefined,
       operations: [{
         op: 'replace',
@@ -130,12 +131,12 @@ describe('Ourbit', () => {
   it('should accept volatile operations', async () => {
     targetState.domain = { array: [] }
     tx.patches.push({
-      id: 'uuid',
+      id: TEST_UUID,
       reason: undefined,
       operations: [{
         op: 'add',
         path: '/domain/uuid',
-        value: { uuid: 'uuid', value: 'value' },
+        value: { uuid: TEST_UUID, value: 'value' },
         volatile: true,
       }],
     })

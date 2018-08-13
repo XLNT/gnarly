@@ -6,11 +6,10 @@ import {
   observe,
   unobserve,
 } from '@xlnt/fast-json-patch'
-import uuid = require('uuid')
 
 import { globalState } from '../globalstate'
 import { ReducerContext } from '../reducer'
-import { invertPatch, operationsOfPatches, toOperation } from '../utils'
+import { invertPatch, operationsOfPatches, toOperation, uuid } from '../utils'
 import {
   IOperation,
   IPatch,
@@ -67,7 +66,7 @@ class Ourbit {
     // watch for patches to the memory state
     const observer = observe(this.targetState, (ops) => {
       patches.push({
-        id: uuid.v4(),
+        id: uuid(),
         operations: ops.map((op) => ({
           ...op,
           volatile: false,
@@ -84,7 +83,7 @@ class Ourbit {
     // collect any operations that are directly emitted
     this.context.setOpCollector((op: IOperation) => {
       patches.push({
-        id: uuid.v4(),
+        id: uuid(),
         operations: [op],
         reason: this.context.getCurrentReason(),
       })

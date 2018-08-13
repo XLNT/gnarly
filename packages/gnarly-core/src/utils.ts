@@ -1,10 +1,10 @@
 import { Operation } from '@xlnt/fast-json-patch'
 import BN = require('bn.js')
+import KSUID = require('ksuid')
 import _ = require('lodash')
 import memoize from 'moize'
 import numberToBN = require('number-to-bn')
 import pMap = require('p-map')
-import uuid = require('uuid')
 import web3Utils = require('web3-utils')
 
 import IABIItem, { IABIItemInput } from './models/ABIItem'
@@ -15,6 +15,9 @@ import {
 } from './ourbit/types'
 
 const API_CACHE_MAX_AGE = 1000
+
+// shrugs: I feel like using the sync randomness here isn't really a big deal, but we'll see
+export const uuid = () => KSUID.randomSync().string
 
 export const cacheApiRequest = (fn) => memoize(fn, {
   isPromise: true,
@@ -123,7 +126,7 @@ export const appendTo = (
   value: any,
 ): IOperation => {
   // forcefully add uuid to value
-  value.uuid = uuid.v4()
+  value.uuid = uuid()
   // for now, typeStores interpret an add operation without an index
   // as a normal sort of insert
   // so there's actually nothing special to do here
