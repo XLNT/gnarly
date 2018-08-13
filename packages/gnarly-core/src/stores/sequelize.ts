@@ -126,7 +126,7 @@ async function* batch (
   }
 }
 
-class SequelizePersistInterface implements IPersistInterface {
+export default class SequelizePersistInterface implements IPersistInterface {
   private Reducer
   private HistoricalBlock
   private Transaction
@@ -381,5 +381,3 @@ class SequelizePersistInterface implements IPersistInterface {
     }
   }
 }
-
-export default SequelizePersistInterface
