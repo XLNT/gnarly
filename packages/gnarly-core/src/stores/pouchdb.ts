@@ -1,4 +1,7 @@
+/* tslint:disable max-classes-per-file */
+
 import PouchDB = require('pouchdb')
+require('pouchdb-all-dbs')(PouchDB)
 PouchDB.plugin(require('pouchdb-upsert'))
 PouchDB.plugin(require('pouchdb-find'))
 
@@ -7,12 +10,16 @@ import {
   ITransaction,
 } from '../ourbit/types'
 import { IPersistInterface } from '../stores'
-import { toBN } from '../utils'
+import { forEach, toBN } from '../utils'
+
+// all databases should have --gnarly prefix so we can delete them and not destroy any user data
+// that might be sitting around
+const GNARLY_DB_PREFIX = '--gnarly'
 
 const sortByHexProp = (prop: string) => (a, b) => toBN(a[prop]).sub(toBN(b[prop])).toNumber()
 const toJSONBlock = (block) => block as IJSONBlock
 
-const deleteWithQuery = async (db, selector) => {
+const deleteWithQuery = async (db: PouchDB.Database, selector: object) => {
   const res = await db.find({ selector })
   await db.bulkDocs(res.docs.map((d) => ({ ...d, _deleted: true })))
 }
@@ -27,23 +34,40 @@ const deleteWithQuery = async (db, selector) => {
 // pouchdb relies heavily on unique identifiers that operate as the primary index
 // so our use of `mid` in postgres will complement this nicely
 
-const reducerDb = (e) => `${e}/gnarly-reducers`
-const historicalBlocksDb = (e) => `${e}/gnarly-historical-blocks`
-const transactionsDb = (e) => `${e}/gnarly-transactions`
+const reducerDb = (e: string) => `${e}/${GNARLY_DB_PREFIX}-reducers`
+const historicalBlocksDb = (e: string) => (key: string): PouchDB.Database =>
+  new PouchDB(`${e}/${GNARLY_DB_PREFIX}-${key}-historical-blocks`)
+const transactionsDb = (e: string) => (key: string): PouchDB.Database =>
+  new PouchDB(`${e}/${GNARLY_DB_PREFIX}-${key}-transactions`)
+
+class DyanmicDict<T> {
+  private cache: { [_: string]: T } = {}
+
+  constructor (
+    private dbGenerator: (key: string) => T,
+  ) {
+  }
+
+  public get = (key: string) => {
+    if (this.cache[key]) { return this.cache[key] }
+
+    this.cache[key] = this.dbGenerator(key)
+    return this.cache[key]
+  }
+}
 
 export default class PouchDBPersistInterface implements IPersistInterface {
-
   private reducers: PouchDB.Database
-  private historicalBlocks: PouchDB.Database
-  private transactions: PouchDB.Database
+  private historicalBlocks: DyanmicDict<PouchDB.Database>
+  private transactions: DyanmicDict<PouchDB.Database>
 
   constructor (
     dbEndpoint: string,
   ) {
     try {
       this.reducers = new PouchDB(reducerDb(dbEndpoint))
-      this.historicalBlocks = new PouchDB(historicalBlocksDb(dbEndpoint))
-      this.transactions = new PouchDB(transactionsDb(dbEndpoint))
+      this.historicalBlocks = new DyanmicDict(historicalBlocksDb(dbEndpoint))
+      this.transactions = new DyanmicDict(transactionsDb(dbEndpoint))
     } catch (error) {
       throw new Error(`Instantiating PouchDBs failed: ${error.stack}`)
     }
@@ -59,36 +83,32 @@ export default class PouchDBPersistInterface implements IPersistInterface {
 
   // blockstream CRUD
   public getHistoricalBlocks = async (reducerKey: string): Promise<IJSONBlock[]> => {
-    const res = await this.historicalBlocks.find({
-      selector: {
-        reducerKey: { $eq: reducerKey },
-      },
-    })
-
-    return res.docs.map(toJSONBlock).sort(sortByHexProp('number'))
+    const res = await this.historicalBlocks.get(reducerKey).allDocs()
+    return res.rows
+      .map((r) => r.doc)
+      .map(toJSONBlock)
+      .sort(sortByHexProp('number'))
   }
 
   public saveHistoricalBlock = async (reducerKey: string, blockRetention: number, block: IJSONBlock): Promise<any> => {
-    await this.historicalBlocks.putIfNotExists({
-      _id: block.hash,
-      ...block,
-      reducerKey,
+    await this.historicalBlocks
+      .get(reducerKey)
+      .putIfNotExists({
+        _id: block.hash,
+        ...block,
     })
 
     // @TODO (shrugs) - delete blocks after blockRetention for this reducer
   }
 
   public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
-    await deleteWithQuery(this.historicalBlocks, {
+    await deleteWithQuery(this.historicalBlocks.get(reducerKey), {
       _id: { $eq: blockHash },
-      reducerKey: { $eq: reducerKey },
     })
   }
 
   public deleteHistoricalBlocks = async (reducerKey: string): Promise<any> => {
-    await deleteWithQuery(this.historicalBlocks, {
-      reducerKey: { $eq: reducerKey },
-    })
+    await this.historicalBlocks.get(reducerKey).destroy()
   }
 
   // transaction CRUD
@@ -113,20 +133,14 @@ export default class PouchDBPersistInterface implements IPersistInterface {
 
   // setup & setdown
   public setup = async (): Promise<any> => {
-    // implicitely create database if not exists
-    await this.reducers.info()
-    await this.historicalBlocks.info()
-    await this.transactions.info()
-
-    // index historical blocks on reducerKeys
-    this.historicalBlocks.createIndex({
-      index: { fields: ['reducerKey'] },
-    })
+    // databases are implicitely created and schemaless, so this fn isn't really going to do anything
   }
 
   public setdown = async (): Promise<any> => {
-    await this.reducers.destroy()
-    await this.historicalBlocks.destroy()
-    await this.transactions.destroy()
+    const dbs = await PouchDB.allDbs()
+    await forEach(
+      dbs.filter((db) => db.startsWith(GNARLY_DB_PREFIX)),
+      async (db) => await (new PouchDB(db)).destroy(),
+    )
   }
 }
