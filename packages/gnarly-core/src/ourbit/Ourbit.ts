@@ -162,7 +162,7 @@ class Ourbit {
     // apply to store (mutable and volatile)
     await this.notifyPatches(tx.id, inversePatches)
     // delete transaction
-    await globalState.store.deleteTransaction(this.key, tx)
+    await globalState.store.deleteTransaction(this.key, tx.id)
   }
 }
 

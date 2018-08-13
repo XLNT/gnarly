@@ -132,7 +132,10 @@ class BlockStream {
   }
 
   public stop = async () => {
-    this.unsubscribeFromNewBlocks()
+    if (this.unsubscribeFromNewBlocks) {
+      this.unsubscribeFromNewBlocks()
+    }
+
     if (this.streamer) {
       this.streamer.unsubscribeFromOnBlockAdded(this.onBlockAddedSubscriptionToken)
       this.streamer.unsubscribeFromOnBlockRemoved(this.onBlockRemovedSubscriptionToken)

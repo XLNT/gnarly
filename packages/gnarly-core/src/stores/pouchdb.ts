@@ -18,10 +18,15 @@ const GNARLY_DB_PREFIX = '--gnarly'
 
 const sortByHexProp = (prop: string) => (a, b) => toBN(a[prop]).sub(toBN(b[prop])).toNumber()
 const toJSONBlock = (block) => block as IJSONBlock
+const toTransaction = (tx) => tx as ITransaction
 
 const deleteWithQuery = async (db: PouchDB.Database, selector: object) => {
   const res = await db.find({ selector })
   await db.bulkDocs(res.docs.map((d) => ({ ...d, _deleted: true })))
+}
+
+const deleteById = async (db: PouchDB.Database, id: string) => {
+  await db.remove(await db.get(id))
 }
 
 // // https://pouchdb.com/api.html#batch_fetch
@@ -77,8 +82,9 @@ export default class PouchDBPersistInterface implements IPersistInterface {
   public saveReducer = async (reducerKey: string): Promise<any> => {
     await this.reducers.putIfNotExists({ _id: reducerKey })
   }
+
   public deleteReducer = async (reducerKey: string): Promise<any> => {
-    await this.reducers.remove(await this.reducers.get(reducerKey))
+    await deleteById(this.reducers, reducerKey)
   }
 
   // blockstream CRUD
@@ -87,7 +93,7 @@ export default class PouchDBPersistInterface implements IPersistInterface {
     return res.rows
       .map((r) => r.doc)
       .map(toJSONBlock)
-      .sort(sortByHexProp('number'))
+      .sort(sortByHexProp('number')) // @TODO might be able to replace with ksuid allDocs
   }
 
   public saveHistoricalBlock = async (reducerKey: string, blockRetention: number, block: IJSONBlock): Promise<any> => {
@@ -102,9 +108,7 @@ export default class PouchDBPersistInterface implements IPersistInterface {
   }
 
   public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
-    await deleteWithQuery(this.historicalBlocks.get(reducerKey), {
-      _id: { $eq: blockHash },
-    })
+    await deleteById(this.historicalBlocks.get(reducerKey), blockHash)
   }
 
   public deleteHistoricalBlocks = async (reducerKey: string): Promise<any> => {
@@ -113,22 +117,55 @@ export default class PouchDBPersistInterface implements IPersistInterface {
 
   // transaction CRUD
   public getAllTransactionsTo = async (reducerKey: string, toTxId: null | string): Promise<any> => {
-    //
+    const res = await this.transactions.get(reducerKey).allDocs({
+      include_docs: true,
+      endkey: toTxId,
+    })
+
+    return res.rows
+      .map((r) => r.doc)
+      .map(toJSONBlock)
   }
+
   public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
-    //
+    const res = await this.transactions.get(reducerKey).allDocs({
+      include_docs: true,
+      limit: 1,
+    })
+
+    if (!res.rows.length) {
+      throw new Error(`Could not get latest transaction in ${reducerKey}`)
+    }
+
+    return toTransaction(res.rows[0].doc)
   }
-  public deleteTransaction = async (reducerKey: string, tx: ITransaction): Promise<any> => {
-    //
+
+  public deleteTransaction = async (reducerKey: string, txId: string): Promise<any> => {
+    await deleteById(this.transactions.get(reducerKey), txId)
   }
+
   public saveTransaction = async (reducerKey: string, tx: ITransaction): Promise<any> => {
-    //
+    await this.transactions.get(reducerKey).put({
+      _id: tx.id,
+      ...tx,
+    })
   }
+
   public getTransaction = async (reducerKey: string, txId: string): Promise<ITransaction> => {
-    //
+    const res = await this.transactions.get(reducerKey).get(txId)
+    return toTransaction(res)
   }
+
   public getTransactionByBlockHash = async (reducerKey: string, blockHash: string): Promise<ITransaction> => {
-    //
+    const res = await this.transactions.get(reducerKey).find({
+      selector: { blockHash: { $eq: blockHash } },
+    })
+
+    if (!res.docs.length) {
+      throw new Error(`Cound not find transaction in ${reducerKey} by blockHash ${blockHash}`)
+    }
+
+    return toTransaction(res.docs[0])
   }
 
   // setup & setdown

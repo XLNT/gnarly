@@ -17,7 +17,7 @@ export interface IPersistInterface {
   // transaction CRUD
   getAllTransactionsTo (reducerKey: string, toTxId: null | string): Promise<any>
   getLatestTransaction (reducerKey: string): Promise<ITransaction>
-  deleteTransaction (reducerKey: string, tx: ITransaction): Promise<any>
+  deleteTransaction (reducerKey: string, txId: string): Promise<any>
   saveTransaction (reducerKey: string, tx: ITransaction): Promise<any>
   getTransaction (reducerKey: string, txId: string): Promise<ITransaction>
   getTransactionByBlockHash (reducerKey: string, blockHash: string): Promise<ITransaction>
