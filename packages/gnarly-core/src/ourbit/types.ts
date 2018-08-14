@@ -40,19 +40,21 @@ export interface IPatch {
 }
 
 /**
- * A transaction is a set of patches.
+ * A transaction is a set of patches with a unique id.
  */
-export interface ITransaction {
+export interface IBasicTransaction {
   id: string
-  blockHash: string,
   patches: IPatch[]
 }
 
-export type OpCollector = (op: IOperation) => void
-
 export interface ITxExtra {
   blockHash: string
+  blockNumber: string
 }
+
+export interface ITransaction extends IBasicTransaction, ITxExtra {}
+
+export type OpCollector = (op: IOperation) => void
 
 /**
  * This function accept patches and persists them to a store.

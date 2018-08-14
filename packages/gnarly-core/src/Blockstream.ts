@@ -170,6 +170,7 @@ class BlockStream {
         this.onNewBlock(block, this.syncing),
         {
           blockHash: block.hash,
+          blockNumber: block.number,
         },
       )
 

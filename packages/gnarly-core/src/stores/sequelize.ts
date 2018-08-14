@@ -23,6 +23,7 @@ export const makeSequelizeModels = (
     id: { type: DataTypes.STRING, primaryKey: true },
     mid: { type: DataTypes.INTEGER, autoIncrement: true },
     blockHash: { type: DataTypes.STRING },
+    blockNumber: { type: DataTypes.STRING },
   }, {
     indexes: [
       { fields: ['blockHash'] },

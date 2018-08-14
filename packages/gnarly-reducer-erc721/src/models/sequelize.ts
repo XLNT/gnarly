@@ -37,8 +37,8 @@ const sequelizeModels = (
     order: { type: DataTypes.INTEGER },
   })
 
-  ERC721Tokens.belongsTo(Patch)
-  ERC721TokenOwners.belongsTo(Patch)
+  ERC721Tokens.Patch = ERC721Tokens.belongsTo(Patch, { constraints: false })
+  ERC721TokenOwners.Patch = ERC721TokenOwners.belongsTo(Patch, { constraints: false })
 
   // token has many owners
   ERC721Tokens.hasMany(ERC721TokenOwners, {

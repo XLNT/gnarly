@@ -26,7 +26,7 @@ const sequelizeModels = (Sequelize: any, sequelize: any) => {
     },
   )
 
-  ERC20Balances.belongsTo(Patch)
+  ERC20Balances.Patch = ERC20Balances.belongsTo(Patch, { constraints: false })
 
   return {
     ERC20Balances,

@@ -59,7 +59,7 @@ class Ourbit {
   public processTransaction = async (
     txId: string,
     fn: () => Promise<void>,
-    extra: ITxExtra = { blockHash: '' },
+    extra: ITxExtra,
   ) => {
     const patches: IPatch[] = []
 
@@ -127,6 +127,7 @@ class Ourbit {
         totalPatches += tx.patches.length
         this.debug('[applyPatch] %s %d', tx.id, tx.patches.length)
         const allOperations = operationsOfPatches(tx.patches)
+
         applyPatch(this.targetState, allOperations.map(toOperation))
       })
     }

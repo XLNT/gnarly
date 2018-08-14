@@ -10,6 +10,7 @@ const debug = makeDebug('gnarly')
 import Sequelize = require('sequelize')
 
 import Gnarly, {
+  PouchDBPersistInterface,
   SequelizePersistInterface,
   Web3Api,
 } from '@xlnt/gnarly-core'
@@ -96,10 +97,8 @@ const main = async () => {
     eventsReducer,
   ]
 
-  const store = new SequelizePersistInterface(
-    Sequelize,
-    sequelize,
-  )
+  const store = new PouchDBPersistInterface('http://127.0.0.1:5984')
+  // const store = new SequelizePersistInterface(Sequelize, sequelize)
 
   const ingestApi = new Web3Api(nodeEndpoint)
 
