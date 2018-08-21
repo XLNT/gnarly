@@ -1,4 +1,4 @@
-import identity = require('lodash.identity')
+import { identity } from 'lodash'
 
 const plain = true
 
@@ -367,6 +367,7 @@ export default class SequelizePersistInterface implements IPersistInterface {
     }
   }
 
+  // just get the tx object, no children
   private getPlainTransaction = async (reducerKey: string, txId: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({

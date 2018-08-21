@@ -7,9 +7,13 @@ node_js:
 cache:
   directories:
   - node_modules
+services:
+  - postgresql
+  - couchdb
 matrix:
   fast_finish: true
 before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
   - lerna bootstrap
   - travis_retry yarn run build-ts
 after_success:

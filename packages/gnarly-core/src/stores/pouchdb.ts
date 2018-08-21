@@ -4,16 +4,17 @@ import PouchDB = require('pouchdb')
 PouchDB.plugin(require('pouchdb-upsert'))
 PouchDB.plugin(require('pouchdb-find'))
 
-import KSUID = require('ksuid')
-import identity = require('lodash.identity')
+// import KSUID = require('ksuid')
+import { identity } from 'lodash'
 
 import { IJSONBlock } from '../models/Block'
 import {
   ITransaction,
 } from '../ourbit/types'
 import { IPersistInterface } from '../stores'
-import { toBN } from '../utils'
+import { forEach, toBN, uuid } from '../utils'
 
+// https://pouchdb.com/api.html#batch_fetch
 async function* batch (
   db: PouchDB.Database,
   query: object = {},
@@ -42,12 +43,12 @@ async function* batch (
   }
 }
 
-// all databases should have --gnarly prefix so we can delete them and not destroy any user data
+// all databases  have --gnarly prefix so we can delete them and not destroy any user data
 // that might be sitting around
 const GNARLY_DB_PREFIX = '--gnarly'
 
 const sortByHexProp = (prop: string) => (a, b) => toBN(a[prop]).sub(toBN(b[prop])).toNumber()
-const sortById = (a, b) => KSUID.parse(a._id).compare(KSUID.parse(b._id))
+// const sortById = (a, b) => KSUID.parse(a._id).compare(KSUID.parse(b._id))
 const toJSONBlock = (block) => block as IJSONBlock
 const toTransaction = (tx) => tx as ITransaction
 const nonVolatile = (t) => !t.volatile
@@ -56,36 +57,26 @@ const destroyDb = async (db: PouchDB.Database) => {
   await db.destroy()
 }
 
-// const deleteWithQuery = async (db: PouchDB.Database, selector: object) => {
-//   const res = await db.find({ selector })
-//   await db.bulkDocs(res.docs.map((d) => ({ ...d, _deleted: true })))
-// }
+const deleteWithQuery = async (db: PouchDB.Database, selector: object) => {
+  const res = await db.find({ selector })
+  await db.bulkDocs(res.docs.map((d) => ({ ...d, _deleted: true })))
+}
 
 const deleteById = async (db: PouchDB.Database, id: string) => {
   await db.remove(await db.get(id))
 }
 
-// // https://pouchdb.com/api.html#batch_fetch
-// const prefix = (p: string) => ({
-//   startkey: `${p}`,
-//   endkey: `${p}\ufff0`,
-// })
-
-// jsonpatch path is _id?
-// pouchdb relies heavily on unique identifiers that operate as the primary index
-// so our use of `mid` in postgres will complement this nicely
-
 const reducerDb = (e: string) => `${e}/${GNARLY_DB_PREFIX}-reducers`
-const historicalBlocksDb = (e: string) => (key: string): PouchDB.Database =>
+const historicalBlocksDb = (e: string) => async (key: string): Promise<PouchDB.Database> =>
   new PouchDB(`${e}/${GNARLY_DB_PREFIX}-historicalblocks-${key}`)
-const transactionsDb = (e: string) => (key: string): PouchDB.Database =>
+const transactionsDb = (e: string) => async (key: string): Promise<PouchDB.Database> =>
   new PouchDB(`${e}/${GNARLY_DB_PREFIX}-transactions-${key}`)
 
 class DyanmicDict<T> {
   private cache: { [_: string]: T } = {}
 
   constructor (
-    private generator: (key: string) => T,
+    private generator: (key: string) => Promise<T>,
     private resetFn: (thing: T) => Promise<void> = identity,
     private resetOnFirstInitialization: boolean = false,
   ) {
@@ -95,19 +86,22 @@ class DyanmicDict<T> {
     if (this.cache[key]) { return this.cache[key] }
 
     if (this.resetOnFirstInitialization) {
-      await this.resetFn(this.generator(key))
+      await this.resetFn(await this.generator(key))
     }
 
-    this.cache[key] = this.generator(key)
+    this.cache[key] = await this.generator(key)
     return this.cache[key]
   }
 
-  public invalidate = (key: string) => {
-    this.cache[key] = undefined
+  public invalidate = async (key: string) => {
+    if (this.cache[key]) {
+      await this.resetFn(this.cache[key])
+      this.cache[key] = undefined
+    }
   }
 
-  public flush = () => {
-    this.cache = {}
+  public flush = async () => {
+    await forEach(Object.keys(this.cache), (k) => this.invalidate(k))
   }
 }
 
@@ -148,24 +142,26 @@ export default class PouchDBPersistInterface implements IPersistInterface {
   public saveHistoricalBlock = async (reducerKey: string, blockRetention: number, block: IJSONBlock): Promise<any> => {
     const db = await this.historicalBlocks.get(reducerKey)
     await db.putIfNotExists({
-      _id: block.hash,
+      _id: uuid(),
       hash: block.hash,
       parentHash: block.parentHash,
       number: block.number,
       // ^ manually filter properties we care about from block
     })
 
-    // @TODO (shrugs) - delete blocks after blockRetention for this reducer
+    // god, this is the worst hack ever, but I'm tired of dealing with pouchdb's weird schema
+    const allBlocks = await this.getHistoricalBlocks(reducerKey)
+    const blocksToDelete = allBlocks.slice(0, -1 * blockRetention)
+    // ^ all blocks before blockRetention
+    await db.bulkDocs(blocksToDelete.map((r) => ({ ...r, _deleted: true })))
   }
 
   public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
-    await deleteById(await this.historicalBlocks.get(reducerKey), blockHash)
+    await deleteWithQuery(await this.historicalBlocks.get(reducerKey), { hash: { $eq: blockHash } })
   }
 
   public deleteHistoricalBlocks = async (reducerKey: string): Promise<any> => {
-    const db = await this.historicalBlocks.get(reducerKey)
-    await db.destroy()
-    this.historicalBlocks.invalidate(reducerKey)
+    await this.historicalBlocks.invalidate(reducerKey)
   }
 
   // transaction CRUD
@@ -256,11 +252,11 @@ export default class PouchDBPersistInterface implements IPersistInterface {
     this.didSetDown = true
 
     if (this.historicalBlocks) {
-      this.historicalBlocks.flush()
+      await this.historicalBlocks.flush()
     }
 
     if (this.transactions) {
-      this.transactions.flush()
+      await this.transactions.flush()
     }
   }
 }

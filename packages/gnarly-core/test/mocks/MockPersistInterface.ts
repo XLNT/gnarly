@@ -1,4 +1,4 @@
-import _ = require('lodash')
+import { find, findIndex } from 'lodash'
 import { IJSONBlock } from '../../src/models/Block'
 import {
   ITransaction,
@@ -76,8 +76,8 @@ export default class MockPersistInterface implements IPersistInterface {
     return this.transactions[this.transactions.length - 1]
   }
 
-  public async deleteTransaction (reducerKey: string, tx: ITransaction) {
-    const i = _.findIndex(this.transactions, (t) => t.id === tx.id)
+  public async deleteTransaction (reducerKey: string, txId: string) {
+    const i = findIndex(this.transactions, (t) => t.id === txId)
     this.transactions.splice(i, 1)
     return
   }
@@ -88,10 +88,10 @@ export default class MockPersistInterface implements IPersistInterface {
   }
 
   public async getTransaction (reducerKey: string, txId: string): Promise<ITransaction> {
-    return _.find(this.transactions, (t) => t.id === txId)
+    return find(this.transactions, (t) => t.id === txId)
   }
 
   public async getTransactionByBlockHash (reducerKey: string, blockHash: string): Promise<ITransaction> {
-    return _.find(this.transactions, (t) => t.blockHash === blockHash)
+    return find(this.transactions, (t) => t.blockHash === blockHash)
   }
 }

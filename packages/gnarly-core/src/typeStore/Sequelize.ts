@@ -1,7 +1,7 @@
 import makeDebug = require('debug')
 const debug = makeDebug('gnarly-core:store:sequelize')
 
-import isPlainObject = require('lodash.isplainobject')
+import { isPlainObject } from 'lodash'
 
 import { IOperation, IPatch } from '../ourbit/types'
 import {

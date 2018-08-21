@@ -6,31 +6,9 @@ import { globalState } from '../src/globalstate'
 import { IJSONBlock } from '../src/models/Block'
 import { forEach, timeout, toBN, toHex } from '../src/utils'
 
-import IJSONBlockFactory from './factories/IJSONBlockFactory'
 import MockIngestApi from './mocks/MockIngestApi'
 import MockPersistInterface from './mocks/MockPersistInterface'
-
-const blockAfter = (block: IJSONBlock, fork: number = 1) => IJSONBlockFactory.build({
-  hash: toHex(toBN(block.hash).add(toBN(1 + 10 * fork))),
-  number: toHex(toBN(block.number).add(toBN(1))),
-  parentHash: block.hash,
-  nonce: toHex(toBN(block.hash).add(toBN(1 + 10 * fork))),
-})
-
-const genesis = () => [IJSONBlockFactory.build({
-  hash: '0x1',
-  number: '0x1',
-  parentHash: '0x0',
-  nonce: '0x1',
-})]
-
-const buildChain = (from: IJSONBlock[], len: number = 10, fork: number = 1) => {
-  const chain = [...from]
-  for (let i = 0; i < len; i++) {
-    chain.push(blockAfter(chain[chain.length - 1], fork))
-  }
-  return chain
-}
+import { buildChain, genesis } from './utils'
 
 const RETENTION = 20
 const MOCK_REDUCER_KEY = 'test'

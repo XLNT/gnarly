@@ -1,7 +1,7 @@
 import { Operation } from '@xlnt/fast-json-patch'
 import BN = require('bn.js')
 import KSUID = require('ksuid')
-import _ = require('lodash')
+import { flatMap } from 'lodash'
 import memoize from 'moize'
 import numberToBN = require('number-to-bn')
 import pMap = require('p-map')
@@ -117,7 +117,7 @@ export const invertPatch = (patch: IPatch): IPatch => ({
 export const operationsOfPatch = (patch: IPatch): IOperation[] =>
   patch.operations
 export const operationsOfPatches = (patches: IPatch[]): IOperation[] =>
-  _.flatMap(patches, operationsOfPatch)
+  flatMap(patches, operationsOfPatch)
 
 export const toOperation = (operation: IOperation): Operation => operation as Operation
 
