@@ -5,11 +5,7 @@ language: node_js
 node_js:
   - '10'
 addons:
-  postgresql: '10'
-  apt:
-    packages:
-      - postgresql-10
-      - postgresql-client-10
+  postgresql: '9.6'
 cache:
   directories:
     - node_modules
