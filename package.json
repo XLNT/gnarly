@@ -4,7 +4,7 @@
   "scripts": {
     "watch-ts": "lerna run watch-ts --parallel",
     "build-ts": "lerna run build-ts",
-    "test": "lerna run test --scope @xlnt/gnarly-core",
+    "test": "lerna run test --stream --scope @xlnt/gnarly-core",
     "lint": "lerna run lint --parallel",
     "clean": "lerna clean --yes && lerna exec --parallel -- rm -r ./lib",
     "coverage": "yarn run coverage:generate && yarn run coverage:submit",
