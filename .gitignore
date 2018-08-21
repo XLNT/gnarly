@@ -41,3 +41,4 @@ lib
 lcov.info
 .coveralls.yml
 *.sqlite
+log.txt

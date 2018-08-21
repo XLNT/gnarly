@@ -17,9 +17,9 @@ describe('All Stores', function () {
   const sequelizeStore = new SequelizePersistInterface(Sequelize, sequelize)
 
   describe('PouchDB Store (pouchdb-server)', function () {
-    this.timeout(9000)
+    this.timeout(12000)
     before(async function () {
-      this.child = exec('pouchdb-server -p 5985 -m -d /tmp')
+      this.child = exec('pouchdb-server -p 5985 -m')
       this.child.on('error', (error) => {
         console.log(`child error:\n${error}`)
       })
@@ -34,12 +34,12 @@ describe('All Stores', function () {
   })
 
   describe('PouchDB Store (default)', function () {
-    this.timeout(9000)
+    this.timeout(12000)
     // assumes pouchdb-server/CouchDB available on default port
     shouldBehaveLikePersistInterface(defaultPouchStore)
   })
 
-  describe.only('Sequelize Store (Postgres)', function () {
+  describe('Sequelize Store (Postgres)', function () {
     this.timeout(2000)
     // assumes postgres is running locally on default port
     shouldBehaveLikePersistInterface(sequelizeStore)
