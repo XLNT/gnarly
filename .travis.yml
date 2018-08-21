@@ -3,10 +3,16 @@ sudo: required
 group: beta
 language: node_js
 node_js:
-- '10'
+  - '10'
+addons:
+  postgresql: '10'
+  apt:
+    packages:
+      - postgresql-10
+      - postgresql-client-10
 cache:
   directories:
-  - node_modules
+    - node_modules
 services:
   - postgresql
   - couchdb
