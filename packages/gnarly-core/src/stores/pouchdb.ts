@@ -152,6 +152,9 @@ export default class PouchDBPersistInterface implements IPersistInterface {
     // god, this is the worst hack ever, but I'm tired of dealing with pouchdb's weird schema
     const allBlocks = await this.getHistoricalBlocks(reducerKey)
     const blocksToDelete = allBlocks.slice(0, -1 * blockRetention)
+    if (blocksToDelete.length) {
+      console.log('deleting blocks:', blocksToDelete.length)
+    }
     // ^ all blocks before blockRetention
     await db.bulkDocs(blocksToDelete.map((r) => ({ ...r, _deleted: true })))
   }

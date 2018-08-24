@@ -2,7 +2,7 @@ import chai = require('chai')
 import { pickBy } from 'lodash'
 import 'mocha'
 
-const should = chai
+chai
   .use(require('chai-spies'))
   .should()
 
