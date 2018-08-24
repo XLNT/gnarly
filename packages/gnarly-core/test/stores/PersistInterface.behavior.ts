@@ -12,7 +12,7 @@ import { IPersistInterface } from '../../src/stores'
 import { buildChain, genesis } from '../utils'
 
 const MOCK_REDUCER_KEY = 'test'
-const MOCK_RETENTION = 10
+const MOCK_RETENTION = 100
 
 const onlyKeys = (keys: string[]) => (thing: object) => pickBy(thing, (value, key) => keys.includes(key))
 

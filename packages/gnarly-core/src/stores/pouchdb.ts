@@ -141,7 +141,7 @@ export default class PouchDBPersistInterface implements IPersistInterface {
 
   public saveHistoricalBlock = async (reducerKey: string, blockRetention: number, block: IJSONBlock): Promise<any> => {
     const db = await this.historicalBlocks.get(reducerKey)
-    await db.putIfNotExists({
+    await db.put({
       _id: uuid(),
       hash: block.hash,
       parentHash: block.parentHash,
@@ -151,12 +151,13 @@ export default class PouchDBPersistInterface implements IPersistInterface {
 
     // god, this is the worst hack ever, but I'm tired of dealing with pouchdb's weird schema
     const allBlocks = await this.getHistoricalBlocks(reducerKey)
-    const blocksToDelete = allBlocks.slice(0, -1 * blockRetention)
-    if (blocksToDelete.length) {
-      console.log('deleting blocks:', blocksToDelete.length)
+    if (allBlocks.length > blockRetention) {
+      // delete the blocks from [0, length - blockRetention)
+      // so for a length of 102 and retention of 100, delete the range [0, 2)
+      const blocksToDelete = allBlocks.slice(0, -1 * blockRetention)
+      // ^ all blocks before blockRetention
+      await db.bulkDocs(blocksToDelete.map((r) => ({ ...r, _deleted: true })))
     }
-    // ^ all blocks before blockRetention
-    await db.bulkDocs(blocksToDelete.map((r) => ({ ...r, _deleted: true })))
   }
 
   public deleteHistoricalBlock = async (reducerKey: string, blockHash: string): Promise<any> => {
