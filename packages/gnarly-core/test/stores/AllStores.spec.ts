@@ -17,7 +17,7 @@ describe('All Stores', function () {
   const sequelizeStore = new SequelizePersistInterface(Sequelize, sequelize)
 
   describe('PouchDB Store (pouchdb-server)', function () {
-    this.timeout(12000)
+    this.timeout(22000)
     before(async function () {
       this.child = exec('pouchdb-server -p 5985 -m')
       this.child.on('error', (error) => {
