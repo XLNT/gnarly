@@ -217,12 +217,14 @@ export default class SequelizePersistInterface implements IPersistInterface {
       })
 
       // remove blocks that are further away than the block retention limit
-      await this.HistoricalBlock.destroy({
+      const numDestroyed = await this.HistoricalBlock.destroy({
         where: {
           reducerId: { [this.Sequelize.Op.eq]: reducerKey },
           numberDecimal: { [this.Sequelize.Op.lte]: blockNum.sub(toBN(blockRetention)).toString() },
         },
       })
+
+      console.log('destroyed length:', numDestroyed)
 
     } catch (error) {
       throw new Error(`Was not able to save historical block
