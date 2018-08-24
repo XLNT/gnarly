@@ -9,6 +9,7 @@ addons:
 cache:
   directories:
     - node_modules
+    - packages/gnarly-core/node_modules
 services:
   - postgresql
   - couchdb
