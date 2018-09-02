@@ -9,7 +9,7 @@ import shouldBehaveLikePersistInterface from './PersistInterface.behavior'
 
 describe('All Stores', function () {
   const pouchDBServerStore = new PouchDBPersistInterface('http://127.0.0.1:5985')
-  const defaultPouchStore = new PouchDBPersistInterface('http://127.0.0.1:5984')
+  // const defaultPouchStore = new PouchDBPersistInterface('http://127.0.0.1:5984')
 
   // don't forget to `create database travis_ci_test;` on your local postgres!
   const sequelize = new Sequelize('postgres://postgres@127.0.0.1:5432/travis_ci_test', {
@@ -34,11 +34,12 @@ describe('All Stores', function () {
     shouldBehaveLikePersistInterface(pouchDBServerStore)
   })
 
-  describe('PouchDB Store (default)', function () {
-    this.timeout(12000)
-    // assumes pouchdb-server/CouchDB available on default port
-    shouldBehaveLikePersistInterface(defaultPouchStore)
-  })
+  // @TODO - couchdb is not api-compatible with pouchdb-server it seems
+  // describe('PouchDB Store (default)', function () {
+  //   this.timeout(12000)
+  //   // assumes pouchdb-server/CouchDB available on default port
+  //   shouldBehaveLikePersistInterface(defaultPouchStore)
+  // })
 
   describe('Sequelize Store (Postgres)', function () {
     this.timeout(2000)
