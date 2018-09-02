@@ -11,6 +11,7 @@ describe('All Stores', function () {
   const pouchDBServerStore = new PouchDBPersistInterface('http://127.0.0.1:5985')
   const defaultPouchStore = new PouchDBPersistInterface('http://127.0.0.1:5984')
 
+  // don't forget to `create database travis_ci_test;` on your local postgres!
   const sequelize = new Sequelize('postgres://postgres@127.0.0.1:5432/travis_ci_test', {
     logging: false,
   })

@@ -66,7 +66,7 @@ const deleteById = async (db: PouchDB.Database, id: string) => {
   await db.remove(await db.get(id))
 }
 
-const reducerDb = (e: string) => `${e}/${GNARLY_DB_PREFIX}-reducers`
+const reducerDb = (e: string): PouchDB.Database => new PouchDB(`${e}/${GNARLY_DB_PREFIX}-reducers`)
 const historicalBlocksDb = (e: string) => async (key: string): Promise<PouchDB.Database> =>
   new PouchDB(`${e}/${GNARLY_DB_PREFIX}-historicalblocks-${key}`)
 const transactionsDb = (e: string) => async (key: string): Promise<PouchDB.Database> =>
@@ -85,6 +85,9 @@ class DyanmicDict<T> {
   public get = async (key: string) => {
     if (this.cache[key]) { return this.cache[key] }
 
+    // basically, we don't know the keys of existing dbs until they've been used at runtime
+    // so when we want to setdown the store we actually just hold onto that idea
+    // and then, when the database is actually created, we nuke the old one and then create the new one
     if (this.resetOnFirstInitialization) {
       await this.resetFn(await this.generator(key))
     }
@@ -241,10 +244,7 @@ export default class PouchDBPersistInterface implements IPersistInterface {
   // setup & setdown
   public setup = async (): Promise<any> => {
     try {
-      if (this.didSetDown) {
-        await (new PouchDB(reducerDb(this.dbEndpoint))).destroy()
-      }
-      this.reducers = new PouchDB(reducerDb(this.dbEndpoint))
+      this.reducers = reducerDb(this.dbEndpoint)
       this.historicalBlocks = new DyanmicDict(historicalBlocksDb(this.dbEndpoint), destroyDb, this.didSetDown)
       this.transactions = new DyanmicDict(transactionsDb(this.dbEndpoint), destroyDb, this.didSetDown)
     } catch (error) {
@@ -254,6 +254,9 @@ export default class PouchDBPersistInterface implements IPersistInterface {
 
   public setdown = async (): Promise<any> => {
     this.didSetDown = true
+
+    // @TODO - replace this dynamic dict setdown situation by iterating over all of the reducers
+    await reducerDb(this.dbEndpoint).destroy()
 
     if (this.historicalBlocks) {
       await this.historicalBlocks.flush()
