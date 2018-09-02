@@ -12,7 +12,7 @@ import {
   ITransaction,
 } from '../ourbit/types'
 import { IPersistInterface } from '../stores'
-import { forEach, toBN, uuid } from '../utils'
+import { forEach, timeout, toBN, uuid } from '../utils'
 
 // https://pouchdb.com/api.html#batch_fetch
 async function* batch (
@@ -92,6 +92,9 @@ class DyanmicDict<T> {
     if (this.resetOnFirstInitialization) {
       await this.resetFn(await this.generator(key))
     }
+
+    await timeout(200)
+    // ^ if we delete a table and then recreated it too quickly, we get no_db_file errors ಠ_ಠ
 
     this.cache[key] = await this.generator(key)
     return this.cache[key]
