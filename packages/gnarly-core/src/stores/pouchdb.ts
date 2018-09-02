@@ -43,9 +43,10 @@ async function* batch (
   }
 }
 
-// all databases  have --gnarly prefix so we can delete them and not destroy any user data
-// that might be sitting around
-const GNARLY_DB_PREFIX = '--gnarly'
+// all databases have this prefix so we can differentiate them
+// and ideally not destroy any normal data that might be sitting around
+// couchdb database names must begin with a letter
+const GNARLY_DB_PREFIX = 'z--gnarly'
 
 const sortByHexProp = (prop: string) => (a, b) => toBN(a[prop]).sub(toBN(b[prop])).toNumber()
 // const sortById = (a, b) => KSUID.parse(a._id).compare(KSUID.parse(b._id))
