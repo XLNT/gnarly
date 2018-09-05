@@ -11,7 +11,7 @@ import { IJSONBlock } from '../models/Block'
 import {
   ITransaction,
 } from '../ourbit/types'
-import { IPersistInterface } from '../stores'
+import { IStore } from '../stores'
 import { forEach, timeout, toBN, uuid } from '../utils'
 
 // https://pouchdb.com/api.html#batch_fetch
@@ -112,7 +112,7 @@ class DyanmicDict<T> {
   }
 }
 
-export default class PouchDBPersistInterface implements IPersistInterface {
+export default class PouchDBPersistInterface implements IStore {
   private reducers: PouchDB.Database
   private historicalBlocks: DyanmicDict<PouchDB.Database>
   private transactions: DyanmicDict<PouchDB.Database>

@@ -5,7 +5,7 @@ import { globalState } from './globalstate'
 
 import IIngestApi from './ingestion/IngestApi'
 import { IReducer } from './reducer'
-import { IPersistInterface } from './stores'
+import { IStore } from './stores'
 
 import ReducerRunner, { makeRunner } from './ReducerRunner'
 
@@ -14,7 +14,7 @@ class Gnarly {
 
   constructor (
     ingestApi: IIngestApi,
-    store: IPersistInterface,
+    store: IStore,
     private reducers: IReducer[],
   ) {
     globalState.setApi(ingestApi)

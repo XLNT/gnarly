@@ -6,7 +6,7 @@ import { IJSONBlock } from '../models/Block'
 import {
   ITransaction,
 } from '../ourbit/types'
-import { IPersistInterface } from '../stores'
+import { IStore } from '../stores'
 import { toBN } from '../utils'
 
 export const makeSequelizeModels = (
@@ -127,7 +127,7 @@ async function* batch (
   }
 }
 
-export default class SequelizePersistInterface implements IPersistInterface {
+export default class SequelizePersistInterface implements IStore {
   private Reducer
   private HistoricalBlock
   private Transaction

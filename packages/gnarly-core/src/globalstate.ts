@@ -8,7 +8,7 @@
 import IIngestApi from './ingestion/IngestApi'
 import IABIItem, { IABIItemInput } from './models/ABIItem'
 import Log from './models/Log'
-import { IPersistInterface } from './stores'
+import { IStore } from './stores'
 import { enhanceAbiItem, onlySupportedAbiItems } from './utils'
 
 export type ABIItemSet = IABIItem[]
@@ -17,7 +17,7 @@ export class GnarlyGlobals {
   // @TODO(shrugs) - do we need to move this to a contract artifact?
   public abis: { [s: string]: ABIItemSet } = {}
   public api: IIngestApi
-  public store: IPersistInterface
+  public store: IStore
 
   public getLogs = async (options) => {
     const logs = await this.api.getLogs(options)
@@ -28,7 +28,7 @@ export class GnarlyGlobals {
     this.api = api
   }
 
-  public setStore = (store: IPersistInterface) => {
+  public setStore = (store: IStore) => {
     this.store = store
   }
 

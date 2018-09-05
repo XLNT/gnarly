@@ -8,5 +8,5 @@ export {
 } from './pouchdb'
 
 export {
-  IPersistInterface,
-} from './IPersistInterface'
+  IStore,
+} from './IStore'

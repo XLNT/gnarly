@@ -8,7 +8,7 @@ chai
 
 import { forEach } from '../../src/utils'
 
-import { IPersistInterface } from '../../src/stores'
+import { IStore } from '../../src/stores'
 import { buildChain, genesis } from '../utils'
 
 const MOCK_REDUCER_KEY = 'test'
@@ -27,7 +27,7 @@ const blocksShouldEqual = (as, bs) => as.map(onlyKeys(historialBlockKeys))
     bs.map(onlyKeys(historialBlockKeys)),
   )
 
-const shouldBehaveAsStore = (store: IPersistInterface) => {
+const shouldBehaveAsStore = (store: IStore) => {
   const saveAllHistoricalBlocks = async (blocks) => forEach(blocks, (block) =>
     store.saveHistoricalBlock(MOCK_REDUCER_KEY, MOCK_RETENTION, block),
   )

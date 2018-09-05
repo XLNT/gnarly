@@ -1,7 +1,7 @@
 import { IJSONBlock } from '../models/Block'
 import { ITransaction } from '../ourbit/types'
 
-export interface IPersistInterface {
+export interface IStore {
   // @TODO - how do you get typescript to stop complaining about AsyncIterator symbols?
 
   // reducer CRUD

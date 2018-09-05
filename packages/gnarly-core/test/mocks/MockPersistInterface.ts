@@ -3,7 +3,7 @@ import { IJSONBlock } from '../../src/models/Block'
 import {
   ITransaction,
 } from '../../src/ourbit'
-import { IPersistInterface } from '../../src/stores'
+import { IStore } from '../../src/stores'
 
 async function* iter (
   res: any[] = [],
@@ -13,7 +13,7 @@ async function* iter (
   }
 }
 
-export default class MockPersistInterface implements IPersistInterface {
+export default class MockPersistInterface implements IStore {
 
   private reducers: any[] = []
   private transactions: ITransaction[] = []
