@@ -7,7 +7,7 @@ import { IJSONBlock } from '../src/models/Block'
 import { forEach, timeout, toBN, toHex } from '../src/utils'
 
 import MockIngestApi from './mocks/MockIngestApi'
-import MockPersistInterface from './mocks/MockPersistInterface'
+import MockStore from './mocks/MockStore'
 import { buildChain, genesis } from './utils'
 
 const RETENTION = 20
@@ -18,7 +18,7 @@ const should = chai
   .use(require('chai-spies'))
   .should()
 
-const bootstrapHistoricalBlocks = async (reducerKey: string, blocks, store: MockPersistInterface, bs: Blockstream) => {
+const bootstrapHistoricalBlocks = async (reducerKey: string, blocks, store: MockStore, bs: Blockstream) => {
   await forEach(blocks, async (block) => store.saveHistoricalBlock(reducerKey, 100, block), { concurrency: 1 })
   await bs.initWithHistoricalBlocks(blocks)
 }
@@ -42,7 +42,7 @@ describe('Blockstream', function () {
     })
 
     this.api = new MockIngestApi()
-    this.store = new MockPersistInterface()
+    this.store = new MockStore()
     globalState.setApi(this.api)
     globalState.setStore(this.store)
 

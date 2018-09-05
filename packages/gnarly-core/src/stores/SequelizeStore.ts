@@ -127,7 +127,7 @@ async function* batch (
   }
 }
 
-export default class SequelizePersistInterface implements IStore {
+export default class SequelizeStore implements IStore {
   private Reducer
   private HistoricalBlock
   private Transaction

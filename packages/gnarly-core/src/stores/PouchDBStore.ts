@@ -112,7 +112,7 @@ class DyanmicDict<T> {
   }
 }
 
-export default class PouchDBPersistInterface implements IStore {
+export default class PouchDBStore implements IStore {
   private reducers: PouchDB.Database
   private historicalBlocks: DyanmicDict<PouchDB.Database>
   private transactions: DyanmicDict<PouchDB.Database>

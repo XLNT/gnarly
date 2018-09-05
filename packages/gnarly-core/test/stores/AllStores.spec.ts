@@ -1,21 +1,21 @@
 import { exec } from 'child_process'
 import Sequelize = require('sequelize')
 
-import PouchDBPersistInterface from '../../src/stores/pouchdb'
-import SequelizePersistInterface from '../../src/stores/sequelize'
+import PouchDBStore from '../../src/stores/pouchdb'
+import SequelizeStore from '../../src/stores/sequelize'
 import { timeout } from '../../src/utils'
 
 import shouldBehaveLikePersistInterface from './PersistInterface.behavior'
 
 describe('All Stores', function () {
-  const pouchDBServerStore = new PouchDBPersistInterface('http://127.0.0.1:5985')
-  // const defaultPouchStore = new PouchDBPersistInterface('http://127.0.0.1:5984')
+  const pouchDBServerStore = new PouchDBStore('http://127.0.0.1:5985')
+  // const defaultPouchStore = new PouchDBStore('http://127.0.0.1:5984')
 
   // don't forget to `create database travis_ci_test;` on your local postgres!
   const sequelize = new Sequelize('postgres://postgres@127.0.0.1:5432/travis_ci_test', {
     logging: false,
   })
-  const sequelizeStore = new SequelizePersistInterface(Sequelize, sequelize)
+  const sequelizeStore = new SequelizeStore(Sequelize, sequelize)
 
   describe('PouchDB Store (pouchdb-server)', function () {
     this.timeout(22000)

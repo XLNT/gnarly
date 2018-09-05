@@ -1,12 +1,12 @@
 export {
-  default as SequelizePersistInterface,
+  default as SequelizeStore,
   makeSequelizeModels,
-} from './sequelize'
+} from './SequelizeStore'
 
 export {
-  default as PouchDBPersistInterface,
-} from './pouchdb'
+  default as PouchDBStore,
+} from './PouchDBStore'
 
 export {
-  IStore,
+  default as IStore,
 } from './IStore'

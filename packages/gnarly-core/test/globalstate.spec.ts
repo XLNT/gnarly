@@ -6,7 +6,7 @@ import Log from '../src/models/Log'
 import { enhanceAbiItem } from '../src/utils'
 
 import MockIngestApi from './mocks/MockIngestApi'
-import MockPersistInterface from './mocks/MockPersistInterface'
+import MockStore from './mocks/MockStore'
 
 import erc20Abi from './data/erc20Abi'
 
@@ -36,7 +36,7 @@ describe('globalstate', function () {
 
   context('store', function () {
     beforeEach(async function () {
-      this.store = new MockPersistInterface()
+      this.store = new MockStore()
     })
 
     it('can set/get store', async function () {

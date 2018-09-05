@@ -13,7 +13,7 @@ async function* iter (
   }
 }
 
-export default class MockPersistInterface implements IStore {
+export default class MockStore implements IStore {
 
   private reducers: any[] = []
   private transactions: ITransaction[] = []

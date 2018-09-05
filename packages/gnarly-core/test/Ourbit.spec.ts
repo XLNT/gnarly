@@ -8,7 +8,7 @@ import Ourbit, {
   ITransaction, ITxExtra,
 } from '../src/ourbit'
 import { ReducerContext } from '../src/reducer'
-import MockPersistInterface from './mocks/MockPersistInterface'
+import MockStore from './mocks/MockStore'
 
 chai
   .use(require('chai-spies'))
@@ -62,7 +62,7 @@ describe('Ourbit', () => {
     }
 
     targetState = {}
-    const store = new MockPersistInterface()
+    const store = new MockStore()
     sandbox.on(store, [
       'saveTransaction',
     ])
