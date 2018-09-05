@@ -16,7 +16,6 @@ cache:
     - packages/gnarly-reducer-events/node_modules
 services:
   - postgresql
-  - couchdb
 matrix:
   fast_finish: true
 before_script:
