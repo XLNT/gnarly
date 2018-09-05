@@ -1,11 +1,10 @@
 import { exec } from 'child_process'
 import Sequelize = require('sequelize')
 
-import PouchDBStore from '../../src/stores/pouchdb'
-import SequelizeStore from '../../src/stores/sequelize'
+import { PouchDBStore, SequelizeStore } from '../../src/stores'
 import { timeout } from '../../src/utils'
 
-import shouldBehaveLikePersistInterface from './PersistInterface.behavior'
+import Store from './Store.behavior'
 
 describe('All Stores', function () {
   const pouchDBServerStore = new PouchDBStore('http://127.0.0.1:5985')
@@ -31,19 +30,19 @@ describe('All Stores', function () {
       await this.child.kill()
     })
 
-    shouldBehaveLikePersistInterface(pouchDBServerStore)
+    Store(pouchDBServerStore)
   })
 
   // @TODO - couchdb is not api-compatible with pouchdb-server it seems
   // describe('PouchDB Store (default)', function () {
   //   this.timeout(12000)
   //   // assumes pouchdb-server/CouchDB available on default port
-  //   shouldBehaveLikePersistInterface(defaultPouchStore)
+  //   Store(defaultPouchStore)
   // })
 
   describe('Sequelize Store (Postgres)', function () {
     this.timeout(2000)
     // assumes postgres is running locally on default port
-    shouldBehaveLikePersistInterface(sequelizeStore)
+    Store(sequelizeStore)
   })
 })
