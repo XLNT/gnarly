@@ -15,9 +15,9 @@ async function* iter (
 
 export default class MockStore implements IStore {
 
-  private reducers: any[] = []
-  private transactions: ITransaction[] = []
-  private historicalBlocks: { [_: string]: IJSONBlock[] } = {}
+  public reducers: any[] = []
+  public transactions: ITransaction[] = []
+  public historicalBlocks: { [_: string]: IJSONBlock[] } = {}
 
   public setup = async (reset: boolean = false) => {
     // nothing to be done
@@ -88,6 +88,7 @@ export default class MockStore implements IStore {
   }
 
   public async getTransaction (reducerKey: string, txId: string): Promise<ITransaction> {
+    console.log(txId)
     return find(this.transactions, (t) => t.id === txId)
   }
 

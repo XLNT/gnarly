@@ -2,14 +2,27 @@ import chai = require('chai')
 import { pickBy } from 'lodash'
 import 'mocha'
 
-chai
+const should = chai
   .use(require('chai-spies'))
+  .use(require('chai-as-promised'))
   .should()
 
-import { forEach } from '../../src/utils'
-
-import { IStore } from '../../src/stores'
+import { ITransaction } from '../../src/ourbit'
+import { forEach, uuid } from '../../src/utils'
+import IPatchFactory from '../factories/IPatchFactory'
+import IOperationFactory from '../factories/IPatchFactory'
+import ITransactionFactory from '../factories/ITransactionFactory'
 import { buildChain, genesis } from '../utils'
+
+const flattenIterable = async (iter) => {
+  const memo = []
+  for await (const batch of iter) {
+    for (const thing of batch) {
+      memo.push(thing)
+    }
+  }
+  return memo
+}
 
 const MOCK_REDUCER_KEY = 'test'
 const MOCK_RETENTION = 100
@@ -27,38 +40,59 @@ const blocksShouldEqual = (as, bs) => as.map(onlyKeys(historialBlockKeys))
     bs.map(onlyKeys(historialBlockKeys)),
   )
 
-const shouldBehaveAsStore = (store: IStore) => {
-  const saveAllHistoricalBlocks = async (blocks) => forEach(blocks, (block) =>
-    store.saveHistoricalBlock(MOCK_REDUCER_KEY, MOCK_RETENTION, block),
-  )
+const transactionKeys = ['id', 'patches', 'blockNumber', 'blockHash']
+const patchKeys = ['id', 'operations']
+const operationKeys = ['id', 'path', 'op', 'value', 'oldValue', 'volatile']
+
+const transactionsWithValidKeys = (txs) => txs
+  .map(onlyKeys(transactionKeys))
+  .map((tx) => ({
+    ...tx,
+    patches: tx.patches
+      .map(onlyKeys(patchKeys))
+      .map((patch) => ({
+        ...patch,
+        operations: patch.operations.map(onlyKeys(operationKeys)),
+      })),
+  }))
+
+const transactionsShouldEqual = (as, bs) => transactionsWithValidKeys(as)
+  .should.deep.equal(transactionsWithValidKeys(bs))
+
+const shouldBehaveAsStore = function () {
+  const saveAllHistoricalBlocks = async function (store, blocks)  {
+    return forEach(blocks, (block) =>
+      store.saveHistoricalBlock(MOCK_REDUCER_KEY, MOCK_RETENTION, block),
+    )
+  }
 
   beforeEach(async function () {
     // implicitly tests setup and setdown
-    await store.setdown()
-    await store.setup()
+    await this.store.setdown()
+    await this.store.setup()
   })
 
   context('reducers', function () {
     describe('saveReducer', function () {
       it('should save reducer information', async function () {
-        await store.saveReducer(MOCK_REDUCER_KEY)
+        await this.store.saveReducer(MOCK_REDUCER_KEY)
       })
     })
 
     describe('deleteReducer', function () {
       it('should delete reducer information', async function () {
-        await store.saveReducer(MOCK_REDUCER_KEY)
-        await store.deleteReducer(MOCK_REDUCER_KEY)
+        await this.store.saveReducer(MOCK_REDUCER_KEY)
+        await this.store.deleteReducer(MOCK_REDUCER_KEY)
       })
     })
   })
 
   context('with reducer', function () {
     beforeEach(async function () {
-      await store.saveReducer(MOCK_REDUCER_KEY)
+      await this.store.saveReducer(MOCK_REDUCER_KEY)
     })
     afterEach(async function () {
-      await store.deleteReducer(MOCK_REDUCER_KEY)
+      await this.store.deleteReducer(MOCK_REDUCER_KEY)
     })
 
     context('historical blocks', function () {
@@ -69,21 +103,21 @@ const shouldBehaveAsStore = (store: IStore) => {
         })
 
         it('should return empty array if no historical blocks', async function () {
-          const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+          const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
           blocks.length.should.equal(0)
         })
 
         it('should save one historical block', async function () {
-          await store.saveHistoricalBlock(MOCK_REDUCER_KEY, MOCK_RETENTION, this.lastBlock)
-          const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+          await this.store.saveHistoricalBlock(MOCK_REDUCER_KEY, MOCK_RETENTION, this.lastBlock)
+          const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
           blocks.length.should.equal(1)
           blocksShouldEqual(blocks, [this.lastBlock])
         })
 
         it('should save many historical blocks', async function () {
-          await saveAllHistoricalBlocks(this.historicalBlocks)
+          await saveAllHistoricalBlocks(this.store, this.historicalBlocks)
 
-          const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+          const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
           blocks.length.should.equal(this.historicalBlocks.length)
           blocksShouldEqual(blocks, this.historicalBlocks)
         })
@@ -93,12 +127,12 @@ const shouldBehaveAsStore = (store: IStore) => {
         beforeEach(async function () {
           this.historicalBlocks = buildChain(genesis(), 8)
           this.lastBlock = this.historicalBlocks[this.historicalBlocks.length - 1]
-          await saveAllHistoricalBlocks(this.historicalBlocks)
+          await saveAllHistoricalBlocks(this.store, this.historicalBlocks)
         })
 
         it('should delete a single historical block', async function () {
-          await store.deleteHistoricalBlock(MOCK_REDUCER_KEY, this.lastBlock.hash)
-          const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+          await this.store.deleteHistoricalBlock(MOCK_REDUCER_KEY, this.lastBlock.hash)
+          const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
           blocksShouldEqual(blocks, this.historicalBlocks.slice(0, -1))
         })
       })
@@ -106,12 +140,12 @@ const shouldBehaveAsStore = (store: IStore) => {
       describe('deleteHistoricalBlocks', function () {
         beforeEach(async function () {
           this.historicalBlocks = buildChain(genesis(), 8)
-          await saveAllHistoricalBlocks(this.historicalBlocks)
+          await saveAllHistoricalBlocks(this.store, this.historicalBlocks)
         })
 
         it('should delete all historical blocks', async function () {
-          await store.deleteHistoricalBlocks(MOCK_REDUCER_KEY)
-          const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+          await this.store.deleteHistoricalBlocks(MOCK_REDUCER_KEY)
+          const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
           blocks.length.should.equal(0)
         })
       })
@@ -123,8 +157,8 @@ const shouldBehaveAsStore = (store: IStore) => {
           })
 
           it('should still have the same number of blocks', async function () {
-            await saveAllHistoricalBlocks(this.historicalBlocks)
-            const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+            await saveAllHistoricalBlocks(this.store, this.historicalBlocks)
+            const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
             blocks.length.should.equal(this.historicalBlocks.length)
           })
         })
@@ -135,8 +169,8 @@ const shouldBehaveAsStore = (store: IStore) => {
           })
 
           it('should delete historical blocks beyond retention', async function () {
-            await saveAllHistoricalBlocks(this.historicalBlocks)
-            const blocks = await store.getHistoricalBlocks(MOCK_REDUCER_KEY)
+            await saveAllHistoricalBlocks(this.store, this.historicalBlocks)
+            const blocks = await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY)
             blocks.length.should.equal(MOCK_RETENTION)
 
             blocksShouldEqual(blocks, this.historicalBlocks.slice(-1 * MOCK_RETENTION))
@@ -148,40 +182,112 @@ const shouldBehaveAsStore = (store: IStore) => {
           const base = buildChain(genesis(), 6)
           const fork1 = buildChain(base, 2)
           const fork2 = buildChain(base, MOCK_RETENTION)
-          await saveAllHistoricalBlocks(fork1)
+          await saveAllHistoricalBlocks(this.store, fork1)
 
           // should be fork1
-          blocksShouldEqual(await store.getHistoricalBlocks(MOCK_REDUCER_KEY), fork1)
+          blocksShouldEqual(await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY), fork1)
 
           // delete extra fork1 blocks
-          await forEach(fork1.slice(-2), (block) => store.deleteHistoricalBlock(MOCK_REDUCER_KEY, block.hash))
+          await forEach(fork1.slice(-2), (block) => this.store.deleteHistoricalBlock(MOCK_REDUCER_KEY, block.hash))
 
           // should be base
-          blocksShouldEqual(await store.getHistoricalBlocks(MOCK_REDUCER_KEY), base)
+          blocksShouldEqual(await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY), base)
 
           // add fork2 blocks which goes above retention
-          await saveAllHistoricalBlocks(fork2.slice(-1 * MOCK_RETENTION))
+          await saveAllHistoricalBlocks(this.store, fork2.slice(-1 * MOCK_RETENTION))
 
           // should be last retention blocks of fork2
-          blocksShouldEqual(await store.getHistoricalBlocks(MOCK_REDUCER_KEY), fork2.slice(-1 * MOCK_RETENTION))
+          blocksShouldEqual(await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY), fork2.slice(-1 * MOCK_RETENTION))
 
           // nuke all of them
-          await store.deleteHistoricalBlocks(MOCK_REDUCER_KEY)
+          await this.store.deleteHistoricalBlocks(MOCK_REDUCER_KEY)
 
           // should be empty
-          blocksShouldEqual(await store.getHistoricalBlocks(MOCK_REDUCER_KEY), [])
+          blocksShouldEqual(await this.store.getHistoricalBlocks(MOCK_REDUCER_KEY), [])
         })
       })
     })
 
     context('transactions', function () {
       describe('getAllTransactionsTo', function () {
-        it('should throw error when given unknown txId')
-        it('should return an AsyncIteratorable set of tx batches')
-        it('should return all transactions up to an existing txId (inclusive) ordered correctly')
-        it('should include patches ordered correctly')
-        it('should not include volatile operations')
-        it('should include operations ordered correctly')
+        it('should throw error when given undefined txId', async function () {
+          await this.store.getAllTransactionsTo(MOCK_REDUCER_KEY, undefined).should.be.rejectedWith(Error)
+        })
+
+        it('should throw error when given null txId', async function () {
+          await this.store.getAllTransactionsTo(MOCK_REDUCER_KEY, null).should.be.rejectedWith(Error)
+        })
+
+        it('should throw error when given unknown txId', async function () {
+          await this.store.getAllTransactionsTo(MOCK_REDUCER_KEY, 'fake').should.be.rejectedWith(Error)
+        })
+
+        context('with valid transactions', function () {
+          beforeEach(async function () {
+            this.mockTransactions = [
+              ITransactionFactory.build({
+                patches: [
+                  IPatchFactory.build({
+                    operations: [IOperationFactory.build({
+                      path: '/test',
+                      op: 'add',
+                      value: 'test',
+                      oldValue: null,
+                      volatile: false,
+                    })],
+                  }),
+                  IPatchFactory.build({
+                    operations: [IOperationFactory.build({
+                      path: '/test-2',
+                      op: 'add',
+                      value: 'test',
+                      oldValue: null,
+                      volatile: false,
+                    })],
+                  }),
+                ],
+                blockNumber: '0x1',
+                blockHash: '0x1',
+              }),
+              ITransactionFactory.build({
+                patches: [IPatchFactory.build({
+                  operations: [IOperationFactory.build({
+                    path: '/test',
+                    op: 'update',
+                    value: 'new',
+                    oldValue: 'test',
+                    volatile: false,
+                  })],
+                })],
+                blockNumber: '0x2',
+                blockHash: '0x2',
+              }),
+            ]
+
+            for (const tx of this.mockTransactions) {
+              await this.store.saveTransaction(MOCK_REDUCER_KEY, tx)
+            }
+
+            this.lastTxId = this.mockTransactions[this.mockTransactions.length - 1].id
+          })
+
+          it('should return an AsyncIteratorable', async function () {
+            const iter = await this.store.getAllTransactionsTo(MOCK_REDUCER_KEY, this.lastTxId)
+
+            should.exist(iter[(Symbol as any).asyncIterator])
+          })
+
+          it('should return all transactions up to an existing txId (inclusive) ordered correctly', async function () {
+            const txs = await flattenIterable(await this.store.getAllTransactionsTo(MOCK_REDUCER_KEY, this.lastTxId))
+
+            should.exist(txs)
+            txs.length.should.equal(this.mockTransactions.length)
+            transactionsShouldEqual(txs, this.mockTransactions)
+          })
+
+          it('should not include volatile operations')
+          it('should include operations ordered correctly')
+        })
       })
 
       describe('getLatestTransaction', function () {

@@ -46,13 +46,14 @@ describe('Ourbit', () => {
     ])
 
     tx = {
-      id: '0x1',
+      id: TEST_UUID,
       blockHash: '0x1',
       blockNumber: '0x0',
       patches: [{
         id: TEST_UUID,
         reason: undefined,
         operations: [{
+          id: TEST_UUID,
           op: 'add',
           path: '/key',
           value: 'value',
@@ -100,6 +101,7 @@ describe('Ourbit', () => {
       id: TEST_UUID,
       reason: undefined,
       operations: [{
+        id: TEST_UUID,
         op: 'replace',
         path: '/key',
         oldValue: 'value',
@@ -126,6 +128,7 @@ describe('Ourbit', () => {
       id: TEST_UUID,
       reason: undefined,
       operations: [{
+        id: TEST_UUID,
         op: 'add',
         path: `/domain/${TEST_UUID}`,
         value: { uuid: TEST_UUID, value: 'value' },
@@ -156,7 +159,7 @@ describe('Ourbit', () => {
     await ourbit.rollbackTransaction('0x2')
     targetState.should.deep.equal({ key: 'value' })
 
-    await ourbit.rollbackTransaction(tx.id)
+    await ourbit.rollbackTransaction('0x1')
     targetState.should.deep.equal({})
   })
 
@@ -167,7 +170,7 @@ describe('Ourbit', () => {
     // new state, same store
     const newOurbit = new Ourbit(TEST_KEY, newState, persistPatch, context)
 
-    await newOurbit.resumeFromTxId('0x1')
+    await newOurbit.resumeFromTxId(tx.id)
     newState.should.deep.equal({ key: 'value' })
   })
 })

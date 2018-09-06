@@ -69,6 +69,7 @@ class Ourbit {
         id: uuid(),
         operations: ops.map((op) => ({
           ...op,
+          id: uuid(),
           volatile: false,
         })),
         reason: this.context.getCurrentReason(),

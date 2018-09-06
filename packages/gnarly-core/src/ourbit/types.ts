@@ -4,6 +4,7 @@
  * If it is volatile, it is not persisted in memory and is handled differently.
  */
 export interface IOperation {
+  id: string,
   path: string,
   op: 'add' | 'replace' | 'remove' | 'move' | 'copy' | 'test' | '_get',
   // ^ we will only actually have add|replace|remove

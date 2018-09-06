@@ -20,8 +20,7 @@ export const makeSequelizeModels = (
   })
 
   const Transaction = sequelize.define('transaction', {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    mid: { type: DataTypes.INTEGER, autoIncrement: true },
+    id: { type: DataTypes.STRING(27), primaryKey: true },
     blockHash: { type: DataTypes.STRING },
     blockNumber: { type: DataTypes.STRING },
   }, {
@@ -31,12 +30,11 @@ export const makeSequelizeModels = (
   })
 
   const Patch = sequelize.define('patch', {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    mid: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    id: { type: DataTypes.STRING(27), primaryKey: true },
   })
 
   const Operation = sequelize.define('operation', {
-    mid: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    id: { type: DataTypes.STRING(27), primaryKey: true },
     path: { type: DataTypes.STRING },
     op: { type: DataTypes.JSONB },
     value: { type: DataTypes.JSONB },
@@ -258,7 +256,7 @@ export default class SequelizeStore implements IStore {
   public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
-        order: [['mid', 'DESC']],
+        order: [['id', 'DESC']],
         rejectOnEmpty: true,
         include: [{
           model: this.Reducer,
@@ -272,6 +270,10 @@ export default class SequelizeStore implements IStore {
 
   public getAllTransactionsTo = async function (reducerKey: string, toTxId: null | string):
     Promise<any> {
+    if (toTxId === null || toTxId === undefined) {
+      throw new Error(`Invalid txId: ${toTxId}`)
+    }
+
     let initial
     try {
       initial = await this.getPlainTransaction(reducerKey, toTxId)
@@ -280,7 +282,7 @@ export default class SequelizeStore implements IStore {
     }
 
     const query = {
-      where: { mid: { [this.Sequelize.Op.lte]: initial.mid } },
+      where: { id: { [this.Sequelize.Op.lte]: initial.id } },
       include: [{
         model: this.Patch,
         include: [{
@@ -292,9 +294,9 @@ export default class SequelizeStore implements IStore {
         where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
       }],
       order: [
-        ['mid', 'ASC'],
-        [{ model: this.Patch }, 'mid', 'ASC'],
-        [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
+        ['id', 'ASC'],
+        [{ model: this.Patch }, 'id', 'ASC'],
+        [{ model: this.Patch }, { model: this.Operation }, 'id', 'ASC'],
       ],
     }
 
@@ -356,8 +358,8 @@ export default class SequelizeStore implements IStore {
           where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
         }],
         order: [
-          [{ model: this.Patch }, 'mid', 'ASC'],
-          [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
+          [{ model: this.Patch }, 'id', 'ASC'],
+          [{ model: this.Patch }, { model: this.Operation }, 'id', 'ASC'],
         ],
         rejectOnEmpty: true,
       })).get({ plain })

@@ -21,24 +21,24 @@ async function* batch (
   batchSize = 1000,
   mapper: (v: any) => any = identity,
 ) {
-  let totalRows = 1 // should be 0 at first, but we want to trigger the first iteration
   let lastId
 
-  while (totalRows > 0) {
+  while (true) {
     const opts = {
       ...query,
-      startkey: lastId,
-      skip: 1,
+      startkey: lastId || undefined,
+      skip: lastId ? 1 : 0,
       limit: batchSize,
       include_docs: true,
+      inclusive_end: true,
     }
 
     const res = await db.allDocs(opts)
-    const gots = mapper(res.rows)
-    yield gots
+    if (res.rows.length === 0) {
+      break
+    }
 
-    totalRows = gots.total_rows
-    if (totalRows === 0) { break }
+    yield mapper(res.rows)
     lastId = res.rows[res.rows.length - 1].id
   }
 }
@@ -177,7 +177,16 @@ export default class PouchDBStore implements IStore {
 
   // transaction CRUD
   public getAllTransactionsTo = async (reducerKey: string, toTxId: null | string): Promise<any> => {
+    if (toTxId === null || toTxId === undefined) {
+      throw new Error(`Invalid txId: ${toTxId}`)
+    }
+
     const db = await this.transactions.get(reducerKey)
+    try {
+      await db.get(toTxId)
+    } catch (error) {
+      throw new Error(`Invalid txId: ${toTxId} not found in reducer ${reducerKey}: ${error}`)
+    }
 
     return batch(db, { endkey: toTxId }, 1000, (rows) =>
       rows
@@ -195,7 +204,7 @@ export default class PouchDBStore implements IStore {
   }
 
   public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
-    // in pouch, our ksuids aren't sorting tot he specificity we want
+    // in pouch, our ksuids aren't sorting to the specificity we want
     // so pull the last ~10 and then sort by blocknumber
     const db = await this.transactions.get(reducerKey)
     const res = await db.allDocs({
