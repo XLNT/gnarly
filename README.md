@@ -1,5 +1,5 @@
-> ## 🛠 Status: Alpha, Active Development
-> gnarly is currently in alpha. If you'd like to play around with it, check out the usage instructions below.
+> ## 🛠 Status: Alpha, Postponed Development
+> gnarly is currently in 'hella alpha'. If you'd like to play around with it, check out the usage instructions below.
 
 
 # 🤙 Gnarly
