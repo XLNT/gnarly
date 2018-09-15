@@ -6,11 +6,10 @@ import {
   observe,
   unobserve,
 } from '@xlnt/fast-json-patch'
-import uuid = require('uuid')
 
 import { globalState } from '../globalstate'
 import { ReducerContext } from '../reducer'
-import { invertPatch, operationsOfPatches, toOperation } from '../utils'
+import { invertPatch, operationsOfPatches, toOperation, uuid } from '../utils'
 import {
   IOperation,
   IPatch,
@@ -60,16 +59,17 @@ class Ourbit {
   public processTransaction = async (
     txId: string,
     fn: () => Promise<void>,
-    extra: ITxExtra = { blockHash: '' },
+    extra: ITxExtra,
   ) => {
     const patches: IPatch[] = []
 
     // watch for patches to the memory state
     const observer = observe(this.targetState, (ops) => {
       patches.push({
-        id: uuid.v4(),
+        id: uuid(),
         operations: ops.map((op) => ({
           ...op,
+          id: uuid(),
           volatile: false,
         })),
         reason: this.context.getCurrentReason(),
@@ -84,7 +84,7 @@ class Ourbit {
     // collect any operations that are directly emitted
     this.context.setOpCollector((op: IOperation) => {
       patches.push({
-        id: uuid.v4(),
+        id: uuid(),
         operations: [op],
         reason: this.context.getCurrentReason(),
       })
@@ -128,6 +128,7 @@ class Ourbit {
         totalPatches += tx.patches.length
         this.debug('[applyPatch] %s %d', tx.id, tx.patches.length)
         const allOperations = operationsOfPatches(tx.patches)
+
         applyPatch(this.targetState, allOperations.map(toOperation))
       })
     }
@@ -163,7 +164,7 @@ class Ourbit {
     // apply to store (mutable and volatile)
     await this.notifyPatches(tx.id, inversePatches)
     // delete transaction
-    await globalState.store.deleteTransaction(this.key, tx)
+    await globalState.store.deleteTransaction(this.key, tx.id)
   }
 }
 

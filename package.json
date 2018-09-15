@@ -4,7 +4,7 @@
   "scripts": {
     "watch-ts": "lerna run watch-ts --parallel",
     "build-ts": "lerna run build-ts",
-    "test": "lerna run test --scope @xlnt/gnarly-core",
+    "test": "lerna run test --stream --scope @xlnt/gnarly-core",
     "lint": "lerna run lint --parallel",
     "clean": "lerna clean --yes && lerna exec --parallel -- rm -r ./lib",
     "coverage": "yarn run coverage:generate && yarn run coverage:submit",
@@ -18,7 +18,6 @@
   "devDependencies": {
     "@types/mocha": "^2.2.48",
     "@types/node": "^9.4.0",
-    "@types/uuid": "^3.4.3",
     "coveralls": "^3.0.2",
     "lcov-result-merger": "^3.1.0",
     "lerna": "^3.0.3",

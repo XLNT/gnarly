@@ -3,13 +3,23 @@ sudo: required
 group: beta
 language: node_js
 node_js:
-- '10'
+  - '10'
+addons:
+  postgresql: '9.6'
 cache:
   directories:
-  - node_modules
+    - node_modules
+    - packages/gnarly-core/node_modules
+    - packages/gnarly-reducer-block-meta/node_modules
+    - packages/gnarly-reducer-erc20/node_modules
+    - packages/gnarly-reducer-erc721/node_modules
+    - packages/gnarly-reducer-events/node_modules
+services:
+  - postgresql
 matrix:
   fast_finish: true
 before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
   - lerna bootstrap
   - travis_retry yarn run build-ts
 after_success:

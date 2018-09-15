@@ -14,6 +14,7 @@ import {
   SetupFn,
   TypeStorer,
 } from './typeStore'
+import { toBN } from './utils'
 
 // TODO: should be moved to bin
 const BLOCK_RETENTION = 100
@@ -75,11 +76,15 @@ export class ReducerRunner {
             try {
               const mostRecentHistoricalBlock = historicalBlocks[historicalBlocks.length - 1]
 
-              assert.equal(
+              assert.strictEqual(
                 mostRecentHistoricalBlock.hash,
                 latestTransaction.blockHash,
                 `We have a latestTransaction ${latestTransaction.id} with blockHash ${latestTransaction.blockHash}
-                but it doesn't match the most recent historical block ${mostRecentHistoricalBlock.hash}!`,
+                but it doesn't match the most recent historical block ${mostRecentHistoricalBlock.hash}!
+
+                The historical chain is:
+
+${historicalBlocks.map((b) => `${toBN(b.number).toString()} — ${b.hash}`).join('\n')}`,
               )
 
               // let's re-hydrate local state by replaying transactions

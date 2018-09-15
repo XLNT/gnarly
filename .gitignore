@@ -40,3 +40,5 @@ lib
 .nyc_output
 lcov.info
 .coveralls.yml
+*.sqlite
+log.txt

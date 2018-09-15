@@ -1,6 +1,5 @@
 import chai = require('chai')
 import 'mocha'
-import uuid = require('uuid')
 
 import { IABIItemInput } from '../src'
 
@@ -11,6 +10,8 @@ import { expectThrow } from './utils'
 const should = chai
   .use(require('chai-spies'))
   .should()
+
+const TEST_UUID = utils.uuid()
 
 const TRANSFER_ABI: IABIItemInput = {
   anonymous: false,
@@ -25,7 +26,7 @@ const TRANSFER_ABI: IABIItemInput = {
 
 describe('utils', function () {
   before(function () {
-    chai.spy.on(uuid, 'v4', () => 'uuid')
+    chai.spy.on(utils, 'uuid', () => TEST_UUID)
   })
 
   after(function () {
@@ -195,9 +196,9 @@ describe('utils', function () {
     it('generates a valid op', async function () {
       const op = utils.appendTo('domain', { test: true })
       op.op.should.equal('add')
-      op.path.should.equal('/domain/uuid')
+      op.path.should.equal(`/domain/${TEST_UUID}`)
       op.value.should.deep.equal({
-        uuid: 'uuid',
+        uuid: TEST_UUID,
         test: true,
       })
       op.volatile.should.equal(true)

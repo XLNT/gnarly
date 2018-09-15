@@ -1,15 +1,14 @@
 import chai = require('chai')
 import 'mocha'
 
-import uuid = require('uuid')
 import { globalState } from '../src/globalstate'
 import * as utils from '../src/utils'
 
 import Ourbit, {
-  ITransaction,
+  ITransaction, ITxExtra,
 } from '../src/ourbit'
 import { ReducerContext } from '../src/reducer'
-import MockPersistInterface from './mocks/MockPersistInterface'
+import MockStore from './mocks/MockStore'
 
 chai
   .use(require('chai-spies'))
@@ -19,6 +18,10 @@ const sandbox = chai.spy.sandbox()
 const TEST_KEY = 'test'
 const TEST_REASON = 'TEST_REASON'
 const TEST_META = {}
+
+const TEST_UUID = utils.uuid()
+
+const extraFor = (tx): ITxExtra => ({ blockHash: tx.blockHash, blockNumber: tx.blockNumber })
 
 describe('Ourbit', () => {
   let ourbit: Ourbit = null
@@ -31,11 +34,11 @@ describe('Ourbit', () => {
   const produceFirstPatch = async () => {
     await ourbit.processTransaction(tx.id, async () => {
       targetState.key = 'value'
-    }, { blockHash: tx.blockHash })
+    }, extraFor(tx))
   }
 
   beforeEach(() => {
-    sandbox.on(uuid, 'v4', () => 'uuid')
+    sandbox.on(utils, 'uuid', () => TEST_UUID)
     sandbox.on(globalState, [
       'setPatchGenerator',
       'setOpCollector',
@@ -43,12 +46,14 @@ describe('Ourbit', () => {
     ])
 
     tx = {
-      id: '0x1',
+      id: TEST_UUID,
       blockHash: '0x1',
+      blockNumber: '0x0',
       patches: [{
-        id: 'uuid',
+        id: TEST_UUID,
         reason: undefined,
         operations: [{
+          id: TEST_UUID,
           op: 'add',
           path: '/key',
           value: 'value',
@@ -58,7 +63,7 @@ describe('Ourbit', () => {
     }
 
     targetState = {}
-    const store = new MockPersistInterface()
+    const store = new MockStore()
     sandbox.on(store, [
       'saveTransaction',
     ])
@@ -79,17 +84,6 @@ describe('Ourbit', () => {
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
-  it('should process a transaction with default values', async () => {
-    await ourbit.processTransaction(tx.id, async () => {
-      targetState.key = 'value'
-    })
-
-    const txWithoutBlockHash = tx
-    tx.blockHash = ''
-
-    globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, txWithoutBlockHash)
-  })
-
   it('should include a reason if provided', async () => {
     tx.patches[0].reason = { key: TEST_REASON, meta: TEST_META }
 
@@ -97,16 +91,17 @@ describe('Ourbit', () => {
       context.because(TEST_REASON, TEST_META, () => {
         targetState.key = 'value'
       })
-    }, { blockHash: tx.blockHash })
+    }, extraFor(tx))
 
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
 
   it('should allow manual collection', async () => {
     tx.patches.push({
-      id: 'uuid',
+      id: TEST_UUID,
       reason: undefined,
       operations: [{
+        id: TEST_UUID,
         op: 'replace',
         path: '/key',
         oldValue: 'value',
@@ -122,7 +117,7 @@ describe('Ourbit', () => {
       context.operation(() => {
         targetState.key = 'newValue'
       })
-    }, { blockHash: tx.blockHash })
+    }, extraFor(tx))
 
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
@@ -130,12 +125,13 @@ describe('Ourbit', () => {
   it('should accept volatile operations', async () => {
     targetState.domain = { array: [] }
     tx.patches.push({
-      id: 'uuid',
+      id: TEST_UUID,
       reason: undefined,
       operations: [{
+        id: TEST_UUID,
         op: 'add',
-        path: '/domain/uuid',
-        value: { uuid: 'uuid', value: 'value' },
+        path: `/domain/${TEST_UUID}`,
+        value: { uuid: TEST_UUID, value: 'value' },
         volatile: true,
       }],
     })
@@ -147,7 +143,7 @@ describe('Ourbit', () => {
       context.emit(utils.appendTo('domain', {
         value: 'value',
       }))
-    }, { blockHash: tx.blockHash })
+    }, extraFor(tx))
 
     globalState.store.saveTransaction.should.have.been.called.with(TEST_KEY, tx)
   })
@@ -158,12 +154,12 @@ describe('Ourbit', () => {
 
     await ourbit.processTransaction('0x2', async () => {
       targetState.key = 'newValue'
-    }, { blockHash: '0x2' })
+    }, { blockHash: '0x2', blockNumber: '0x2' })
 
     await ourbit.rollbackTransaction('0x2')
     targetState.should.deep.equal({ key: 'value' })
 
-    await ourbit.rollbackTransaction(tx.id)
+    await ourbit.rollbackTransaction('0x1')
     targetState.should.deep.equal({})
   })
 
@@ -174,7 +170,7 @@ describe('Ourbit', () => {
     // new state, same store
     const newOurbit = new Ourbit(TEST_KEY, newState, persistPatch, context)
 
-    await newOurbit.resumeFromTxId('0x1')
+    await newOurbit.resumeFromTxId(tx.id)
     newState.should.deep.equal({ key: 'value' })
   })
 })

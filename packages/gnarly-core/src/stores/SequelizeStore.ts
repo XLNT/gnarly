@@ -1,4 +1,4 @@
-import identity = require('lodash.identity')
+import { identity } from 'lodash'
 
 const plain = true
 
@@ -6,7 +6,7 @@ import { IJSONBlock } from '../models/Block'
 import {
   ITransaction,
 } from '../ourbit/types'
-import { IPersistInterface } from '../stores'
+import { IStore } from '../stores'
 import { toBN } from '../utils'
 
 export const makeSequelizeModels = (
@@ -20,9 +20,9 @@ export const makeSequelizeModels = (
   })
 
   const Transaction = sequelize.define('transaction', {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    mid: { type: DataTypes.INTEGER, autoIncrement: true },
+    id: { type: DataTypes.STRING(27), primaryKey: true },
     blockHash: { type: DataTypes.STRING },
+    blockNumber: { type: DataTypes.STRING },
   }, {
     indexes: [
       { fields: ['blockHash'] },
@@ -30,12 +30,11 @@ export const makeSequelizeModels = (
   })
 
   const Patch = sequelize.define('patch', {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    mid: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    id: { type: DataTypes.STRING(27), primaryKey: true },
   })
 
   const Operation = sequelize.define('operation', {
-    mid: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    id: { type: DataTypes.STRING(27), primaryKey: true },
     path: { type: DataTypes.STRING },
     op: { type: DataTypes.JSONB },
     value: { type: DataTypes.JSONB },
@@ -126,7 +125,7 @@ async function* batch (
   }
 }
 
-class SequelizePersistInterface implements IPersistInterface {
+export default class SequelizeStore implements IStore {
   private Reducer
   private HistoricalBlock
   private Transaction
@@ -257,7 +256,7 @@ class SequelizePersistInterface implements IPersistInterface {
   public getLatestTransaction = async (reducerKey: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
-        order: [['mid', 'DESC']],
+        order: [['id', 'DESC']],
         rejectOnEmpty: true,
         include: [{
           model: this.Reducer,
@@ -271,6 +270,10 @@ class SequelizePersistInterface implements IPersistInterface {
 
   public getAllTransactionsTo = async function (reducerKey: string, toTxId: null | string):
     Promise<any> {
+    if (toTxId === null || toTxId === undefined) {
+      throw new Error(`Invalid txId: ${toTxId}`)
+    }
+
     let initial
     try {
       initial = await this.getPlainTransaction(reducerKey, toTxId)
@@ -279,7 +282,7 @@ class SequelizePersistInterface implements IPersistInterface {
     }
 
     const query = {
-      where: { mid: { [this.Sequelize.Op.lte]: initial.mid } },
+      where: { id: { [this.Sequelize.Op.lte]: initial.id } },
       include: [{
         model: this.Patch,
         include: [{
@@ -291,9 +294,9 @@ class SequelizePersistInterface implements IPersistInterface {
         where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
       }],
       order: [
-        ['mid', 'ASC'],
-        [{ model: this.Patch }, 'mid', 'ASC'],
-        [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
+        ['id', 'ASC'],
+        [{ model: this.Patch }, 'id', 'ASC'],
+        [{ model: this.Patch }, { model: this.Operation }, 'id', 'ASC'],
       ],
     }
 
@@ -302,10 +305,10 @@ class SequelizePersistInterface implements IPersistInterface {
     ))
   }
 
-  public deleteTransaction = async (reducerKey: string, tx: ITransaction) => {
+  public deleteTransaction = async (reducerKey: string, txId: string) => {
     // @TODO does this delete patches, etc as well? seems like not, by default
     return this.Transaction.destroy({
-      where: { id: { [this.Sequelize.Op.eq]: tx.id } },
+      where: { id: { [this.Sequelize.Op.eq]: txId } },
       include: [{
         model: this.Reducer,
         where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
@@ -355,8 +358,8 @@ class SequelizePersistInterface implements IPersistInterface {
           where: { id: { [this.Sequelize.Op.eq]: reducerKey } },
         }],
         order: [
-          [{ model: this.Patch }, 'mid', 'ASC'],
-          [{ model: this.Patch }, { model: this.Operation }, 'mid', 'ASC'],
+          [{ model: this.Patch }, 'id', 'ASC'],
+          [{ model: this.Patch }, { model: this.Operation }, 'id', 'ASC'],
         ],
         rejectOnEmpty: true,
       })).get({ plain })
@@ -366,6 +369,7 @@ class SequelizePersistInterface implements IPersistInterface {
     }
   }
 
+  // just get the tx object, no children
   private getPlainTransaction = async (reducerKey: string, txId: string): Promise<ITransaction> => {
     try {
       return (await this.Transaction.findOne({
@@ -381,5 +385,3 @@ class SequelizePersistInterface implements IPersistInterface {
     }
   }
 }
-
-export default SequelizePersistInterface

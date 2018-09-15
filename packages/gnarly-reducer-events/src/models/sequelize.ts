@@ -26,7 +26,7 @@ const sequelizeModels = (
     ],
   })
 
-  Events.Patch = Events.belongsTo(Patch)
+  Events.Patch = Events.belongsTo(Patch, { constraints: false })
 
   return {
     Events,

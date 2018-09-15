@@ -4,6 +4,7 @@
  * If it is volatile, it is not persisted in memory and is handled differently.
  */
 export interface IOperation {
+  id: string,
   path: string,
   op: 'add' | 'replace' | 'remove' | 'move' | 'copy' | 'test' | '_get',
   // ^ we will only actually have add|replace|remove
@@ -40,19 +41,21 @@ export interface IPatch {
 }
 
 /**
- * A transaction is a set of patches.
+ * A transaction is a set of patches with a unique id.
  */
-export interface ITransaction {
+export interface IBasicTransaction {
   id: string
-  blockHash: string,
   patches: IPatch[]
 }
 
-export type OpCollector = (op: IOperation) => void
-
 export interface ITxExtra {
   blockHash: string
+  blockNumber: string
 }
+
+export interface ITransaction extends IBasicTransaction, ITxExtra {}
+
+export type OpCollector = (op: IOperation) => void
 
 /**
  * This function accept patches and persists them to a store.

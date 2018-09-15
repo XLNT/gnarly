@@ -16,8 +16,6 @@ const makeReducer = (
     emitBlock: (block: Block) => {
       emit(appendTo('blocks', {
         hash: block.hash,
-        transactionId: block.hash,
-        // ^ assumes that gnarly.transactionId === block.hash
         number: block.number.toString(),
         unsafeNumber: block.number.toString(),
         parentHash: block.parentHash,

@@ -1,7 +1,7 @@
 import { IJSONBlock } from '../models/Block'
 import { ITransaction } from '../ourbit/types'
 
-export interface IPersistInterface {
+export default interface IStore {
   // @TODO - how do you get typescript to stop complaining about AsyncIterator symbols?
 
   // reducer CRUD
@@ -17,7 +17,7 @@ export interface IPersistInterface {
   // transaction CRUD
   getAllTransactionsTo (reducerKey: string, toTxId: null | string): Promise<any>
   getLatestTransaction (reducerKey: string): Promise<ITransaction>
-  deleteTransaction (reducerKey: string, tx: ITransaction): Promise<any>
+  deleteTransaction (reducerKey: string, txId: string): Promise<any>
   saveTransaction (reducerKey: string, tx: ITransaction): Promise<any>
   getTransaction (reducerKey: string, txId: string): Promise<ITransaction>
   getTransactionByBlockHash (reducerKey: string, blockHash: string): Promise<ITransaction>

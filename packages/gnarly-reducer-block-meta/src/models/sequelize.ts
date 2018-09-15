@@ -40,7 +40,7 @@ const sequelizeModels = (
     ],
   })
 
-  Block.Patch = Block.belongsTo(Patch)
+  Block.Patch = Block.belongsTo(Patch, { constraints: false })
 
   return {
     Block,
